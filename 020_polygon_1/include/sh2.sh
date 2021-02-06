@@ -24,8 +24,17 @@ sh2_copy_to_ptr_from_reg_byte() {
 	local src=$2
 	local dstnum=$(to_regnum $dst)
 	local srcnum=$(to_regnum $src)
-	echo -en "\x2${dstnum}\x${srcnum}0"	# mov $src,@$dst
-	echo -e "mov $src,@$dst\t;1" >>$ASM_LIST_FILE
+	echo -en "\x2${dstnum}\x${srcnum}0"	# mov.b $src,@$dst
+	echo -e "mov.b $src,@$dst\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_copy_to_ptr_from_reg_word() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x2${dstnum}\x${srcnum}1"	# mov.w $src,@$dst
+	echo -e "mov.w $src,@$dst\t;1" >>$ASM_LIST_FILE
 }
 
 sh2_add_to_reg_from_val_byte() {

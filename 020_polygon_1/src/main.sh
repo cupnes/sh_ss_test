@@ -41,6 +41,25 @@ put_file_to_addr() {
 }
 
 main() {
+	# VDP1のシステムレジスタ設定
+	## TVMR(0x00100000)
+	## b20に1がセットされているアドレス
+	sh2_set_reg r3 10
+	### 0x00000010
+	sh2_shift_left_logical_8 r3
+	### 0x00001000
+	sh2_shift_left_logical_8 r3
+	### 0x00100000
+	### VBE(b3) = 0
+	### TVM(b2-b0) = 0b000
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r3 r0
+	## FBCR(0x100002)
+	sh2_add_to_reg_from_val_byte r3 02
+	sh2_copy_to_ptr_from_reg_word r3 r0
+
+
+	# コマンドテーブル設定
 	local com_adr=$SS_VDP1_VRAM_ADDR
 	vdp1_command_polygon_draw >src/polygon_draw.o
 	put_file_to_addr src/polygon_draw.o $com_adr
@@ -48,6 +67,14 @@ main() {
 	com_adr=$(calc16 "$com_adr+20")
 	vdp1_command_draw_end >src/draw_end.o
 	put_file_to_addr src/draw_end.o $com_adr
+
+
+	# VDP1のシステムレジスタ設定
+	## PTMR(0x00100004)
+	sh2_add_to_reg_from_val_byte r3 02
+	## PTM(b1-b0) = 0b01
+	sh2_set_reg r0 01
+	sh2_copy_to_ptr_from_reg_word r3 r0
 
 	infinite_loop
 }
