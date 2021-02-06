@@ -58,4 +58,43 @@ vdp1_command_polygon_draw() {
 	echo -en '\x00\x14'
 	# CMDGRDA
 	echo -en '\x00\x00'
+	# dummy
+	echo -en '\x00\x00'
+}
+
+vdp1_command_draw_end() {
+	# CMDCTRL
+	# 0b0000 0000 0000 0100
+	# - END(b15) = 1
+	echo -en '\x80\x00'
+	# CMDLINK
+	echo -en '\x00\x00'
+	# CMDPMOD
+	echo -en '\x00\x00'
+	# CMDCOLR
+	echo -en '\x00\x00'
+	# CMDSRCA
+	echo -en '\x00\x00'
+	# CMDSIZE
+	echo -en '\x00\x00'
+	# CMDXA
+	echo -en '\x00\x00'
+	# CMDYA
+	echo -en '\x00\x00'
+	# CMDXB
+	echo -en '\x00\x00'
+	# CMDYB
+	echo -en '\x00\x00'
+	# CMDXC
+	echo -en '\x00\x00'
+	# CMDYC
+	echo -en '\x00\x00'
+	# CMDXD
+	echo -en '\x00\x00'
+	# CMDYD
+	echo -en '\x00\x00'
+	# CMDGRDA
+	echo -en '\x00\x00'
+	# dummy
+	echo -en '\x00\x00'
 }

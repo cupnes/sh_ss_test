@@ -12,6 +12,6 @@ run: $(TARGET)
 	yabause -a -i $<
 
 clean:
-	rm -f *~ *.o *.bin *.BIN *.lst $(TARGET) src/*~ include/*~
+	rm -f *~ *.o *.bin *.BIN *.lst $(TARGET) src/*~ src/*.o include/*~
 
 .PHONY: run clean

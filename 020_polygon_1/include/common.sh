@@ -54,6 +54,28 @@ four_digits() {
 	esac
 }
 
+extend_digit() {
+	local val=$1
+	local expected_digits=$2
+	local current_digits=$(echo -n $val | wc -m)
+	if [ $current_digits -lt $expected_digits ]; then
+		local n=$((expected_digits - current_digits))
+		local _i
+		for _i in $(seq $n); do
+			echo -n '0'
+		done
+	fi
+	echo $val
+}
+
+dump_val_4() {
+	local val=$1
+	local i
+	for i in 1 3 5 7; do
+		echo -en "\x$(echo $val | cut -c${i}-$((i + 1)))"
+	done
+}
+
 two_comp() {
 	local val=$1
 	local val_up=$(echo $val | tr [:lower:] [:upper:])
