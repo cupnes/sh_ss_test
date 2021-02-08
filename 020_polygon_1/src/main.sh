@@ -10,6 +10,19 @@ set -ue
 . include/vdp1.sh
 
 main() {
+	# VDP2のシステムレジスタ設定
+	## TVMD
+	## - DISP(b15) = 0
+	## - BDCLMD(b8) = 0
+	## - LSMD(b7-b6) = 0b00
+	## - VRESO(b5-b4) = 0b00
+	## - HRESO(b2-b0) = 0b000
+	copy_to_reg_from_val_long r4 $SS_VDP2_TVMD_ADDR
+	sh2_set_reg r0 00
+	sh2_shift_left_logical_8 r0
+	# sh2_add_to_reg_from_val_byte r0 10
+	sh2_copy_to_ptr_from_reg_word r4 r0
+
 	# VDP1のシステムレジスタ設定
 	## TVMR
 	## - VBE(b3) = 0
@@ -31,6 +44,23 @@ main() {
 	vdp1_command_draw_end >src/draw_end.o
 	put_file_to_addr src/draw_end.o $com_adr
 
+	# VDP2のシステムレジスタ設定
+	## TVMD
+	## - DISP(b15) = 1
+	## - BDCLMD(b8) = 1
+	## - LSMD(b7-b6) = 0b00
+	## - VRESO(b5-b4) = 0b00
+	## - HRESO(b2-b0) = 0b000
+	copy_to_reg_from_val_long r4 $SS_VDP2_TVMD_ADDR
+	sh2_set_reg r0 81
+	sh2_shift_left_logical_8 r0
+	# sh2_add_to_reg_from_val_byte r0 10
+	sh2_copy_to_ptr_from_reg_word r4 r0
+	## BGON
+	## - N0ON(b0) = 1
+	# sh2_add_to_reg_from_val_byte r4 20
+	# sh2_set_reg r0 01
+	# sh2_copy_to_ptr_from_reg_word r4 r0
 
 	# VDP1のシステムレジスタ設定
 	## PTMR(FBCRの2バイト先)
@@ -38,19 +68,6 @@ main() {
 	## PTM(b1-b0) = 0b01
 	sh2_set_reg r0 01
 	sh2_copy_to_ptr_from_reg_word r3 r0
-
-	# VDP2のシステムレジスタ設定
-	## TVMD
-	## - DISP(b15) = 1
-	## - BDCLMD(b8) = 1
-	## - LSMD(b7-b6) = 0b00
-	## - VRESO(b5-b4) = 0b01
-	## - HRESO(b2-b0) = 0b000
-	copy_to_reg_from_val_long r4 $SS_VDP2_TVMD_ADDR
-	sh2_set_reg r0 81
-	sh2_shift_left_logical_8 r0
-	sh2_add_to_reg_from_val_byte r0 10
-	sh2_copy_to_ptr_from_reg_word r4 r0
 
 	infinite_loop
 }
