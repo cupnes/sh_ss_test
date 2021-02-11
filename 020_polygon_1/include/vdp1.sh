@@ -5,6 +5,117 @@ INCLUDE_VDP1_SH=true
 
 . include/ss.sh
 
+vdp1_command_system_clipping_coordinates() {
+	# CMDCTRL
+	# 0b0000 0000 0000 1001
+	# - JP(b14-12) = 0b000
+	echo -en '\x00\x09'
+	# CMDLINK
+	echo -en '\x00\x00'
+	# CMDPMOD
+	echo -en '\x00\x00'
+	# CMDCOLR
+	echo -en '\x00\x00'
+	# CMDSRCA
+	echo -en '\x00\x00'
+	# CMDSIZE
+	echo -en '\x00\x00'
+	# CMDXA
+	echo -en '\x00\x00'
+	# CMDYA
+	echo -en '\x00\x00'
+	# CMDXB
+	echo -en '\x00\x00'
+	# CMDYB
+	echo -en '\x00\x00'
+	# CMDXC
+	echo -en '\x01\x3f'
+	# CMDYC
+	echo -en '\x00\xdf'
+	# CMDXD
+	echo -en '\x00\x00'
+	# CMDYD
+	echo -en '\x00\x00'
+	# CMDGRDA
+	echo -en '\x00\x00'
+	# dummy
+	echo -en '\x00\x00'
+}
+
+vdp1_command_user_clipping_coordinates() {
+	# CMDCTRL
+	# 0b0000 0000 0000 1000
+	# - JP(b14-12) = 0b000
+	echo -en '\x00\x08'
+	# CMDLINK
+	echo -en '\x00\x00'
+	# CMDPMOD
+	echo -en '\x00\x00'
+	# CMDCOLR
+	echo -en '\x00\x00'
+	# CMDSRCA
+	echo -en '\x00\x00'
+	# CMDSIZE
+	echo -en '\x00\x00'
+	# CMDXA
+	echo -en '\x00\x00'
+	# CMDYA
+	echo -en '\x00\x00'
+	# CMDXB
+	echo -en '\x00\x00'
+	# CMDYB
+	echo -en '\x00\x00'
+	# CMDXC
+	echo -en '\x01\x3f'
+	# CMDYC
+	echo -en '\x00\xdf'
+	# CMDXD
+	echo -en '\x00\x00'
+	# CMDYD
+	echo -en '\x00\x00'
+	# CMDGRDA
+	echo -en '\x00\x00'
+	# dummy
+	echo -en '\x00\x00'
+}
+
+vdp1_command_local_coordinates() {
+	# CMDCTRL
+	# 0b0000 0000 0000 1010
+	# - JP(b14-12) = 0b000
+	echo -en '\x00\x0a'
+	# CMDLINK
+	echo -en '\x00\x00'
+	# CMDPMOD
+	echo -en '\x00\x00'
+	# CMDCOLR
+	echo -en '\x00\x00'
+	# CMDSRCA
+	echo -en '\x00\x00'
+	# CMDSIZE
+	echo -en '\x00\x00'
+	# CMDXA
+	echo -en '\x00\x00'
+	# CMDYA
+	echo -en '\x00\x00'
+	# CMDXB
+	echo -en '\x00\x00'
+	# CMDYB
+	echo -en '\x00\x00'
+	# CMDXC
+	echo -en '\x00\x00'
+	# CMDYC
+	echo -en '\x00\x00'
+	# CMDXD
+	echo -en '\x00\x00'
+	# CMDYD
+	echo -en '\x00\x00'
+	# CMDGRDA
+	echo -en '\x00\x00'
+	# dummy
+	echo -en '\x00\x00'
+}
+
 vdp1_command_polygon_draw() {
 	# CMDCTRL
 	# 0b0000 0000 0000 0100

@@ -37,6 +37,18 @@ main() {
 
 	# コマンドテーブル設定
 	local com_adr=$SS_VDP1_VRAM_ADDR
+	vdp1_command_system_clipping_coordinates >src/system_clipping_coordinates.o
+	put_file_to_addr src/system_clipping_coordinates.o $com_adr
+
+	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_user_clipping_coordinates >src/user_clipping_coordinates.o
+	put_file_to_addr src/user_clipping_coordinates.o $com_adr
+
+	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_local_coordinates >src/local_coordinates.o
+	put_file_to_addr src/local_coordinates.o $com_adr
+
+	com_adr=$(calc16 "$com_adr+20")
 	vdp1_command_polygon_draw >src/polygon_draw.o
 	put_file_to_addr src/polygon_draw.o $com_adr
 
@@ -54,13 +66,12 @@ main() {
 	copy_to_reg_from_val_long r4 $SS_VDP2_TVMD_ADDR
 	sh2_set_reg r0 81
 	sh2_shift_left_logical_8 r0
-	# sh2_add_to_reg_from_val_byte r0 10
 	sh2_copy_to_ptr_from_reg_word r4 r0
 	## BGON
 	## - N0ON(b0) = 1
-	# sh2_add_to_reg_from_val_byte r4 20
-	# sh2_set_reg r0 01
-	# sh2_copy_to_ptr_from_reg_word r4 r0
+	sh2_add_to_reg_from_val_byte r4 20
+	sh2_set_reg r0 01
+	sh2_copy_to_ptr_from_reg_word r4 r0
 
 	# VDP1のシステムレジスタ設定
 	## PTMR(FBCRの2バイト先)
