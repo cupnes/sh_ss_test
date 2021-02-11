@@ -20,7 +20,6 @@ main() {
 	copy_to_reg_from_val_long r4 $SS_VDP2_TVMD_ADDR
 	sh2_set_reg r0 00
 	sh2_shift_left_logical_8 r0
-	# sh2_add_to_reg_from_val_byte r0 10
 	sh2_copy_to_ptr_from_reg_word r4 r0
 
 	# VDP1のシステムレジスタ設定
@@ -76,8 +75,8 @@ main() {
 	# VDP1のシステムレジスタ設定
 	## PTMR(FBCRの2バイト先)
 	sh2_add_to_reg_from_val_byte r3 02
-	## PTM(b1-b0) = 0b01
-	sh2_set_reg r0 01
+	## PTM(b1-b0) = 0b10
+	sh2_set_reg r0 02
 	sh2_copy_to_ptr_from_reg_word r3 r0
 
 	infinite_loop
