@@ -144,29 +144,29 @@ vdp1_command_polygon_draw() {
 	# CMDSIZE
 	echo -en '\x00\x00'
 	# CMDXA
-	# 頂点AのX座標 = 127(0x7f)
-	echo -en '\x00\x7f'
+	# 頂点AのX座標 = 49(0x31)
+	echo -en '\x00\x31'
 	# CMDYA
-	# 頂点AのY座標 = 20(0x14)
-	echo -en '\x00\x14'
+	# 頂点AのY座標 = 9(0x9)
+	echo -en '\x00\x09'
 	# CMDXB
-	# 頂点BのX座標 = 193(0xc1)
-	echo -en '\x00\xc1'
+	# 頂点BのX座標 = 270(0x10e)
+	echo -en '\x01\x0e'
 	# CMDYB
-	# 頂点BのY座標 = 20(0x14)
-	echo -en '\x00\x14'
+	# 頂点BのY座標 = 9(0x9)
+	echo -en '\x00\x09'
 	# CMDXC
-	# 頂点CのX座標 = 193(0xc1)
-	echo -en '\x00\xc1'
+	# 頂点CのX座標 = 270(0x10e)
+	echo -en '\x01\x0e'
 	# CMDYC
-	# 頂点CのY座標 = 204(0xcc)
-	echo -en '\x00\xcc'
+	# 頂点CのY座標 = 230(0xe6)
+	echo -en '\x00\xe6'
 	# CMDXD
-	# 頂点DのX座標 = 127(0x7f)
-	echo -en '\x00\x7f'
+	# 頂点DのX座標 = 49(0x31)
+	echo -en '\x00\x31'
 	# CMDYD
-	# 頂点DのY座標 = 204(0xcc)
-	echo -en '\x00\xcc'
+	# 頂点DのY座標 = 230(0xe6)
+	echo -en '\x00\xe6'
 	# CMDGRDA
 	echo -en '\x00\x00'
 	# dummy

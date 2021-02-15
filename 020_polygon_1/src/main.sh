@@ -71,6 +71,11 @@ main() {
 	sh2_add_to_reg_from_val_byte r4 20
 	sh2_set_reg r0 01
 	sh2_copy_to_ptr_from_reg_word r4 r0
+	## PRISA
+	sh2_add_to_reg_from_val_byte r4 68
+	sh2_add_to_reg_from_val_byte r4 68
+	sh2_set_reg r0 06
+	sh2_copy_to_ptr_from_reg_word r4 r0
 
 	# VDP1のシステムレジスタ設定
 	## PTMR(FBCRの2バイト先)
