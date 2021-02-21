@@ -55,6 +55,13 @@ main() {
 	put_file_to_addr src/polygon_draw.o $com_adr
 
 	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_polygon_draw 0010 0010 \
+				  0020 0010 \
+				  0020 0020 \
+				  0010 0020 >src/polygon_draw_2.o
+	put_file_to_addr src/polygon_draw_2.o $com_adr
+
+	com_adr=$(calc16 "$com_adr+20")
 	vdp1_command_draw_end >src/draw_end.o
 	put_file_to_addr src/draw_end.o $com_adr
 

@@ -30,8 +30,8 @@ BIN_FILE="$1"
 PVD_VOLUME_SPACE_SIZE='\x16\x00\x00\x00\x00\x00\x00\x16'
 
 # BIN_FILEのバイト数(Both Endian)
-# 1240(0x4d8)バイト
-BIN_DATA_LENGTH='\xd8\x04\x00\x00\x00\x00\x04\xd8'
+# 1458(0x5b2)バイト
+BIN_DATA_LENGTH='\xb2\x05\x00\x00\x00\x00\x05\xb2'
 
 # Initial Program(IP)
 # (ISO9660 Reserved Field)
