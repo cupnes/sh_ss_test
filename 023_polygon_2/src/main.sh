@@ -48,7 +48,10 @@ main() {
 	put_file_to_addr src/local_coordinates.o $com_adr
 
 	com_adr=$(calc16 "$com_adr+20")
-	vdp1_command_polygon_draw 007a 002d 00c5 002d 00c5 00b3 007a 00b3 >src/polygon_draw.o
+	vdp1_command_polygon_draw 007a 002d \
+				  00c5 002d \
+				  00c5 00b3 \
+				  007a 00b3 >src/polygon_draw.o
 	put_file_to_addr src/polygon_draw.o $com_adr
 
 	com_adr=$(calc16 "$com_adr+20")
