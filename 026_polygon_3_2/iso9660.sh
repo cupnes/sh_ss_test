@@ -27,12 +27,19 @@ BIN_FILE="$1"
 
 # BIN_FILEは1セクタ(2048バイト)以内という制限
 
+# BIN_FILEのバイト数
+BIN_FILE_SIZE=$(stat -c '%s' $BIN_FILE)
+## 8桁の16進数
+BIN_FILE_SIZE_HEX="$(extend_digit $(to16 $BIN_FILE_SIZE) 8)"
+## セクタ数
+BIN_FILE_NUM_SECTORS=$(((BIN_FILE_SIZE + SECTOR_BYTES - 1) / SECTOR_BYTES))
+
 # ISOファイルサイズをセクタ数で指定する(Both Endian)
 # BIN_FILEが1セクタなら合計22(0x16)セクタ
-PVD_VOLUME_SPACE_SIZE='\x16\x00\x00\x00\x00\x00\x00\x16'
-
-# BIN_FILEのバイト数(8桁の16進数)
-BIN_FILE_SIZE_HEX="$(extend_digit $(to16 $(stat -c '%s' $BIN_FILE)) 8)"
+# セクタ数 = 21 + $BIN_FILE_SIZE / $SECTOR_BYTES
+ISO_FILE_NUM_SECTORS=$((21 + BIN_FILE_NUM_SECTORS))
+## 8桁の16進数
+ISO_FILE_NUM_SECTORS_HEX="$(extend_digit $(to16 $ISO_FILE_NUM_SECTORS) 8)"
 
 # Initial Program(IP)
 # (ISO9660 Reserved Field)
@@ -70,7 +77,8 @@ gen_pvd() {
 	dd if=/dev/zero bs=1 count=8
 	# 80(0x50) - 87(0x57) Volume Space Size
 	# ISOファイルサイズをセクタ数で指定する
-	echo -en $PVD_VOLUME_SPACE_SIZE
+	echo_4bytes "$ISO_FILE_NUM_SECTORS_HEX"
+	echo_4bytes_be "$ISO_FILE_NUM_SECTORS_HEX"
 	# 88(0x58) - 119(0x77) Escape Sequences
 	dd if=/dev/zero bs=1 count=$((119 - 88 + 1))
 	# 120(0x78) - 123(0x7b) Volume Set Size
