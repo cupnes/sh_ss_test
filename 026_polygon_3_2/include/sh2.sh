@@ -79,6 +79,13 @@ sh2_rel_jump_after_next_inst() {
 	echo -e "bra 0x$offset\t;2" >>$ASM_LIST_FILE
 }
 
+sh2_abs_jump_to_reg_after_next_inst() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x2b"	# jmp $reg
+	echo -e "jmp $reg\t;2" >>$ASM_LIST_FILE
+}
+
 sh2_nop() {
 	echo -en '\x00\x09'	# nop
 	echo -e 'nop\t;1' >>$ASM_LIST_FILE

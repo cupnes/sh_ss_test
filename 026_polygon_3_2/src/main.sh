@@ -9,6 +9,19 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 
+PROGRAM_ENTRY_ADDR=06004000
+VARS_BASE=0600401E
+FUNCS_BASE=06005000
+MAIN_BASE=06010000
+
+vars() {
+	:
+}
+
+funcs() {
+	:
+}
+
 main() {
 	# VDP2のシステムレジスタ設定
 	## TVMD
@@ -123,4 +136,37 @@ main() {
 	infinite_loop
 }
 
-main
+make_bin() {
+	local file_sz
+	local area_sz
+	local pad_sz
+
+	# メインプログラム領域へジャンプ(30バイト)
+	(
+		copy_to_reg_from_val_long r1 $MAIN_BASE
+		sh2_abs_jump_to_reg_after_next_inst r1
+		sh2_nop
+	) >src/jmp_main.o
+	cat src/jmp_main.o
+
+	# 変数領域
+	vars >src/vars.o
+	cat src/vars.o
+	file_sz=$(stat -c '%s' src/vars.o)
+	area_sz=$(echo "ibase=16;$FUNCS_BASE - $VARS_BASE" | bc)
+	pad_sz=$((area_sz - file_sz))
+	dd if=/dev/zero bs=1 count=$pad_sz
+
+	# 関数領域
+	funcs >src/funcs.o
+	cat src/funcs.o
+	file_sz=$(stat -c '%s' src/funcs.o)
+	area_sz=$(echo "ibase=16;$MAIN_BASE - $FUNCS_BASE" | bc)
+	pad_sz=$((area_sz - file_sz))
+	dd if=/dev/zero bs=1 count=$pad_sz
+
+	# メインプログラム領域
+	main
+}
+
+make_bin
