@@ -19,6 +19,15 @@ sh2_set_reg() {
 	echo -e "mov #0x$val,$reg\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_copy_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x6${dstnum}\x${srcnum}3"	# mov $src,$dst
+	echo -e "mov $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_copy_to_ptr_from_reg_byte() {
 	local dst=$1
 	local src=$2
@@ -35,6 +44,15 @@ sh2_copy_to_ptr_from_reg_word() {
 	local srcnum=$(to_regnum $src)
 	echo -en "\x2${dstnum}\x${srcnum}1"	# mov.w $src,@$dst
 	echo -e "mov.w $src,@$dst\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_copy_to_ptr_from_reg_long() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x2${dstnum}\x${srcnum}2"	# mov.l $src,@$dst
+	echo -e "mov.l $src,@$dst\t;1" >>$ASM_LIST_FILE
 }
 
 sh2_add_to_reg_from_val_byte() {
@@ -84,6 +102,18 @@ sh2_abs_jump_to_reg_after_next_inst() {
 	local regnum=$(to_regnum $reg)
 	echo -en "\x4${regnum}\x2b"	# jmp $reg
 	echo -e "jmp $reg\t;2" >>$ASM_LIST_FILE
+}
+
+sh2_abs_call_to_reg_after_next_inst() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x0b"	# jsr $reg
+	echo -e "jsr $reg\t;2" >>$ASM_LIST_FILE
+}
+
+sh2_return_after_next_inst() {
+	echo -en '\x00\x0b'	# rts
+	echo -e 'rts\t;2' >>$ASM_LIST_FILE
 }
 
 sh2_nop() {

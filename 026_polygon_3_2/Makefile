@@ -12,6 +12,9 @@ run: $(TARGET)
 	yabause -a -i $<
 
 clean:
-	rm -f *~ *.o *.bin *.BIN *.lst $(TARGET) src/*~ src/*.o include/*~
+	rm -f *~ *.o *.bin 0.BIN *.lst map.sh $(TARGET) src/*~ src/*.o include/*~
 
-.PHONY: run clean
+clean_all: clean
+	rm -f IP.BIN
+
+.PHONY: run clean clean_all
