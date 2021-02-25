@@ -225,22 +225,38 @@ main() {
 	put_file_to_addr src/polygon_draw.o $com_adr
 
 	# 05c00080
-	com_adr=$(calc16 "$com_adr+20")
-	vdp1_command_polygon_draw 0066 0025 \
-				  007a 002d \
-				  007a 00b3 \
-				  0066 0096 \
-				  bded >src/polygon_draw_2.o
-	put_file_to_addr src/polygon_draw_2.o $com_adr
+	# 0x0066 -> r2
+	sh2_set_reg r2 66
+	# 0x0025 -> r3
+	sh2_set_reg r3 25
+	# 0x007a -> r4
+	sh2_set_reg r4 7a
+	# 0x002d -> r5
+	sh2_set_reg r5 2d
+	# 0x007a -> r6
+	sh2_set_reg r6 7a
+	# 0x00b3 -> r7
+	sh2_set_reg r0 00
+	sh2_or_to_r0_from_val_byte b3
+	sh2_copy_to_reg_from_reg r7 r0
+	# 0x0066 -> r8
+	sh2_set_reg r8 66
+	# 0x0096 -> r9
+	sh2_set_reg r0 00
+	sh2_or_to_r0_from_val_byte 96
+	sh2_copy_to_reg_from_reg r9 r0
+	# 0xbded -> r10
+	sh2_set_reg r0 bd
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ed
+	sh2_copy_to_reg_from_reg r10 r0
+	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
+	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
+	# call r11
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_nop
 
 	# 05c000a0
-	# com_adr=$(calc16 "$com_adr+20")
-	# vdp1_command_polygon_draw 0066 0025 \
-	# 			  00a5 0025 \
-	# 			  00c5 002d \
-	# 			  007a 002d \
-	# 			  ffff >src/polygon_draw_3.o
-	# put_file_to_addr src/polygon_draw_3.o $com_adr
 	# 0x0066 -> r2
 	sh2_set_reg r2 66
 	# 0x0025 -> r3
@@ -269,7 +285,7 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_nop
 
-	com_adr=$(calc16 "$com_adr+40")
+	com_adr=$(calc16 "$com_adr+60")
 	vdp1_command_draw_end >src/draw_end.o
 	put_file_to_addr src/draw_end.o $com_adr
 
