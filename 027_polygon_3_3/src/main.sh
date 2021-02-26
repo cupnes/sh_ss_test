@@ -301,16 +301,32 @@ f_draw_plate() {
 
 	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
 	# 何もせずreturn
-	## PRJz(r14) > Az(r3)?
-	sh2_compare_reg_gt_reg_unsigned r14 r3
 	(
-		# PRJz(r14) > Az(r3) の時
-
-		# return
+		# 何もせずreturn
 		sh2_return_after_next_inst
 		sh2_nop
 	) >src/f_draw_plate.1.o
 	local sz_1=$(stat -c '%s' src/f_draw_plate.1.o)
+	## PRJz(r14) > Az(r3)?
+	sh2_compare_reg_gt_reg_unsigned r14 r3
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
+	sh2_nop
+	sh2_nop
+	cat src/f_draw_plate.1.o
+	## PRJz(r14) > Bz(r6)?
+	sh2_compare_reg_gt_reg_unsigned r14 r6
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
+	sh2_nop
+	sh2_nop
+	cat src/f_draw_plate.1.o
+	## PRJz(r14) > Cz(r9)?
+	sh2_compare_reg_gt_reg_unsigned r14 r9
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
+	sh2_nop
+	sh2_nop
+	cat src/f_draw_plate.1.o
+	## PRJz(r14) > Dz(r12)?
+	sh2_compare_reg_gt_reg_unsigned r14 r12
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
 	sh2_nop
 	sh2_nop
