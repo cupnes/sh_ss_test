@@ -21,14 +21,14 @@ vars() {
 	# 投影面Z座標
 	var_projection_plane_z=$VARS_BASE
 	echo -e "var_projection_plane_z=$var_projection_plane_z" >>$map_file
-	echo -en '\x64\x00'	# 100
+	echo -en '\x00\x64'	# 100
 
 	# 直方体の8頂点の3次元座標
 	## 頂点A(正面左上)
 	### X
-	var_cuboid_ax=$(calc16 "$var_projection_plane_z+2")
+	var_cuboid_ax=$(calc16_8 "$var_projection_plane_z+2")
 	echo -e "var_cuboid_ax=$var_cuboid_ax" >>$map_file
-	echo -en '\x7a\x00'	# 122
+	echo -en '\x00\x7a'	# 122
 	## 頂点B(正面右上)
 	## 頂点C(正面右下)
 	## 頂点D(正面左下)
@@ -211,8 +211,8 @@ funcs() {
 funcs >/dev/null
 rm -f $map_file
 
+# コマンドテーブル設定
 setup_vram_command_table() {
-	# コマンドテーブル設定
 	# 05c00000
 	local com_adr=$SS_VDP1_VRAM_ADDR
 	vdp1_command_system_clipping_coordinates >src/system_clipping_coordinates.o
@@ -231,8 +231,13 @@ setup_vram_command_table() {
 	# 05c00060
 	# 正面ポリゴン
 	# ポリゴン頂点A (122, 45, 100) -> (122, 45)
-	# ## 直方体頂点Axの変数のアドレスをr2へロード
-	# copy_to_reg_from_val_long r2 
+	## 直方体頂点Axの変数のアドレスをr2へロード
+	copy_to_reg_from_val_long r2 $var_cuboid_ax
+	## [r2] -> r2
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	## 無限ループで止める
+	infinite_loop
+
 	## 0x007a -> r2 (Ax)
 	sh2_set_reg r2 7a
 	## 0x002d -> r3 (Ay)
@@ -338,6 +343,7 @@ setup_vram_command_table() {
 }
 
 main() {
+	# VRAMコマンドテーブル設定
 	setup_vram_command_table
 
 	# VDP2のシステムレジスタ設定
