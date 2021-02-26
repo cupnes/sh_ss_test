@@ -25,9 +25,12 @@ vars() {
 	echo -en '\x00\x64'	# 100
 
 	# 六面体の8頂点の3次元座標
+	## 頂点座標が並ぶ領域のベースアドレス
+	var_hexahedron_base=$(calc16_8 "$var_projection_plane_z+2")
+	echo -e "var_hexahedron_base=$var_hexahedron_base" >>$map_file
 	## 頂点A(正面左上)
 	### X
-	var_hexahedron_ax=$(calc16_8 "$var_projection_plane_z+2")
+	var_hexahedron_ax=$var_hexahedron_base
 	echo -e "var_hexahedron_ax=$var_hexahedron_ax" >>$map_file
 	echo -en '\x00\x7a'	# 122
 	### Y
@@ -292,6 +295,8 @@ f_put_vdp1_command_polygon_draw_to_addr() {
 #     : r0   - 作業用
 #     : r14  - 作業用
 f_draw_plate() {
+	infinite_loop
+
 	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
 	# 何もせずreturn
 	## Az < PRJz ?
@@ -345,9 +350,51 @@ setup_vram_command_table() {
 	## (この時点のr1にそのアドレスが入っている)
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r1
-	infinite_loop
 	## 六面体正面の4頂点の3次元座標をレジスタへロード
+	### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
+	copy_to_reg_from_val_long r14 $var_hexahedron_base
+	### Ax -> r1
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	### Ay -> r2
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r2 r14
+	### Az -> r3
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r3 r14
+	### Bx -> r4
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r4 r14
+	### By -> r5
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r5 r14
+	### Bz -> r6
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r6 r14
+	### Cx -> r7
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r7 r14
+	### Cy -> r8
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r8 r14
+	### Cz -> r9
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r9 r14
+	### Dx -> r10
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r10 r14
+	### Dy -> r11
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r11 r14
+	### Dz -> r12
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r12 r14
+	## 描画カラーをr13へ設定
+	### 0xffdb -> r13
+	sh2_set_reg r13 db
 	## 描画関数呼び出し
+	copy_to_reg_from_val_long r14 $a_draw_plate
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
 
 	## 0x007a -> r2 (Ax)
 	sh2_set_reg r2 7a
