@@ -9,6 +9,7 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 
+INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 VARS_BASE=0600401E
 FUNCS_BASE=06005000
@@ -270,25 +271,36 @@ f_put_vdp1_command_polygon_draw_to_addr() {
 	sh2_nop
 }
 
-# # 3次元座標を透視投影で2次元座標へ変換
-# # in  : r1 - PRJz(投影面Z座標)
-# #       r2 - INx
-# #       r3 - INy
-# #       r4 - INz
-# # out : r5 - OUTx
-# #       r6 - OUTy
-# # work: PR  - この関数を呼び出したBSR/JSR命令のアドレス
-# #       r0 - 作業用
-# # ※ コレ単体を関数にするほどでは無いかも
-# f_perspective_projection() {
-# 	# OUTx = INx * t
+# 4つの3次元座標で指定された平面を指定されたカラーで
+# 指定されたアドレスへ描画
+# in  : r1  - dst addr
+#       r2  - Ax
+#       r3  - Ay
+#       r4  - Az
+#       r5  - Bx
+#       r6  - By
+#       r7  - Bz
+#       r8  - Cx
+#       r9  - Cy
+#       r10 - Cz
+#       r11 - Dx
+#       r12 - Dy
+#       r13 - Dz
+#       r14 - color
+# out : r1  - dst addrへ最後に書き込んだ次のアドレス
+# work: PR  - この関数を呼び出したBSR/JSR命令のアドレス
+#     : r0  - 作業用
+f_draw_plate() {
+	# r1を作業用に使えるようにスタックへpush
 
-# 	# OUTy = INy * t
+	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
+	# 何もせずreturn
+	## Az < PRJz ?
 
-# 	# return
-# 	sh2_return_after_next_inst
-# 	sh2_nop
-# }
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
 
 funcs() {
 	local fsz
@@ -322,13 +334,13 @@ setup_vram_command_table() {
 
 	# 05c00060
 	# 正面ポリゴン
-	# ポリゴン頂点A (122, 45, 100) -> (122, 45)
-	## 六面体頂点Axの変数のアドレスをr2へロード
-	copy_to_reg_from_val_long r2 $var_hexahedron_ax
-	## [r2] -> r2
-	sh2_copy_to_reg_from_ptr_word r2 r2
-	## 無限ループで止める
-	infinite_loop
+	# ## ポリゴン頂点Aを算出
+	# ### 
+	# ## 六面体頂点Axをr2へロード
+	# copy_to_reg_from_val_long r2 $var_hexahedron_ax
+	# sh2_copy_to_reg_from_ptr_word r2 r2
+	# ## 無限ループで止める
+	# infinite_loop
 
 	## 0x007a -> r2 (Ax)
 	sh2_set_reg r2 7a
@@ -435,6 +447,9 @@ setup_vram_command_table() {
 }
 
 main() {
+	# スタックポインタ(r15)の初期化
+	copy_to_reg_from_val_long r15 $INIT_SP
+
 	# VRAMコマンドテーブル設定
 	setup_vram_command_table
 
