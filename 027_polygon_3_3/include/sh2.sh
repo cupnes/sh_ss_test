@@ -78,6 +78,15 @@ sh2_and_to_r0_from_val_byte() {
 	echo -e "and #0x$val,r0\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_compare_reg_gt_reg_unsigned() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x3${regAnum}\x${regBnum}6"	# cmp/hi $regB,$regA
+	echo -e "cmp/hi $regB,$regA\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_or_to_reg_from_reg() {
 	local dst=$1
 	local src=$2
@@ -100,9 +109,22 @@ sh2_shift_left_logical_8() {
 	echo -e "shll8 $reg\t;1" >>$ASM_LIST_FILE
 }
 
+# Tビットを参照する条件付き分岐命令
+# - T=0 のとき、分岐先アドレスに分岐
+# - T=1 のとき、次の命令を実行
+# 分岐先は PC にディスプレースメントを加えたアドレス
+# ただし、この際アドレス計算に使用する PC は、本命令の 4 バイト後のアドレス
+# 8 ビットディスプレースメントは符号拡張後 2 倍するので、
+# 分岐先との相対距離は −256 バイトから +254 バイトの範囲
+sh2_rel_jump_if_false() {
+	local offset=$1
+	echo -en "\x8b\x${offset}"	# bf $offset
+	echo -e "bf 0x$offset\t;3/1" >>$ASM_LIST_FILE
+}
+
 sh2_rel_jump_after_next_inst() {
 	local offset=$1
-	echo -en "\xaf\x${offset}"	# bra ${offset}
+	echo -en "\xaf\x${offset}"	# bra $offset
 	echo -e "bra 0x$offset\t;2" >>$ASM_LIST_FILE
 }
 

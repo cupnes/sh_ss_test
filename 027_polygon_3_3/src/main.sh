@@ -295,11 +295,29 @@ f_put_vdp1_command_polygon_draw_to_addr() {
 #     : r0   - 作業用
 #     : r14  - 作業用
 f_draw_plate() {
-	infinite_loop
+	# 投影面Z座標をr14へロード
+	copy_to_reg_from_val_long r14 $var_projection_plane_z
+	sh2_copy_to_reg_from_ptr_word r14 r14
 
 	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
 	# 何もせずreturn
-	## Az < PRJz ?
+	## PRJz(r14) > Az(r3)?
+	sh2_compare_reg_gt_reg_unsigned r14 r3
+	(
+		# PRJz(r14) > Az(r3) の時
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_draw_plate.1.o
+	local sz_1=$(stat -c '%s' src/f_draw_plate.1.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
+	sh2_nop
+	sh2_nop
+	cat src/f_draw_plate.1.o
+
+	# 無限ループ
+	infinite_loop
 
 	# return
 	sh2_return_after_next_inst
