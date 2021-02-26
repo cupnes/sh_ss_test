@@ -23,19 +23,111 @@ vars() {
 	echo -e "var_projection_plane_z=$var_projection_plane_z" >>$map_file
 	echo -en '\x00\x64'	# 100
 
-	# 直方体の8頂点の3次元座標
+	# 六面体の8頂点の3次元座標
 	## 頂点A(正面左上)
 	### X
-	var_cuboid_ax=$(calc16_8 "$var_projection_plane_z+2")
-	echo -e "var_cuboid_ax=$var_cuboid_ax" >>$map_file
+	var_hexahedron_ax=$(calc16_8 "$var_projection_plane_z+2")
+	echo -e "var_hexahedron_ax=$var_hexahedron_ax" >>$map_file
 	echo -en '\x00\x7a'	# 122
+	### Y
+	var_hexahedron_ay=$(calc16_8 "$var_hexahedron_ax+2")
+	echo -e "var_hexahedron_ay=$var_hexahedron_ay" >>$map_file
+	echo -en '\x00\x2d'	# 45
+	### Z
+	var_hexahedron_az=$(calc16_8 "$var_hexahedron_ay+2")
+	echo -e "var_hexahedron_az=$var_hexahedron_az" >>$map_file
+	echo -en '\x00\x64'	# 100
 	## 頂点B(正面右上)
+	### X
+	var_hexahedron_bx=$(calc16_8 "$var_hexahedron_az+2")
+	echo -e "var_hexahedron_bx=$var_hexahedron_bx" >>$map_file
+	echo -en '\x00\xc5'	# 197
+	### Y
+	var_hexahedron_by=$(calc16_8 "$var_hexahedron_bx+2")
+	echo -e "var_hexahedron_by=$var_hexahedron_by" >>$map_file
+	echo -en '\x00\x2d'	# 45
+	### Z
+	var_hexahedron_bz=$(calc16_8 "$var_hexahedron_by+2")
+	echo -e "var_hexahedron_bz=$var_hexahedron_bz" >>$map_file
+	echo -en '\x00\x64'	# 100
 	## 頂点C(正面右下)
+	### X
+	var_hexahedron_cx=$(calc16_8 "$var_hexahedron_bz+2")
+	echo -e "var_hexahedron_cx=$var_hexahedron_cx" >>$map_file
+	echo -en '\x00\xc5'	# 197
+	### Y
+	var_hexahedron_cy=$(calc16_8 "$var_hexahedron_cx+2")
+	echo -e "var_hexahedron_cy=$var_hexahedron_cy" >>$map_file
+	echo -en '\x00\xb3'	# 179
+	### Z
+	var_hexahedron_cz=$(calc16_8 "$var_hexahedron_cy+2")
+	echo -e "var_hexahedron_cz=$var_hexahedron_cz" >>$map_file
+	echo -en '\x00\x64'	# 100
 	## 頂点D(正面左下)
+	### X
+	var_hexahedron_dx=$(calc16_8 "$var_hexahedron_cz+2")
+	echo -e "var_hexahedron_dx=$var_hexahedron_dx" >>$map_file
+	echo -en '\x00\x7a'	# 122
+	### Y
+	var_hexahedron_dy=$(calc16_8 "$var_hexahedron_dx+2")
+	echo -e "var_hexahedron_dy=$var_hexahedron_dy" >>$map_file
+	echo -en '\x00\xb3'	# 179
+	### Z
+	var_hexahedron_dz=$(calc16_8 "$var_hexahedron_dy+2")
+	echo -e "var_hexahedron_dz=$var_hexahedron_dz" >>$map_file
+	echo -en '\x00\x64'	# 100
 	## 頂点E(背面左上)
+	### X
+	var_hexahedron_ex=$(calc16_8 "$var_hexahedron_dz+2")
+	echo -e "var_hexahedron_ex=$var_hexahedron_ex" >>$map_file
+	echo -en '\x00\x7a'	# 122
+	### Y
+	var_hexahedron_ey=$(calc16_8 "$var_hexahedron_ex+2")
+	echo -e "var_hexahedron_ey=$var_hexahedron_ey" >>$map_file
+	echo -en '\x00\x2d'	# 45
+	### Z
+	var_hexahedron_ez=$(calc16_8 "$var_hexahedron_ey+2")
+	echo -e "var_hexahedron_ez=$var_hexahedron_ez" >>$map_file
+	echo -en '\x00\x77'	# 119
 	## 頂点F(背面右上)
+	### X
+	var_hexahedron_fx=$(calc16_8 "$var_hexahedron_ez+2")
+	echo -e "var_hexahedron_fx=$var_hexahedron_fx" >>$map_file
+	echo -en '\x00\xc5'	# 197
+	### Y
+	var_hexahedron_fy=$(calc16_8 "$var_hexahedron_fx+2")
+	echo -e "var_hexahedron_fy=$var_hexahedron_fy" >>$map_file
+	echo -en '\x00\x2d'	# 45
+	### Z
+	var_hexahedron_fz=$(calc16_8 "$var_hexahedron_fy+2")
+	echo -e "var_hexahedron_fz=$var_hexahedron_fz" >>$map_file
+	echo -en '\x00\x77'	# 119
 	## 頂点G(背面右下)
+	### X
+	var_hexahedron_gx=$(calc16_8 "$var_hexahedron_fz+2")
+	echo -e "var_hexahedron_gx=$var_hexahedron_gx" >>$map_file
+	echo -en '\x00\xc5'	# 197
+	### Y
+	var_hexahedron_gy=$(calc16_8 "$var_hexahedron_gx+2")
+	echo -e "var_hexahedron_gy=$var_hexahedron_gy" >>$map_file
+	echo -en '\x00\xb3'	# 179
+	### Z
+	var_hexahedron_gz=$(calc16_8 "$var_hexahedron_gy+2")
+	echo -e "var_hexahedron_gz=$var_hexahedron_gz" >>$map_file
+	echo -en '\x00\x77'	# 119
 	## 頂点H(背面左下)
+	### X
+	var_hexahedron_hx=$(calc16_8 "$var_hexahedron_gz+2")
+	echo -e "var_hexahedron_hx=$var_hexahedron_hx" >>$map_file
+	echo -en '\x00\x7a'	# 122
+	### Y
+	var_hexahedron_hy=$(calc16_8 "$var_hexahedron_hx+2")
+	echo -e "var_hexahedron_hy=$var_hexahedron_hy" >>$map_file
+	echo -en '\x00\xb3'	# 179
+	### Z
+	var_hexahedron_hz=$(calc16_8 "$var_hexahedron_hy+2")
+	echo -e "var_hexahedron_hz=$var_hexahedron_hz" >>$map_file
+	echo -en '\x00\x77'	# 119
 }
 # 変数設定のために空実行
 vars >/dev/null
@@ -231,8 +323,8 @@ setup_vram_command_table() {
 	# 05c00060
 	# 正面ポリゴン
 	# ポリゴン頂点A (122, 45, 100) -> (122, 45)
-	## 直方体頂点Axの変数のアドレスをr2へロード
-	copy_to_reg_from_val_long r2 $var_cuboid_ax
+	## 六面体頂点Axの変数のアドレスをr2へロード
+	copy_to_reg_from_val_long r2 $var_hexahedron_ax
 	## [r2] -> r2
 	sh2_copy_to_reg_from_ptr_word r2 r2
 	## 無限ループで止める
