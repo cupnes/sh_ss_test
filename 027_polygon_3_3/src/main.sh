@@ -309,28 +309,51 @@ f_draw_plate() {
 	local sz_1=$(stat -c '%s' src/f_draw_plate.1.o)
 	## PRJz(r14) > Az(r3)?
 	sh2_compare_reg_gt_reg_unsigned r14 r3
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
-	sh2_nop
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
 	sh2_nop
 	cat src/f_draw_plate.1.o
 	## PRJz(r14) > Bz(r6)?
 	sh2_compare_reg_gt_reg_unsigned r14 r6
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
-	sh2_nop
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
 	sh2_nop
 	cat src/f_draw_plate.1.o
 	## PRJz(r14) > Cz(r9)?
 	sh2_compare_reg_gt_reg_unsigned r14 r9
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
-	sh2_nop
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
 	sh2_nop
 	cat src/f_draw_plate.1.o
 	## PRJz(r14) > Dz(r12)?
 	sh2_compare_reg_gt_reg_unsigned r14 r12
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2) / 2)))
-	sh2_nop
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
 	sh2_nop
 	cat src/f_draw_plate.1.o
+
+	# 透視投影で2次元座標へ変換
+	# - PRJz == Az or Bz or Cz or Dz の時
+	#   - 2次元座標(x, y) = 3次元座標(x, y)
+	# - PRJz < Az or Bz or Cz or Dz の時
+	#   - 2次元座標(x, y) = 3次元座標(x, y) * PRJz / 3次元座標z
+	## PRJz(r14) == Az(r3)?
+	sh2_compare_reg_eq_reg r14 r3
+	(
+		# PRJz(r14) < Az(r3) の時
+
+		# 無限ループ
+		infinite_loop
+	) >src/f_draw_plate.2.o
+	(
+		# PRJz(r14) == Az(r3) の時
+
+		# PRJz(r14) < Az(r3) の時の処理を飛ばす
+		local sz_2=$(stat -c '%s' src/f_draw_plate.2.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_2 / 2))) 3)
+		sh2_nop
+	) >src/f_draw_plate.3.o
+	local sz_3=$(stat -c '%s' src/f_draw_plate.3.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_3 / 2)))
+	sh2_nop
+	cat src/f_draw_plate.3.o	# PRJz(r14) == Az(r3) の時
+	cat src/f_draw_plate.2.o	# PRJz(r14) < Az(r3) の時
 
 	# 無限ループ
 	infinite_loop

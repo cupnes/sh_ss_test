@@ -95,6 +95,11 @@ two_comp_d() {
 	echo "obase=16;256-${val}" | bc
 }
 
+two_comp_3_d() {
+	local val=$1
+	echo "obase=16;4096-${val}" | bc
+}
+
 calc16() {
 	local bc_form=$1
 	local form_up=$(echo $bc_form | tr [:lower:] [:upper:])

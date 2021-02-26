@@ -78,6 +78,15 @@ sh2_and_to_r0_from_val_byte() {
 	echo -e "and #0x$val,r0\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_compare_reg_eq_reg() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x3${regAnum}\x${regBnum}0"	# cmp/eq $regB,$regA
+	echo -e "cmp/eq $regB,$regA\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_compare_reg_gt_reg_unsigned() {
 	local regA=$1
 	local regB=$2
@@ -122,9 +131,14 @@ sh2_rel_jump_if_false() {
 	echo -e "bf 0x$offset\t;3/1" >>$ASM_LIST_FILE
 }
 
+# 無条件の遅延分岐命令
+# 分岐先は PC にディスプレースメントを加えたアドレス
+# ただし、この際アドレス計算に使用する PC は、本命令の 4 バイト後のアドレス
+# 12 ビットディスプレースメントは符号拡張後 2 倍するので、
+# 分岐先との相対距離は −4096 バイトから +4094 バイトの範囲
 sh2_rel_jump_after_next_inst() {
 	local offset=$1
-	echo -en "\xaf\x${offset}"	# bra $offset
+	echo -en "\xa$(echo $offset | cut -c1)\x$(echo $offset | cut -c2-3)"	# bra $offset
 	echo -e "bra 0x$offset\t;2" >>$ASM_LIST_FILE
 }
 
