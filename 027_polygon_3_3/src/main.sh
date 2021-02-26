@@ -273,26 +273,25 @@ f_put_vdp1_command_polygon_draw_to_addr() {
 
 # 4つの3次元座標で指定された平面を指定されたカラーで
 # 指定されたアドレスへ描画
-# in  : r1  - dst addr
-#       r2  - Ax
-#       r3  - Ay
-#       r4  - Az
-#       r5  - Bx
-#       r6  - By
-#       r7  - Bz
-#       r8  - Cx
-#       r9  - Cy
-#       r10 - Cz
-#       r11 - Dx
-#       r12 - Dy
-#       r13 - Dz
-#       r14 - color
-# out : r1  - dst addrへ最後に書き込んだ次のアドレス
-# work: PR  - この関数を呼び出したBSR/JSR命令のアドレス
-#     : r0  - 作業用
+# in  : r1   - Ax
+#       r2   - Ay
+#       r3   - Az
+#       r4   - Bx
+#       r5   - By
+#       r6   - Bz
+#       r7   - Cx
+#       r8   - Cy
+#       r9   - Cz
+#       r10  - Dx
+#       r11  - Dy
+#       r12  - Dz
+#       r13  - color
+#       SP+0 - dst addr
+# out : SP+0 - dst addrへ最後に書き込んだ次のアドレス
+# work: PR   - この関数を呼び出したBSR/JSR命令のアドレス
+#     : r0   - 作業用
+#     : r14  - 作業用
 f_draw_plate() {
-	# r1を作業用に使えるようにスタックへpush
-
 	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
 	# 何もせずreturn
 	## Az < PRJz ?
@@ -310,6 +309,14 @@ funcs() {
 	a_put_vdp1_command_polygon_draw_to_addr=$FUNCS_BASE
 	echo -e "a_put_vdp1_command_polygon_draw_to_addr=$a_put_vdp1_command_polygon_draw_to_addr" >>$map_file
 	f_put_vdp1_command_polygon_draw_to_addr
+
+	# 4つの3次元座標で指定された平面を指定されたカラーで
+	# 指定されたアドレスへ描画
+	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
+	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_polygon_draw_to_addr.o))
+	a_draw_plate=$(calc16_8 "${a_put_vdp1_command_polygon_draw_to_addr}+${fsz}")
+	echo -e "a_draw_plate=$a_draw_plate" >>$map_file
+	f_draw_plate
 }
 # 変数設定のために空実行
 funcs >/dev/null
@@ -334,13 +341,13 @@ setup_vram_command_table() {
 
 	# 05c00060
 	# 正面ポリゴン
-	# ## ポリゴン頂点Aを算出
-	# ### 
-	# ## 六面体頂点Axをr2へロード
-	# copy_to_reg_from_val_long r2 $var_hexahedron_ax
-	# sh2_copy_to_reg_from_ptr_word r2 r2
-	# ## 無限ループで止める
-	# infinite_loop
+	## 次にコマンドを配置するVRAMアドレスをスタックに積む
+	## (この時点のr1にそのアドレスが入っている)
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	infinite_loop
+	## 六面体正面の4頂点の3次元座標をレジスタへロード
+	## 描画関数呼び出し
 
 	## 0x007a -> r2 (Ax)
 	sh2_set_reg r2 7a
