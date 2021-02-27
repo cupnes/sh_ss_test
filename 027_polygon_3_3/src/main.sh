@@ -340,13 +340,27 @@ f_draw_plate() {
 
 		# 2次元座標Ax(r1) = 3次元座標Ax(r1) * PRJz(r14) / 3次元座標z(r3)
 
-		# 3次元座標Ax(r3) * PRJz(r14) -> MACL
-		sh2_multiply_reg_and_reg_unsigned_word r3 r14
+		# 3次元座標Ax(r1) * PRJz(r14) -> MACL
+		sh2_multiply_reg_and_reg_unsigned_word r1 r14
 
 		# MACL -> r1
 		sh2_copy_to_reg_from_macl r1
 
 		# r1 / 3次元座標z(r3) -> r1
+		# 被除数=r1, 除数=r3
+		## 除数を上位16ビット、下位16ビットを0に設定
+		sh2_shift_left_logical_16 r3
+		## フラグの初期化
+		sh2_divide_step0_unsigned
+		## 16回繰り返し
+		local _i
+		for _i in $(seq 16); do
+			sh2_divide_1step_reg_by_reg r1 r3
+		done
+		## ROTCL R1
+		sh2_rotate_with_carry_left r1
+		## R1=商
+		sh2_extend_unsigned_reg_to_reg_word r1 r1
 
 		# 無限ループ
 		infinite_loop
