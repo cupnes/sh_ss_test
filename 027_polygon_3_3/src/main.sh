@@ -387,6 +387,15 @@ f_draw_plate() {
 	## PRJz(r14) == Bz(r6)?
 	sh2_compare_reg_eq_reg r14 r6
 	(
+		# PRJz(r14) == Bz(r6) の時
+
+		# 2次元座標Bx(r3) = 3次元座標Bx(r4)
+		sh2_copy_to_reg_from_reg r3 r4
+
+		# 2次元座標By(r4) = 3次元座標By(r5)
+		sh2_copy_to_reg_from_reg r4 r5
+	) >src/f_draw_plate.4.o
+	(
 		# PRJz(r14) < Bz(r6) の時
 
 		# 除数(r6)を上位16ビット、下位16ビットを0に設定
@@ -425,11 +434,18 @@ f_draw_plate() {
 		sh2_rotate_with_carry_left r4
 		### r4=商
 		sh2_extend_unsigned_reg_to_reg_word r4 r4
+
+		# PRJz(r14) == Bz(r6) の時の処理を飛ばす
+		local sz_4=$(stat -c '%s' src/f_draw_plate.4.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_4 / 2))) 3)
+		sh2_nop
 	) >src/f_draw_plate.3.o
 	local sz_3=$(stat -c '%s' src/f_draw_plate.3.o)
 	sh2_rel_jump_if_true $(two_digits_d $((sz_3 / 2)))
 	sh2_nop
 	cat src/f_draw_plate.3.o	# PRJz(r14) < Bz(r6) の時
+	cat src/f_draw_plate.4.o	# PRJz(r14) == Bz(r6) の時
+	# この時点でポリゴン描画の頂点Bの座標(Bx,By)を(r3,r4)へ設定完了
 
 	# 無限ループ
 	infinite_loop
