@@ -139,36 +139,36 @@ rm -f $map_file
 
 # 指定された4頂点・カラーのポリゴンを描画するコマンドを
 # 指定されたアドレスへ配置
-# in  : r1  - dst addr
-#       r2  - Ax
-#       r3  - Ay
-#       r4  - Bx
-#       r5  - By
-#       r6  - Cx
-#       r7  - Cy
-#       r8  - Dx
-#       r9  - Dy
-#       r10 - color
-# out : r1  - dst addrへ最後に書き込んだ次のアドレス
+# in  : r1  - Ax
+#       r2  - Ay
+#       r3  - Bx
+#       r4  - By
+#       r5  - Cx
+#       r6  - Cy
+#       r7  - Dx
+#       r8  - Dy
+#       r9  - color
+#       r10 - dst addr
+# out : r10 - dst addrへ最後に書き込んだ次のアドレス
 # work: PR  - この関数を呼び出したBSR/JSR命令のアドレス
 #     : r0  - 作業用
 f_put_vdp1_command_polygon_draw_to_addr() {
 	# CMDCTRL
 	# 0b0000 0000 0000 0100
 	# - JP(b14-b12) = 0b000
-	# 0x0004 -> [r1]
+	# 0x0004 -> [r10]
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte 04
-	sh2_copy_to_ptr_from_reg_word r1 r0
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDLINK
-	# 0x0000 -> [r1]
+	# 0x0000 -> [r10]
 	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_word r1 r0
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDPMOD
 	# 0b0000 1000 1100 0000
@@ -178,96 +178,96 @@ f_put_vdp1_command_polygon_draw_to_addr() {
 	# - Cmod(b9) = 0 (Clip=0なので無効)
 	# - Mesh(b8) = 0 (メッシュ無効)
 	# - 色演算(b2-b0) = 0b000 (色演算は全て無効)
-	# 0x08c0 -> [r1]
+	# 0x08c0 -> [r10]
 	sh2_set_reg r0 08
 	sh2_shift_left_logical_8 r0
 	sh2_or_to_r0_from_val_byte c0
-	sh2_copy_to_ptr_from_reg_word r1 r0
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDCOLR
-	# r10 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r10
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r9 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r9
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDSRCA
-	# 0x0000 -> [r1]
+	# 0x0000 -> [r10]
 	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_word r1 r0
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDSIZE
-	# 0x0000 -> [r1]
+	# 0x0000 -> [r10]
 	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_word r1 r0
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDXA
 	# 頂点AのX座標
-	# r2 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r2
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r1 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r1
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDYA
 	# 頂点AのY座標
-	# r3 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r3
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r2 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r2
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDXB
 	# 頂点BのX座標
-	# r4 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r4
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r3 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r3
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDYB
 	# 頂点BのY座標
-	# r5 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r5
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r4 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r4
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDXC
 	# 頂点CのX座標
-	# r6 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r6
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r5 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r5
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDYC
 	# 頂点CのY座標
-	# r7 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r7
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r6 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r6
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDXD
 	# 頂点DのX座標
-	# r8 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r8
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r7 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r7
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDYD
 	# 頂点DのY座標
-	# r9 -> [r1]
-	sh2_copy_to_ptr_from_reg_word r1 r9
-	# r1 += 2
-	sh2_add_to_reg_from_val_byte r1 02
+	# r8 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r8
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
 
 	# CMDGRDA, dummy
-	# 0x00000000 -> [r1]
+	# 0x00000000 -> [r10]
 	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_long r1 r0
-	# r1 += 4
-	sh2_add_to_reg_from_val_byte r1 04
+	sh2_copy_to_ptr_from_reg_long r10 r0
+	# r10 += 4
+	sh2_add_to_reg_from_val_byte r10 04
 
 	# return
 	sh2_return_after_next_inst
@@ -338,10 +338,12 @@ f_draw_plate() {
 	(
 		# PRJz(r14) < Az(r3) の時
 
-		# 2次元座標Ax = 3次元座標Ax * PRJz / 3次元座標z
+		# 2次元座標Ax(r1) = 3次元座標Ax(r1) * PRJz(r14) / 3次元座標z(r3)
 
-		# 3次元座標Ax(r3) * PRJz(r14)
+		# 3次元座標Ax(r3) * PRJz(r14) -> MACL
 		sh2_multiply_reg_and_reg_unsigned_word r3 r14
+
+		# 
 
 		# 無限ループ
 		infinite_loop
@@ -408,86 +410,89 @@ setup_vram_command_table() {
 
 	# 05c00060
 	# 正面ポリゴン
-	## 次にコマンドを配置するVRAMアドレスをスタックに積む
-	## (この時点のr1にそのアドレスが入っている)
-	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	sh2_copy_to_ptr_from_reg_long r15 r1
-	## 六面体正面の4頂点の3次元座標をレジスタへロード
-	### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
-	copy_to_reg_from_val_long r14 $var_hexahedron_base
-	### Ax -> r1
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	### Ay -> r2
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r2 r14
-	### Az -> r3
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r3 r14
-	### Bx -> r4
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r4 r14
-	### By -> r5
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r5 r14
-	### Bz -> r6
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r6 r14
-	### Cx -> r7
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r7 r14
-	### Cy -> r8
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r8 r14
-	### Cz -> r9
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r9 r14
-	### Dx -> r10
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r10 r14
-	### Dy -> r11
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r11 r14
-	### Dz -> r12
-	sh2_add_to_reg_from_val_byte r14 02
-	sh2_copy_to_reg_from_ptr_word r12 r14
-	## 描画カラーをr13へ設定
-	### 0xffdb -> r13
-	sh2_set_reg r13 db
-	## 描画関数呼び出し
-	copy_to_reg_from_val_long r14 $a_draw_plate
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
+	# ## 次にコマンドを配置するVRAMアドレスをスタックに積む
+	# ## (この時点のr1にそのアドレスが入っている)
+	# sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	# sh2_copy_to_ptr_from_reg_long r15 r1
+	# ## 六面体正面の4頂点の3次元座標をレジスタへロード
+	# ### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
+	# copy_to_reg_from_val_long r14 $var_hexahedron_base
+	# ### Ax -> r1
+	# sh2_copy_to_reg_from_ptr_word r1 r14
+	# ### Ay -> r2
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r2 r14
+	# ### Az -> r3
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r3 r14
+	# ### Bx -> r4
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r4 r14
+	# ### By -> r5
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r5 r14
+	# ### Bz -> r6
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r6 r14
+	# ### Cx -> r7
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r7 r14
+	# ### Cy -> r8
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r8 r14
+	# ### Cz -> r9
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r9 r14
+	# ### Dx -> r10
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r10 r14
+	# ### Dy -> r11
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r11 r14
+	# ### Dz -> r12
+	# sh2_add_to_reg_from_val_byte r14 02
+	# sh2_copy_to_reg_from_ptr_word r12 r14
+	# ## 描画カラーをr13へ設定
+	# ### 0xffdb -> r13
+	# sh2_set_reg r13 db
+	# ## 描画関数呼び出し
+	# copy_to_reg_from_val_long r14 $a_draw_plate
+	# sh2_abs_call_to_reg_after_next_inst r14
+	# sh2_nop
 
-	## 0x007a -> r2 (Ax)
-	sh2_set_reg r2 7a
-	## 0x002d -> r3 (Ay)
-	sh2_set_reg r3 2d
+	## 次にコマンドを配置するVRAMアドレスをr10へ格納
+	## (この時点のr1にそのアドレスが入っている)
+	sh2_copy_to_reg_from_reg r10 r1
+	## 0x007a -> r1 (Ax)
+	sh2_set_reg r1 7a
+	## 0x002d -> r2 (Ay)
+	sh2_set_reg r2 2d
 	# 頂点B
-	## 0x00c5 -> r4 (Bx)
+	## 0x00c5 -> r3 (Bx)
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte c5
-	sh2_copy_to_reg_from_reg r4 r0
-	## 0x002d -> r5 (By)
-	sh2_set_reg r5 2d
+	sh2_copy_to_reg_from_reg r3 r0
+	## 0x002d -> r4 (By)
+	sh2_set_reg r4 2d
 	# 頂点C
-	## 0x00c5 -> r6 (Cx)
+	## 0x00c5 -> r5 (Cx)
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte c5
+	sh2_copy_to_reg_from_reg r5 r0
+	## 0x00b3 -> r6 (Cy)
+	sh2_set_reg r0 00
+	sh2_or_to_r0_from_val_byte b3
 	sh2_copy_to_reg_from_reg r6 r0
-	## 0x00b3 -> r7 (Cy)
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte b3
-	sh2_copy_to_reg_from_reg r7 r0
 	# 頂点D
-	## 0x007a -> r8 (Dx)
-	sh2_set_reg r8 7a
-	## 0x00b3 -> r9 (Dy)
+	## 0x007a -> r7 (Dx)
+	sh2_set_reg r7 7a
+	## 0x00b3 -> r8 (Dy)
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte b3
-	sh2_copy_to_reg_from_reg r9 r0
+	sh2_copy_to_reg_from_reg r8 r0
 	# カラー
-	## 0xffdb -> r10
-	sh2_set_reg r10 db
+	## 0xffdb -> r9
+	sh2_set_reg r9 db
 	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
 	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
 	# call r11
@@ -496,31 +501,31 @@ setup_vram_command_table() {
 
 	# 05c00080
 	# 側面ポリゴン
-	# 0x0066 -> r2
-	sh2_set_reg r2 66
-	# 0x0025 -> r3
-	sh2_set_reg r3 25
-	# 0x007a -> r4
-	sh2_set_reg r4 7a
-	# 0x002d -> r5
-	sh2_set_reg r5 2d
-	# 0x007a -> r6
-	sh2_set_reg r6 7a
-	# 0x00b3 -> r7
+	# 0x0066 -> r1
+	sh2_set_reg r1 66
+	# 0x0025 -> r2
+	sh2_set_reg r2 25
+	# 0x007a -> r3
+	sh2_set_reg r3 7a
+	# 0x002d -> r4
+	sh2_set_reg r4 2d
+	# 0x007a -> r5
+	sh2_set_reg r5 7a
+	# 0x00b3 -> r6
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte b3
-	sh2_copy_to_reg_from_reg r7 r0
-	# 0x0066 -> r8
-	sh2_set_reg r8 66
-	# 0x0096 -> r9
+	sh2_copy_to_reg_from_reg r6 r0
+	# 0x0066 -> r7
+	sh2_set_reg r7 66
+	# 0x0096 -> r8
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte 96
-	sh2_copy_to_reg_from_reg r9 r0
-	# 0xbded -> r10
+	sh2_copy_to_reg_from_reg r8 r0
+	# 0xbded -> r9
 	sh2_set_reg r0 bd
 	sh2_shift_left_logical_8 r0
 	sh2_or_to_r0_from_val_byte ed
-	sh2_copy_to_reg_from_reg r10 r0
+	sh2_copy_to_reg_from_reg r9 r0
 	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
 	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
 	# call r11
@@ -529,28 +534,28 @@ setup_vram_command_table() {
 
 	# 05c000a0
 	# 上面ポリゴン
-	# 0x0066 -> r2
-	sh2_set_reg r2 66
-	# 0x0025 -> r3
-	sh2_set_reg r3 25
-	# 0x00a5 -> r4
+	# 0x0066 -> r1
+	sh2_set_reg r1 66
+	# 0x0025 -> r2
+	sh2_set_reg r2 25
+	# 0x00a5 -> r3
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte a5
-	sh2_copy_to_reg_from_reg r4 r0
-	# 0x0025 -> r5
-	sh2_set_reg r5 25
-	# 0x00c5 -> r6
+	sh2_copy_to_reg_from_reg r3 r0
+	# 0x0025 -> r4
+	sh2_set_reg r4 25
+	# 0x00c5 -> r5
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte c5
-	sh2_copy_to_reg_from_reg r6 r0
-	# 0x002d -> r7
-	sh2_set_reg r7 2d
-	# 0x007a -> r8
-	sh2_set_reg r8 7a
-	# 0x002d -> r9
-	sh2_set_reg r9 2d
-	# 0xffff -> r10
-	sh2_set_reg r10 ff
+	sh2_copy_to_reg_from_reg r5 r0
+	# 0x002d -> r6
+	sh2_set_reg r6 2d
+	# 0x007a -> r7
+	sh2_set_reg r7 7a
+	# 0x002d -> r8
+	sh2_set_reg r8 2d
+	# 0xffff -> r9
+	sh2_set_reg r9 ff
 	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
 	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
 	# call r11
