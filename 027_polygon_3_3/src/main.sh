@@ -295,6 +295,8 @@ f_put_vdp1_command_polygon_draw_to_addr() {
 #     : r0   - 作業用
 #     : r14  - 作業用
 f_draw_plate() {
+	local _i
+
 	# 投影面Z座標をr14へロード
 	copy_to_reg_from_val_long r14 $var_projection_plane_z
 	sh2_copy_to_reg_from_ptr_word r14 r14
@@ -333,12 +335,11 @@ f_draw_plate() {
 	#   - 2次元座標(x, y) = 3次元座標(x, y) * PRJz / 3次元座標z
 	# - PRJz == Az or Bz or Cz or Dz の時
 	#   - 2次元座標(x, y) = 3次元座標(x, y)
+
 	## PRJz(r14) == Az(r3)?
 	sh2_compare_reg_eq_reg r14 r3
 	(
 		# PRJz(r14) < Az(r3) の時
-
-		local _i
 
 		# 除数(r3)を上位16ビット、下位16ビットを0に設定
 		sh2_shift_left_logical_16 r3
@@ -348,7 +349,7 @@ f_draw_plate() {
 		sh2_multiply_reg_and_reg_unsigned_word r1 r14
 		## MACL -> r1
 		sh2_copy_to_reg_from_macl r1
-		## r1 / 3次元座標z(r3) -> r1
+		## r1 / 3次元座標Az(r3) -> r1
 		### フラグの初期化
 		sh2_divide_step0_unsigned
 		### 16回繰り返し
@@ -365,7 +366,7 @@ f_draw_plate() {
 		sh2_multiply_reg_and_reg_unsigned_word r2 r14
 		## MACL -> r2
 		sh2_copy_to_reg_from_macl r2
-		## r2 / 3次元座標z(r3) -> r2
+		## r2 / 3次元座標Az(r3) -> r2
 		### フラグの初期化
 		sh2_divide_step0_unsigned
 		### 16回繰り返し
@@ -382,6 +383,53 @@ f_draw_plate() {
 	sh2_nop
 	cat src/f_draw_plate.2.o	# PRJz(r14) < Az(r3) の時
 	# この時点でポリゴン描画の頂点Aの座標(Ax,Ay)を(r1,r2)へ設定完了
+
+	## PRJz(r14) == Bz(r6)?
+	sh2_compare_reg_eq_reg r14 r6
+	(
+		# PRJz(r14) < Bz(r6) の時
+
+		# 除数(r6)を上位16ビット、下位16ビットを0に設定
+		sh2_shift_left_logical_16 r6
+
+		# 2次元座標Bx(r3) = 3次元座標Bx(r4) * PRJz(r14) / 3次元座標Bz(r6)
+		## 3次元座標Bx(r4) * PRJz(r14) -> MACL
+		sh2_multiply_reg_and_reg_unsigned_word r4 r14
+		## MACL -> r3
+		sh2_copy_to_reg_from_macl r3
+		## r3 / 3次元座標Bz(r6) -> r3
+		### フラグの初期化
+		sh2_divide_step0_unsigned
+		### 16回繰り返し
+		for _i in $(seq 16); do
+			sh2_divide_1step_reg_by_reg r3 r6
+		done
+		### rotcl r3
+		sh2_rotate_with_carry_left r3
+		### r3=商
+		sh2_extend_unsigned_reg_to_reg_word r3 r3
+
+		# 2次元座標By(r4) = 3次元座標By(r5) * PRJz(r14) / 3次元座標Bz(r6)
+		## 3次元座標By(r5) * PRJz(r14) -> MACL
+		sh2_multiply_reg_and_reg_unsigned_word r5 r14
+		## MACL -> r4
+		sh2_copy_to_reg_from_macl r4
+		## r4 / 3次元座標Bz(r6) -> r4
+		### フラグの初期化
+		sh2_divide_step0_unsigned
+		### 16回繰り返し
+		for _i in $(seq 16); do
+			sh2_divide_1step_reg_by_reg r4 r6
+		done
+		### rotcl r4
+		sh2_rotate_with_carry_left r4
+		### r4=商
+		sh2_extend_unsigned_reg_to_reg_word r4 r4
+	) >src/f_draw_plate.3.o
+	local sz_3=$(stat -c '%s' src/f_draw_plate.3.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_3 / 2)))
+	sh2_nop
+	cat src/f_draw_plate.3.o	# PRJz(r14) < Bz(r6) の時
 
 	# 無限ループ
 	infinite_loop
