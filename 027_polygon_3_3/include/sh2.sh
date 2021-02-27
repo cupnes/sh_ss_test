@@ -96,6 +96,19 @@ sh2_compare_reg_gt_reg_unsigned() {
 	echo -e "cmp/hi $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+# 2つの汎用レジスタの内容を16ビットで乗算
+# 結果の32ビットをMACLレジスタに格納
+# 演算は符号なし算術演算で行う
+# MACHの内容は変化しない
+sh2_multiply_reg_and_reg_unsigned_word() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x2${regAnum}\x${regBnum}e"	# mulu.w $regB,$regA
+	echo -e "mulu.w $regB,$regA\t;1-3" >>$ASM_LIST_FILE
+}
+
 sh2_or_to_reg_from_reg() {
 	local dst=$1
 	local src=$2

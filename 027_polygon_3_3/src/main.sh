@@ -338,6 +338,11 @@ f_draw_plate() {
 	(
 		# PRJz(r14) < Az(r3) の時
 
+		# 2次元座標Ax = 3次元座標Ax * PRJz / 3次元座標z
+
+		# 3次元座標Ax(r3) * PRJz(r14)
+		sh2_multiply_reg_and_reg_unsigned_word r3 r14
+
 		# 無限ループ
 		infinite_loop
 	) >src/f_draw_plate.2.o
