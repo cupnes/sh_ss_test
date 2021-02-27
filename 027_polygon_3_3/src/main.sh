@@ -329,10 +329,10 @@ f_draw_plate() {
 	cat src/f_draw_plate.1.o
 
 	# 透視投影で2次元座標へ変換
-	# - PRJz == Az or Bz or Cz or Dz の時
-	#   - 2次元座標(x, y) = 3次元座標(x, y)
 	# - PRJz < Az or Bz or Cz or Dz の時
 	#   - 2次元座標(x, y) = 3次元座標(x, y) * PRJz / 3次元座標z
+	# - PRJz == Az or Bz or Cz or Dz の時
+	#   - 2次元座標(x, y) = 3次元座標(x, y)
 	## PRJz(r14) == Az(r3)?
 	sh2_compare_reg_eq_reg r14 r3
 	(
@@ -377,19 +377,11 @@ f_draw_plate() {
 		### r2=商
 		sh2_extend_unsigned_reg_to_reg_word r2 r2
 	) >src/f_draw_plate.2.o
-	(
-		# PRJz(r14) == Az(r3) の時
-
-		# PRJz(r14) < Az(r3) の時の処理を飛ばす
-		local sz_2=$(stat -c '%s' src/f_draw_plate.2.o)
-		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_2 / 2))) 3)
-		sh2_nop
-	) >src/f_draw_plate.3.o
-	local sz_3=$(stat -c '%s' src/f_draw_plate.3.o)
-	sh2_rel_jump_if_false $(two_digits_d $((sz_3 / 2)))
+	local sz_2=$(stat -c '%s' src/f_draw_plate.2.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_2 / 2)))
 	sh2_nop
-	cat src/f_draw_plate.3.o	# PRJz(r14) == Az(r3) の時
 	cat src/f_draw_plate.2.o	# PRJz(r14) < Az(r3) の時
+	# この時点でポリゴン描画の頂点Aの座標(Ax,Ay)を(r1,r2)へ設定完了
 
 	# 無限ループ
 	infinite_loop
