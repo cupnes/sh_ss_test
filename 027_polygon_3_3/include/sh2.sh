@@ -178,3 +178,10 @@ sh2_nop() {
 	echo -en '\x00\x09'	# nop
 	echo -e 'nop\t;1' >>$ASM_LIST_FILE
 }
+
+sh2_copy_to_reg_from_macl() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x0${regnum}\x1a"	# sts macl,$reg
+	echo -e "sts macl,$reg\t;1" >>$ASM_LIST_FILE
+}

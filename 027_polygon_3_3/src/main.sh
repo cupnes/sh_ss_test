@@ -343,7 +343,10 @@ f_draw_plate() {
 		# 3次元座標Ax(r3) * PRJz(r14) -> MACL
 		sh2_multiply_reg_and_reg_unsigned_word r3 r14
 
-		# 
+		# MACL -> r1
+		sh2_copy_to_reg_from_macl r1
+
+		# r1 / 3次元座標z(r3) -> r1
 
 		# 無限ループ
 		infinite_loop
@@ -410,55 +413,55 @@ setup_vram_command_table() {
 
 	# 05c00060
 	# 正面ポリゴン
-	# ## 次にコマンドを配置するVRAMアドレスをスタックに積む
-	# ## (この時点のr1にそのアドレスが入っている)
-	# sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	# sh2_copy_to_ptr_from_reg_long r15 r1
-	# ## 六面体正面の4頂点の3次元座標をレジスタへロード
-	# ### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
-	# copy_to_reg_from_val_long r14 $var_hexahedron_base
-	# ### Ax -> r1
-	# sh2_copy_to_reg_from_ptr_word r1 r14
-	# ### Ay -> r2
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r2 r14
-	# ### Az -> r3
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r3 r14
-	# ### Bx -> r4
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r4 r14
-	# ### By -> r5
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r5 r14
-	# ### Bz -> r6
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r6 r14
-	# ### Cx -> r7
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r7 r14
-	# ### Cy -> r8
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r8 r14
-	# ### Cz -> r9
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r9 r14
-	# ### Dx -> r10
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r10 r14
-	# ### Dy -> r11
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r11 r14
-	# ### Dz -> r12
-	# sh2_add_to_reg_from_val_byte r14 02
-	# sh2_copy_to_reg_from_ptr_word r12 r14
-	# ## 描画カラーをr13へ設定
-	# ### 0xffdb -> r13
-	# sh2_set_reg r13 db
-	# ## 描画関数呼び出し
-	# copy_to_reg_from_val_long r14 $a_draw_plate
-	# sh2_abs_call_to_reg_after_next_inst r14
-	# sh2_nop
+	## 次にコマンドを配置するVRAMアドレスをスタックに積む
+	## (この時点のr1にそのアドレスが入っている)
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## 六面体正面の4頂点の3次元座標をレジスタへロード
+	### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
+	copy_to_reg_from_val_long r14 $var_hexahedron_base
+	### Ax -> r1
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	### Ay -> r2
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r2 r14
+	### Az -> r3
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r3 r14
+	### Bx -> r4
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r4 r14
+	### By -> r5
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r5 r14
+	### Bz -> r6
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r6 r14
+	### Cx -> r7
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r7 r14
+	### Cy -> r8
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r8 r14
+	### Cz -> r9
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r9 r14
+	### Dx -> r10
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r10 r14
+	### Dy -> r11
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r11 r14
+	### Dz -> r12
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r12 r14
+	## 描画カラーをr13へ設定
+	### 0xffdb -> r13
+	sh2_set_reg r13 db
+	## 描画関数呼び出し
+	copy_to_reg_from_val_long r14 $a_draw_plate
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
 
 	## 次にコマンドを配置するVRAMアドレスをr10へ格納
 	## (この時点のr1にそのアドレスが入っている)
