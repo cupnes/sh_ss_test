@@ -510,6 +510,69 @@ f_draw_plate() {
 	cat src/f_draw_plate.6.o	# PRJz(r14) == Bz(r9) の時
 	# この時点でポリゴン描画の頂点Cの座標(Cx,Cy)を(r5,r6)へ設定完了
 
+	## PRJz(r14) == Dz(r12)?
+	sh2_compare_reg_eq_reg r14 r12
+	(
+		# PRJz(r14) == Dz(r12) の時
+
+		# 2次元座標Dx(r7) = 3次元座標Dx(r10)
+		sh2_copy_to_reg_from_reg r7 r10
+
+		# 2次元座標Dy(r8) = 3次元座標Dy(r11)
+		sh2_copy_to_reg_from_reg r8 r11
+	) >src/f_draw_plate.8.o
+	(
+		# PRJz(r14) < Dz(r12) の時
+
+		# 除数(r12)を上位16ビット、下位16ビットを0に設定
+		sh2_shift_left_logical_16 r12
+
+		# 2次元座標Dx(r7) = 3次元座標Dx(r10) * PRJz(r14) / 3次元座標Dz(r12)
+		## 3次元座標Dx(r10) * PRJz(r14) -> MACL
+		sh2_multiply_reg_and_reg_unsigned_word r10 r14
+		## MACL -> r7
+		sh2_copy_to_reg_from_macl r7
+		## r7 / 3次元座標Dz(r12) -> r7
+		### フラグの初期化
+		sh2_divide_step0_unsigned
+		### 16回繰り返し
+		for _i in $(seq 16); do
+			sh2_divide_1step_reg_by_reg r7 r12
+		done
+		### rotcl r7
+		sh2_rotate_with_carry_left r7
+		### r7=商
+		sh2_extend_unsigned_reg_to_reg_word r7 r7
+
+		# 2次元座標Dy(r8) = 3次元座標Dy(r11) * PRJz(r14) / 3次元座標Dz(r12)
+		## 3次元座標Dy(r11) * PRJz(r14) -> MACL
+		sh2_multiply_reg_and_reg_unsigned_word r11 r14
+		## MACL -> r8
+		sh2_copy_to_reg_from_macl r8
+		## r8 / 3次元座標Dz(r12) -> r8
+		### フラグの初期化
+		sh2_divide_step0_unsigned
+		### 16回繰り返し
+		for _i in $(seq 16); do
+			sh2_divide_1step_reg_by_reg r8 r12
+		done
+		### rotcl r8
+		sh2_rotate_with_carry_left r8
+		### r8=商
+		sh2_extend_unsigned_reg_to_reg_word r8 r8
+
+		# PRJz(r14) == Dz(r12) の時の処理を飛ばす
+		local sz_8=$(stat -c '%s' src/f_draw_plate.8.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_8 / 2))) 3)
+		sh2_nop
+	) >src/f_draw_plate.7.o
+	local sz_7=$(stat -c '%s' src/f_draw_plate.7.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_7 / 2)))
+	sh2_nop
+	cat src/f_draw_plate.7.o	# PRJz(r14) < Dz(r12) の時
+	cat src/f_draw_plate.8.o	# PRJz(r14) == Dz(r12) の時
+	# この時点でポリゴン描画の頂点Dの座標(Dx,Dy)を(r7,r8)へ設定完了
+
 	# 無限ループ
 	infinite_loop
 
