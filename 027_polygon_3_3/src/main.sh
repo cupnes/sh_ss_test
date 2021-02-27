@@ -695,45 +695,6 @@ setup_vram_command_table() {
 	sh2_copy_to_reg_from_ptr_long r1 r15
 	sh2_add_to_reg_from_val_byte r15 04
 
-	## 次にコマンドを配置するVRAMアドレスをr10へ格納
-	## (この時点のr1にそのアドレスが入っている)
-	sh2_copy_to_reg_from_reg r10 r1
-	## 0x007a -> r1 (Ax)
-	sh2_set_reg r1 7a
-	## 0x002d -> r2 (Ay)
-	sh2_set_reg r2 2d
-	# 頂点B
-	## 0x00c5 -> r3 (Bx)
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte c5
-	sh2_copy_to_reg_from_reg r3 r0
-	## 0x002d -> r4 (By)
-	sh2_set_reg r4 2d
-	# 頂点C
-	## 0x00c5 -> r5 (Cx)
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte c5
-	sh2_copy_to_reg_from_reg r5 r0
-	## 0x00b3 -> r6 (Cy)
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte b3
-	sh2_copy_to_reg_from_reg r6 r0
-	# 頂点D
-	## 0x007a -> r7 (Dx)
-	sh2_set_reg r7 7a
-	## 0x00b3 -> r8 (Dy)
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte b3
-	sh2_copy_to_reg_from_reg r8 r0
-	# カラー
-	## 0xffdb -> r9
-	sh2_set_reg r9 db
-	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
-	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
-	# call r11
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
-
 	# 05c00080
 	# 側面ポリゴン
 	# 0x0066 -> r1
