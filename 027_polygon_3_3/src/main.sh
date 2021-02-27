@@ -573,8 +573,29 @@ f_draw_plate() {
 	cat src/f_draw_plate.8.o	# PRJz(r14) == Dz(r12) の時
 	# この時点でポリゴン描画の頂点Dの座標(Dx,Dy)を(r7,r8)へ設定完了
 
-	# 無限ループ
-	infinite_loop
+	# 引数r13のカラーをr9へ設定
+	sh2_copy_to_reg_from_reg r9 r13
+
+	# SP+0のdst addrをr10へ設定
+	sh2_copy_to_reg_from_ptr_long r10 r15
+
+	# 現在のPRをスタックへ退避
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# ポリゴン描画コマンドを配置する関数を呼び出す
+	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_nop
+
+	# PRをスタックから復帰
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+
+	# SP+0のdst addrをr10で更新
+	sh2_copy_to_ptr_from_reg_long r15 r10
 
 	# return
 	sh2_return_after_next_inst
@@ -670,6 +691,9 @@ setup_vram_command_table() {
 	copy_to_reg_from_val_long r14 $a_draw_plate
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+	## 次にコマンドを配置するVRAMアドレスをスタックからr1へ取得
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
 
 	## 次にコマンドを配置するVRAMアドレスをr10へ格納
 	## (この時点のr1にそのアドレスが入っている)

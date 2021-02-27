@@ -236,6 +236,13 @@ sh2_return_after_next_inst() {
 	echo -e 'rts\t;2' >>$ASM_LIST_FILE
 }
 
+sh2_copy_to_pr_from_reg() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x2a"	# lds $reg,pr
+	echo -e "lds $reg,pr\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_nop() {
 	echo -en '\x00\x09'	# nop
 	echo -e 'nop\t;1' >>$ASM_LIST_FILE
@@ -246,4 +253,11 @@ sh2_copy_to_reg_from_macl() {
 	local regnum=$(to_regnum $reg)
 	echo -en "\x0${regnum}\x1a"	# sts macl,$reg
 	echo -e "sts macl,$reg\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_copy_to_reg_from_pr() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x0${regnum}\x2a"	# sts pr,$reg
+	echo -e "sts pr,$reg\t;1" >>$ASM_LIST_FILE
 }
