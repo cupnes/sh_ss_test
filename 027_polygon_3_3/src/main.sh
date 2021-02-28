@@ -29,107 +29,131 @@ vars() {
 	var_hexahedron_base=$(calc16_8 "$var_projection_plane_z+2")
 	echo -e "var_hexahedron_base=$var_hexahedron_base" >>$map_file
 	## 頂点A(正面左上)
-	### X
+	### X (base+0x00)
 	var_hexahedron_ax=$var_hexahedron_base
+	ofs_hexahedron_ax=00
 	echo -e "var_hexahedron_ax=$var_hexahedron_ax" >>$map_file
 	echo -en '\x00\x7a'	# 122
-	### Y
+	### Y (base+0x02)
 	var_hexahedron_ay=$(calc16_8 "$var_hexahedron_ax+2")
+	ofs_hexahedron_ay=02
 	echo -e "var_hexahedron_ay=$var_hexahedron_ay" >>$map_file
 	echo -en '\x00\x2d'	# 45
-	### Z
+	### Z (base+0x04)
 	var_hexahedron_az=$(calc16_8 "$var_hexahedron_ay+2")
+	ofs_hexahedron_az=04
 	echo -e "var_hexahedron_az=$var_hexahedron_az" >>$map_file
 	echo -en '\x00\x64'	# 100
 	## 頂点B(正面右上)
-	### X
+	### X (base+0x06)
 	var_hexahedron_bx=$(calc16_8 "$var_hexahedron_az+2")
+	ofs_hexahedron_bx=06
 	echo -e "var_hexahedron_bx=$var_hexahedron_bx" >>$map_file
 	echo -en '\x00\xc5'	# 197
-	### Y
+	### Y (base+0x08)
 	var_hexahedron_by=$(calc16_8 "$var_hexahedron_bx+2")
+	ofs_hexahedron_by=08
 	echo -e "var_hexahedron_by=$var_hexahedron_by" >>$map_file
 	echo -en '\x00\x2d'	# 45
-	### Z
+	### Z (base+0x0a)
 	var_hexahedron_bz=$(calc16_8 "$var_hexahedron_by+2")
+	ofs_hexahedron_bz=0a
 	echo -e "var_hexahedron_bz=$var_hexahedron_bz" >>$map_file
 	echo -en '\x00\x64'	# 100
 	## 頂点C(正面右下)
-	### X
+	### X (base+0x0c)
 	var_hexahedron_cx=$(calc16_8 "$var_hexahedron_bz+2")
+	ofs_hexahedron_cx=0c
 	echo -e "var_hexahedron_cx=$var_hexahedron_cx" >>$map_file
 	echo -en '\x00\xc5'	# 197
-	### Y
+	### Y (base+0x0e)
 	var_hexahedron_cy=$(calc16_8 "$var_hexahedron_cx+2")
+	ofs_hexahedron_cy=0e
 	echo -e "var_hexahedron_cy=$var_hexahedron_cy" >>$map_file
 	echo -en '\x00\xb3'	# 179
-	### Z
+	### Z (base+0x10)
 	var_hexahedron_cz=$(calc16_8 "$var_hexahedron_cy+2")
+	ofs_hexahedron_cz=10
 	echo -e "var_hexahedron_cz=$var_hexahedron_cz" >>$map_file
 	echo -en '\x00\x64'	# 100
 	## 頂点D(正面左下)
-	### X
+	### X (base+0x12)
 	var_hexahedron_dx=$(calc16_8 "$var_hexahedron_cz+2")
+	ofs_hexahedron_dx=12
 	echo -e "var_hexahedron_dx=$var_hexahedron_dx" >>$map_file
 	echo -en '\x00\x7a'	# 122
-	### Y
+	### Y (base+0x14)
 	var_hexahedron_dy=$(calc16_8 "$var_hexahedron_dx+2")
+	ofs_hexahedron_dy=14
 	echo -e "var_hexahedron_dy=$var_hexahedron_dy" >>$map_file
 	echo -en '\x00\xb3'	# 179
-	### Z
+	### Z (base+0x16)
 	var_hexahedron_dz=$(calc16_8 "$var_hexahedron_dy+2")
+	ofs_hexahedron_dz=16
 	echo -e "var_hexahedron_dz=$var_hexahedron_dz" >>$map_file
 	echo -en '\x00\x64'	# 100
 	## 頂点E(背面左上)
-	### X
+	### X (base+0x18)
 	var_hexahedron_ex=$(calc16_8 "$var_hexahedron_dz+2")
+	ofs_hexahedron_ex=18
 	echo -e "var_hexahedron_ex=$var_hexahedron_ex" >>$map_file
 	echo -en '\x00\x7a'	# 122
-	### Y
+	### Y (base+0x1a)
 	var_hexahedron_ey=$(calc16_8 "$var_hexahedron_ex+2")
+	ofs_hexahedron_ey=1a
 	echo -e "var_hexahedron_ey=$var_hexahedron_ey" >>$map_file
 	echo -en '\x00\x2d'	# 45
-	### Z
+	### Z (base+0x1c)
 	var_hexahedron_ez=$(calc16_8 "$var_hexahedron_ey+2")
+	ofs_hexahedron_ez=1c
 	echo -e "var_hexahedron_ez=$var_hexahedron_ez" >>$map_file
 	echo -en '\x00\x77'	# 119
 	## 頂点F(背面右上)
-	### X
+	### X (base+0x1e)
 	var_hexahedron_fx=$(calc16_8 "$var_hexahedron_ez+2")
+	ofs_hexahedron_fx=1e
 	echo -e "var_hexahedron_fx=$var_hexahedron_fx" >>$map_file
 	echo -en '\x00\xc5'	# 197
-	### Y
+	### Y (base+0x20)
 	var_hexahedron_fy=$(calc16_8 "$var_hexahedron_fx+2")
+	ofs_hexahedron_fy=20
 	echo -e "var_hexahedron_fy=$var_hexahedron_fy" >>$map_file
 	echo -en '\x00\x2d'	# 45
-	### Z
+	### Z (base+0x22)
 	var_hexahedron_fz=$(calc16_8 "$var_hexahedron_fy+2")
+	ofs_hexahedron_fz=22
 	echo -e "var_hexahedron_fz=$var_hexahedron_fz" >>$map_file
 	echo -en '\x00\x77'	# 119
 	## 頂点G(背面右下)
-	### X
+	### X (base+0x24)
 	var_hexahedron_gx=$(calc16_8 "$var_hexahedron_fz+2")
+	ofs_hexahedron_gx=24
 	echo -e "var_hexahedron_gx=$var_hexahedron_gx" >>$map_file
 	echo -en '\x00\xc5'	# 197
-	### Y
+	### Y (base+0x26)
 	var_hexahedron_gy=$(calc16_8 "$var_hexahedron_gx+2")
+	ofs_hexahedron_gy=26
 	echo -e "var_hexahedron_gy=$var_hexahedron_gy" >>$map_file
 	echo -en '\x00\xb3'	# 179
-	### Z
+	### Z (base+0x28)
 	var_hexahedron_gz=$(calc16_8 "$var_hexahedron_gy+2")
+	ofs_hexahedron_gz=28
 	echo -e "var_hexahedron_gz=$var_hexahedron_gz" >>$map_file
 	echo -en '\x00\x77'	# 119
 	## 頂点H(背面左下)
-	### X
+	### X (base+0x2a)
 	var_hexahedron_hx=$(calc16_8 "$var_hexahedron_gz+2")
+	ofs_hexahedron_hx=2a
 	echo -e "var_hexahedron_hx=$var_hexahedron_hx" >>$map_file
 	echo -en '\x00\x7a'	# 122
-	### Y
+	### Y (base+0x2c)
 	var_hexahedron_hy=$(calc16_8 "$var_hexahedron_hx+2")
+	ofs_hexahedron_hy=2c
 	echo -e "var_hexahedron_hy=$var_hexahedron_hy" >>$map_file
 	echo -en '\x00\xb3'	# 179
-	### Z
+	### Z (base+0x2e)
 	var_hexahedron_hz=$(calc16_8 "$var_hexahedron_hy+2")
+	ofs_hexahedron_hz=2e
 	echo -e "var_hexahedron_hz=$var_hexahedron_hz" >>$map_file
 	echo -en '\x00\x77'	# 119
 }
@@ -691,42 +715,61 @@ setup_vram_command_table() {
 	copy_to_reg_from_val_long r14 $a_draw_plate
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-	## 次にコマンドを配置するVRAMアドレスをスタックからr1へ取得
-	sh2_copy_to_reg_from_ptr_long r1 r15
-	sh2_add_to_reg_from_val_byte r15 04
 
 	# 05c00080
 	# 側面ポリゴン
-	# 0x0066 -> r1
-	sh2_set_reg r1 66
-	# 0x0025 -> r2
-	sh2_set_reg r2 25
-	# 0x007a -> r3
-	sh2_set_reg r3 7a
-	# 0x002d -> r4
-	sh2_set_reg r4 2d
-	# 0x007a -> r5
-	sh2_set_reg r5 7a
-	# 0x00b3 -> r6
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte b3
-	sh2_copy_to_reg_from_reg r6 r0
-	# 0x0066 -> r7
-	sh2_set_reg r7 66
-	# 0x0096 -> r8
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte 96
-	sh2_copy_to_reg_from_reg r8 r0
-	# 0xbded -> r9
+	## 六面体左側面の4頂点の3次元座標をレジスタへロード
+	### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
+	copy_to_reg_from_val_long r14 $var_hexahedron_base
+	### Ex -> r1
+	sh2_add_to_reg_from_val_byte r14 $ofs_hexahedron_ex
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	### Ey -> r2
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r2 r14
+	### Ez -> r3
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r3 r14
+	### Ax -> r4
+	sh2_add_to_reg_from_val_byte r14 $(two_comp $ofs_hexahedron_ez)
+	sh2_copy_to_reg_from_ptr_word r4 r14
+	### Ay -> r5
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r5 r14
+	### Az -> r6
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r6 r14
+	### Dx -> r7
+	sh2_add_to_reg_from_val_byte r14 $(calc16_2 "${ofs_hexahedron_dx}-${ofs_hexahedron_az}")
+	sh2_copy_to_reg_from_ptr_word r7 r14
+	### Dy -> r8
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r8 r14
+	### Dz -> r9
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r9 r14
+	### Hx -> r10
+	sh2_add_to_reg_from_val_byte r14 $(calc16_2 "${ofs_hexahedron_hx}-${ofs_hexahedron_dz}")
+	sh2_copy_to_reg_from_ptr_word r10 r14
+	### Hy -> r11
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r11 r14
+	### Hz -> r12
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r12 r14
+	## 描画カラーをr13へ設定
+	### 0xbded -> r13
 	sh2_set_reg r0 bd
 	sh2_shift_left_logical_8 r0
 	sh2_or_to_r0_from_val_byte ed
-	sh2_copy_to_reg_from_reg r9 r0
-	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
-	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
-	# call r11
-	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_copy_to_reg_from_reg r13 r0
+	## 描画関数呼び出し
+	copy_to_reg_from_val_long r14 $a_draw_plate
+	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+	## 次にコマンドを配置するVRAMアドレスをスタックからr1へ取得
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
 
 	# 05c000a0
 	# 上面ポリゴン
