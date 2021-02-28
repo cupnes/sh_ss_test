@@ -767,39 +767,57 @@ setup_vram_command_table() {
 	copy_to_reg_from_val_long r14 $a_draw_plate
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-	## 次にコマンドを配置するVRAMアドレスをスタックからr1へ取得
-	sh2_copy_to_reg_from_ptr_long r1 r15
-	sh2_add_to_reg_from_val_byte r15 04
 
 	# 05c000a0
 	# 上面ポリゴン
-	# 0x0066 -> r1
-	sh2_set_reg r1 66
-	# 0x0025 -> r2
-	sh2_set_reg r2 25
-	# 0x00a5 -> r3
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte a5
-	sh2_copy_to_reg_from_reg r3 r0
-	# 0x0025 -> r4
-	sh2_set_reg r4 25
-	# 0x00c5 -> r5
-	sh2_set_reg r0 00
-	sh2_or_to_r0_from_val_byte c5
-	sh2_copy_to_reg_from_reg r5 r0
-	# 0x002d -> r6
-	sh2_set_reg r6 2d
-	# 0x007a -> r7
-	sh2_set_reg r7 7a
-	# 0x002d -> r8
-	sh2_set_reg r8 2d
-	# 0xffff -> r9
-	sh2_set_reg r9 ff
-	# $a_put_vdp1_command_polygon_draw_to_addr -> r11
-	copy_to_reg_from_val_long r11 $a_put_vdp1_command_polygon_draw_to_addr
-	# call r11
-	sh2_abs_call_to_reg_after_next_inst r11
+	## 六面体上面の4頂点の3次元座標をレジスタへロード
+	### 頂点座標が並ぶ領域の先頭アドレスをr14へロード
+	copy_to_reg_from_val_long r14 $var_hexahedron_base
+	### Ex -> r1
+	sh2_add_to_reg_from_val_byte r14 $ofs_hexahedron_ex
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	### Ey -> r2
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r2 r14
+	### Ez -> r3
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r3 r14
+	### Fx -> r4
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r4 r14
+	### Fy -> r5
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r5 r14
+	### Fz -> r6
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r6 r14
+	### Bx -> r7
+	sh2_add_to_reg_from_val_byte r14 $(two_comp $(calc16_2 "${ofs_hexahedron_fz}-${ofs_hexahedron_bx}"))
+	sh2_copy_to_reg_from_ptr_word r7 r14
+	### By -> r8
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r8 r14
+	### Bz -> r9
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r9 r14
+	### Ax -> r10
+	sh2_add_to_reg_from_val_byte r14 $(two_comp $(calc16_2 "${ofs_hexahedron_bz}-${ofs_hexahedron_ax}"))
+	sh2_copy_to_reg_from_ptr_word r10 r14
+	### Ay -> r11
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r11 r14
+	### Az -> r12
+	sh2_add_to_reg_from_val_byte r14 02
+	sh2_copy_to_reg_from_ptr_word r12 r14
+	## 描画カラーをr13へ設定
+	### 0xffff -> r13
+	sh2_set_reg r13 ff
+	## 描画関数呼び出し
+	copy_to_reg_from_val_long r14 $a_draw_plate
+	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+	## 次にコマンドを配置するVRAMアドレスをスタックから破棄
+	sh2_add_to_reg_from_val_byte r15 04
 
 	com_adr=$(calc16 "$com_adr+80")
 	vdp1_command_draw_end >src/draw_end.o
