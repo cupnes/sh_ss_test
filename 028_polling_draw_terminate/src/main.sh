@@ -9,6 +9,7 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 
+VRAM_DRAW_CMD_BASE=05c00060
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 VARS_BASE=0600401E
@@ -626,48 +627,17 @@ f_draw_plate() {
 	sh2_nop
 }
 
-funcs() {
-	local fsz
-
-	# 指定された4頂点・カラーのポリゴンを描画するコマンドを
-	# 指定されたアドレスへ配置
-	a_put_vdp1_command_polygon_draw_to_addr=$FUNCS_BASE
-	echo -e "a_put_vdp1_command_polygon_draw_to_addr=$a_put_vdp1_command_polygon_draw_to_addr" >>$map_file
-	f_put_vdp1_command_polygon_draw_to_addr
-
-	# 4つの3次元座標で指定された平面を指定されたカラーで
-	# 指定されたアドレスへ描画
-	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
-	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_polygon_draw_to_addr.o))
-	a_draw_plate=$(calc16_8 "${a_put_vdp1_command_polygon_draw_to_addr}+${fsz}")
-	echo -e "a_draw_plate=$a_draw_plate" >>$map_file
-	f_draw_plate
-}
-# 変数設定のために空実行
-funcs >/dev/null
-rm -f $map_file
-
-# コマンドテーブル設定
-setup_vram_command_table() {
-	# 05c00000
-	local com_adr=$SS_VDP1_VRAM_ADDR
-	vdp1_command_system_clipping_coordinates >src/system_clipping_coordinates.o
-	put_file_to_addr src/system_clipping_coordinates.o $com_adr
-
-	# 05c00020
-	com_adr=$(calc16 "$com_adr+20")
-	vdp1_command_user_clipping_coordinates >src/user_clipping_coordinates.o
-	put_file_to_addr src/user_clipping_coordinates.o $com_adr
-
-	# 05c00040
-	com_adr=$(calc16 "$com_adr+20")
-	vdp1_command_local_coordinates >src/local_coordinates.o
-	put_file_to_addr src/local_coordinates.o $com_adr
+# ポリゴン描画コマンドの更新
+f_update_polygon() {
+	# 現在のPRをスタックへ退避
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
 
 	# 05c00060
 	# 正面ポリゴン
 	## 次にコマンドを配置するVRAMアドレスをスタックに積む
-	## (この時点のr1にそのアドレスが入っている)
+	copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r1
 	## 六面体正面の4頂点の3次元座標をレジスタへロード
@@ -819,6 +789,68 @@ setup_vram_command_table() {
 	## 次にコマンドを配置するVRAMアドレスをスタックから破棄
 	sh2_add_to_reg_from_val_byte r15 04
 
+	# PRをスタックから復帰
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+funcs() {
+	local fsz
+
+	# 指定された4頂点・カラーのポリゴンを描画するコマンドを
+	# 指定されたアドレスへ配置
+	a_put_vdp1_command_polygon_draw_to_addr=$FUNCS_BASE
+	echo -e "a_put_vdp1_command_polygon_draw_to_addr=$a_put_vdp1_command_polygon_draw_to_addr" >>$map_file
+	f_put_vdp1_command_polygon_draw_to_addr
+
+	# 4つの3次元座標で指定された平面を指定されたカラーで
+	# 指定されたアドレスへ描画
+	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
+	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_polygon_draw_to_addr.o))
+	a_draw_plate=$(calc16_8 "${a_put_vdp1_command_polygon_draw_to_addr}+${fsz}")
+	echo -e "a_draw_plate=$a_draw_plate" >>$map_file
+	f_draw_plate
+
+	# ポリゴン描画コマンドの更新
+	f_draw_plate >src/f_draw_plate.o
+	fsz=$(to16 $(stat -c '%s' src/f_draw_plate.o))
+	a_update_polygon=$(calc16_8 "${a_draw_plate}+${fsz}")
+	echo -e "a_update_polygon=$a_update_polygon" >>$map_file
+	f_update_polygon
+}
+# 変数設定のために空実行
+funcs >/dev/null
+rm -f $map_file
+
+# コマンドテーブル設定
+setup_vram_command_table() {
+	# 05c00000
+	local com_adr=$SS_VDP1_VRAM_ADDR
+	vdp1_command_system_clipping_coordinates >src/system_clipping_coordinates.o
+	put_file_to_addr src/system_clipping_coordinates.o $com_adr
+
+	# 05c00020
+	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_user_clipping_coordinates >src/user_clipping_coordinates.o
+	put_file_to_addr src/user_clipping_coordinates.o $com_adr
+
+	# 05c00040
+	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_local_coordinates >src/local_coordinates.o
+	put_file_to_addr src/local_coordinates.o $com_adr
+
+	# 05c00060, 05c00080, 05c000a0
+	# ポリゴン更新関数呼び出し
+	copy_to_reg_from_val_long r1 $a_update_polygon
+	sh2_abs_call_to_reg_after_next_inst r1
+	sh2_nop
+
+	# 05c000c0
 	com_adr=$(calc16 "$com_adr+80")
 	vdp1_command_draw_end >src/draw_end.o
 	put_file_to_addr src/draw_end.o $com_adr
