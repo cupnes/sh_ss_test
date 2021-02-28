@@ -1,4 +1,4 @@
-TARGET=028_polling_vblank.iso
+TARGET=028_polling_draw_terminate.iso
 
 all: $(TARGET)
 
