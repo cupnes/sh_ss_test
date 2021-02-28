@@ -156,6 +156,15 @@ sh2_or_to_r0_from_val_byte() {
 	echo -e "or #0x$val,r0\t;1" >>$ASM_LIST_FILE
 }
 
+# 論理積をとり、結果がゼロのときTビットをセット
+# 結果がゼロでないときTビットをクリア
+# R0の内容は変更しない
+sh2_test_r0_and_val_byte() {
+	local val=$1
+	echo -en "\xc8\x${val}"	# tst #0x$val,r0
+	echo -e "tst #0x$val,r0\t;1" >>$ASM_LIST_FILE
+}
+
 # 汎用レジスタ Rn の内容を左方向に T ビットを含めて 1 ビットローテート(回転)し、
 # 結果を Rn に格納
 # ローテートしてオペランドの外に出てしまったビットは、T ビットへ転送
