@@ -888,6 +888,44 @@ f_update_polygon() {
 	sh2_nop
 }
 
+# 頂点座標更新
+f_update_vertex_coordinates() {
+	# 現在の押下状態をr1へロード
+	## 変数のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $var_pad_current_state_1
+	## アドレスが指す先の値をr0へロード
+	sh2_copy_to_reg_from_ptr_byte r0 r1
+
+	# →の押下確認
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_RIGHT
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# Axをインクリメント
+
+		# 変数のアドレスをr2へロード
+		copy_to_reg_from_val_long r2 $var_hexahedron_ax
+
+		# 座標値をr3へロード
+		sh2_copy_to_reg_from_ptr_word r3 r2
+
+		# 座標値をインクリメント
+		sh2_add_to_reg_from_val_byte r3 01
+
+		# 座標値を変数へ書き戻す
+		sh2_copy_to_ptr_from_reg_word r2 r3
+	) >src/f_update_vertex_coordinates.1.o
+	local sz_1=$(stat -c '%s' src/f_update_vertex_coordinates.1.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_update_vertex_coordinates.1.o
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 funcs() {
 	local fsz
 
@@ -918,6 +956,13 @@ funcs() {
 	a_update_polygon=$(calc16_8 "${a_draw_plate}+${fsz}")
 	echo -e "a_update_polygon=$a_update_polygon" >>$map_file
 	f_update_polygon
+
+	# 頂点座標更新
+	f_update_polygon >src/f_update_polygon.o
+	fsz=$(to16 $(stat -c '%s' src/f_update_polygon.o))
+	a_update_vertex_coordinates=$(calc16_8 "${a_update_polygon}+${fsz}")
+	echo -e "a_update_vertex_coordinates=$a_update_vertex_coordinates" >>$map_file
+	f_update_vertex_coordinates
 }
 # 変数設定のために空実行
 funcs >/dev/null
@@ -1035,6 +1080,11 @@ main() {
 		## 論理積結果がゼロのとき、
 		## 即ちTビットがセットされたとき、
 		## 待つ処理を繰り返す
+
+		# 頂点座標更新
+		copy_to_reg_from_val_long r1 $a_update_vertex_coordinates
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
 
 		# ポリゴン更新
 		copy_to_reg_from_val_long r1 $a_update_polygon
