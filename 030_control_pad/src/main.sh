@@ -226,29 +226,25 @@ f_update_gamepad_input_status() {
 	sh2_rel_jump_if_false $(two_comp_d 4)
 	sh2_nop
 
-	# OREG0(ポートステータス)をr2へロード
-	## OREG0のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_OREG0_ADDR
-	## r2へr1の指す先(OREG0)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r2 r1
-
-	# OREG1(サターンペリフェラルID)をr3へロード
-	## OREG1のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_OREG1_ADDR
-	## r3へr1の指す先(OREG1)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r3 r1
-
-	# OREG2(1st Data)をr4へロード
+	# OREG2(1st Data)を変数へロード
 	## OREG2のアドレスをr1へロード
 	copy_to_reg_from_val_long r1 $SS_SMPC_OREG2_ADDR
-	## r4へr1の指す先(OREG2)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r4 r1
+	## r2へr1の指す先(OREG2)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r2 r1
+	## 変数のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $var_pad_current_state_1
+	## r1の指す先(変数)へr2の値を格納
+	sh2_copy_to_ptr_from_reg_byte r1 r2
 
 	# OREG3(2nd Data)をr5へロード
 	## OREG3のアドレスをr1へロード
 	copy_to_reg_from_val_long r1 $SS_SMPC_OREG3_ADDR
-	## r5へr1の指す先(OREG3)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r5 r1
+	## r2へr1の指す先(OREG3)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r2 r1
+	## 変数のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $var_pad_current_state_2
+	## r1の指す先(変数)へr2の値を格納
+	sh2_copy_to_ptr_from_reg_byte r1 r2
 
 	# return
 	sh2_return_after_next_inst
