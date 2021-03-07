@@ -893,10 +893,11 @@ f_update_vertex_coordinates() {
 	# 現在の押下状態をr1へロード
 	## 変数のアドレスをr1へロード
 	copy_to_reg_from_val_long r1 $var_pad_current_state_1
-	## アドレスが指す先の値をr0へロード
-	sh2_copy_to_reg_from_ptr_byte r0 r1
+	## アドレスが指す先の値をr1へロード
+	sh2_copy_to_reg_from_ptr_byte r1 r1
 
 	# →の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
 	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_RIGHT
 	## 押下されていないとき、論理積の結果がゼロでなく、
 	## Tビットがクリアされる(false)
