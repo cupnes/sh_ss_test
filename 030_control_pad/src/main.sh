@@ -176,6 +176,80 @@ rm -f $map_file
 
 # ゲームパッドの入力状態更新
 f_update_gamepad_input_status() {
+	# SFへ1をセット
+	## SFのアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_SF_ADDR
+	## r0へ0x01をセット
+	sh2_set_reg r0 01
+	## r1の指す先(SF)へr0の値(0x01)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# IREG2へ0xf0をセット
+	## IREG2のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_IREG2_ADDR
+	## r0へ0xf0をセット
+	sh2_set_reg r0 f0
+	## r1の指す先(IREG2)へr0の値(0xf0)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# IREG1へ0x08をセット
+	## IREG1のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_IREG1_ADDR
+	## r0へ0x08をセット
+	sh2_set_reg r0 08
+	## r1の指す先(IREG1)へr0の値(0x08)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# IREG0へ0x00をセット
+	## IREG0のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_IREG0_ADDR
+	## r0へ0x00をセット
+	sh2_set_reg r0 00
+	## r1の指す先(IREG0)へr0の値(0x00)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# COMREGへINTBACKをセット
+	## COMREGのアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_COMREG_ADDR
+	## r0へINTBACKをセット
+	sh2_set_reg r0 $SS_SMPC_COMREG_INTBACK
+	## r1の指す先(COMREG)へr0の値(INTBACK)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# SFが0になるのを待つ
+	## SFのアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_SF_ADDR
+	## r0へr1の指す先(SF)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r0 r1
+	## bit0が1の間、ここで待つ
+	sh2_test_r0_and_val_byte 01
+	sh2_rel_jump_if_false $(two_comp_d 4)
+	sh2_nop
+
+	# OREG0(ポートステータス)をr2へロード
+	## OREG0のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_OREG0_ADDR
+	## r2へr1の指す先(OREG0)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r2 r1
+
+	# OREG1(サターンペリフェラルID)をr3へロード
+	## OREG1のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_OREG1_ADDR
+	## r3へr1の指す先(OREG1)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r3 r1
+
+	# OREG2(1st Data)をr4へロード
+	## OREG2のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_OREG2_ADDR
+	## r4へr1の指す先(OREG2)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r4 r1
+
+	# OREG3(2nd Data)をr5へロード
+	## OREG3のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_OREG3_ADDR
+	## r5へr1の指す先(OREG3)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r5 r1
+
 	# return
 	sh2_return_after_next_inst
 	sh2_nop

@@ -55,6 +55,15 @@ sh2_copy_to_ptr_from_reg_long() {
 	echo -e "mov.l $src,@$dst\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_copy_to_reg_from_ptr_byte() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x6${dstnum}\x${srcnum}0"	# mov.b @$src,$dst
+	echo -e "mov.b @$src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_copy_to_reg_from_ptr_word() {
 	local dst=$1
 	local src=$2
