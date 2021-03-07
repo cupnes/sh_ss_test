@@ -974,6 +974,32 @@ f_update_vertex_coordinates() {
 	sh2_nop
 	cat src/f_update_vertex_coordinates.3.o
 
+	# ↑の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_UP
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# Ayをデクリメント
+
+		# 変数のアドレスをr2へロード
+		copy_to_reg_from_val_long r2 $var_hexahedron_ay
+
+		# 座標値をr3へロード
+		sh2_copy_to_reg_from_ptr_word r3 r2
+
+		# 座標値をデクリメント
+		sh2_add_to_reg_from_val_byte r3 $(two_comp_d 1)
+
+		# 座標値を変数へ書き戻す
+		sh2_copy_to_ptr_from_reg_word r2 r3
+	) >src/f_update_vertex_coordinates.4.o
+	local sz_4=$(stat -c '%s' src/f_update_vertex_coordinates.4.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_4 / 2)))
+	sh2_nop
+	cat src/f_update_vertex_coordinates.4.o
+
 	# return
 	sh2_return_after_next_inst
 	sh2_nop
