@@ -82,6 +82,15 @@ sh2_copy_to_reg_from_ptr_long() {
 	echo -e "mov.l @$src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_add_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x3${dstnum}\x${srcnum}c"	# add $src,$dst
+	echo -e "add $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_add_to_reg_from_val_byte() {
 	local reg=$1
 	local val=$2
@@ -149,6 +158,15 @@ sh2_multiply_reg_and_reg_unsigned_word() {
 	local regBnum=$(to_regnum $regB)
 	echo -en "\x2${regAnum}\x${regBnum}e"	# mulu.w $regB,$regA
 	echo -e "mulu.w $regB,$regA\t;1-3" >>$ASM_LIST_FILE
+}
+
+sh2_sub_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x3${dstnum}\x${srcnum}8"	# sub $src,$dst
+	echo -e "sub $src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
 sh2_or_to_reg_from_reg() {

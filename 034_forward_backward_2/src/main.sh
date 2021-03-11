@@ -8,6 +8,7 @@ set -ue
 . include/lib.sh
 . include/ss.sh
 . include/vdp1.sh
+. src/render.sh
 
 VRAM_DRAW_CMD_BASE=05c00060
 INIT_SP=06004000
@@ -32,14 +33,30 @@ vars() {
 	echo -e "var_pad_current_state_2=$var_pad_current_state_2" >>$map_file
 	echo -en '\xff'
 
-	# 投影面Z座標
-	var_projection_plane_z=$(calc16_8 "$var_pad_current_state_2+1")
-	echo -e "var_projection_plane_z=$var_projection_plane_z" >>$map_file
+	# カメラの位置と向き
+	# ワールド座標系原点からのベクトル
+	## ベースアドレス
+	var_camera_base=$(calc16_8 "$var_pad_current_state_2+1")
+	echo -e "var_camera_base=$var_camera_base" >>$map_file
+	## X (base+0x00)
+	var_camera_x=$var_camera_base
+	ofs_camera_x=00
+	echo -e "var_camera_x=$var_camera_x" >>$map_file
+	echo -en '\x00\x00'	# 0
+	## Y (base+0x02)
+	var_camera_y=$(calc16_8 "$var_camera_x+2")
+	ofs_camera_y=02
+	echo -e "var_camera_y=$var_camera_y" >>$map_file
+	echo -en '\x00\x00'	# 0
+	## Z (base+0x04)
+	var_camera_z=$(calc16_8 "$var_camera_y+2")
+	ofs_camera_z=04
+	echo -e "var_camera_z=$var_camera_z" >>$map_file
 	echo -en '\x00\x64'	# 100
 
 	# 六面体の8頂点の3次元座標
 	## 頂点座標が並ぶ領域のベースアドレス
-	var_hexahedron_base=$(calc16_8 "$var_projection_plane_z+2")
+	var_hexahedron_base=$(calc16_8 "$var_camera_z+2")
 	echo -e "var_hexahedron_base=$var_hexahedron_base" >>$map_file
 	## 頂点A(正面左上)
 	### X (base+0x00)
@@ -417,7 +434,7 @@ f_draw_plate() {
 	local _i
 
 	# 投影面Z座標をr14へロード
-	copy_to_reg_from_val_long r14 $var_projection_plane_z
+	copy_to_reg_from_val_long r14 $var_camera_z
 	sh2_copy_to_reg_from_ptr_word r14 r14
 
 	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
@@ -692,6 +709,12 @@ f_draw_plate() {
 	cat src/f_draw_plate.8.o	# PRJz(r14) == Dz(r12) の時
 	# この時点でポリゴン描画の頂点Dの座標(Dx,Dy)を(r7,r8)へ設定完了
 
+	# 以上のr1-r8(Ax-Dy)は投影面座標系なので、ゲームスクリーン座標計へ変換
+	transform_to_gs_from_prj r1 r2	# Ax, Ay
+	transform_to_gs_from_prj r3 r4	# Bx, By
+	transform_to_gs_from_prj r5 r6	# Cx, Cy
+	transform_to_gs_from_prj r7 r8	# Dx, Dy
+
 	# 引数r13のカラーをr9へ設定
 	sh2_copy_to_reg_from_reg r9 r13
 
@@ -947,7 +970,7 @@ f_update_vertex_coordinates() {
 		# 投影面Z座標をデクリメント(カメラ後退)
 
 		# 変数のアドレスをr2へロード
-		copy_to_reg_from_val_long r2 $var_projection_plane_z
+		copy_to_reg_from_val_long r2 $var_camera_z
 
 		# 座標値をr3へロード
 		sh2_copy_to_reg_from_ptr_word r3 r2
@@ -973,7 +996,7 @@ f_update_vertex_coordinates() {
 		# 投影面Z座標をインクリメント(カメラ前進)
 
 		# 変数のアドレスをr2へロード
-		copy_to_reg_from_val_long r2 $var_projection_plane_z
+		copy_to_reg_from_val_long r2 $var_camera_z
 
 		# 座標値をr3へロード
 		sh2_copy_to_reg_from_ptr_word r3 r2
