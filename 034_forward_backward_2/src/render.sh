@@ -28,7 +28,7 @@ transform_to_gs_from_prj() {
 	sh2_set_reg r0 $(calc16_2 "${SCREEN_HEIGHT}-1")
 	sh2_and_to_r0_from_val_byte ff
 	## r0 - reg_yをr0へセット
-	sh2_sub_to_reg_from_reg r0 r1
+	sh2_sub_to_reg_from_reg r0 $reg_y
 	## r0をreg_yへ保存
 	sh2_copy_to_reg_from_reg $reg_y r0
 }

@@ -477,25 +477,13 @@ f_draw_plate() {
 	(
 		# PRJz(r14) < Az(r3) の時
 
-		# 除数(r3)を上位16ビット、下位16ビットを0に設定
-		sh2_shift_left_logical_16 r3
-
 		# 2次元座標Ax(r1) = 3次元座標Ax(r1) * PRJz(r14) / 3次元座標Az(r3)
 		## 3次元座標Ax(r1) * PRJz(r14) -> MACL
-		sh2_multiply_reg_and_reg_unsigned_word r1 r14
+		sh2_multiply_reg_and_reg_signed_word r1 r14
 		## MACL -> r1
 		sh2_copy_to_reg_from_macl r1
 		## r1 / 3次元座標Az(r3) -> r1
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r1 r3
-		done
-		### rotcl r1
-		sh2_rotate_with_carry_left r1
-		### r1=商
-		sh2_extend_unsigned_reg_to_reg_word r1 r1
+		div_reg_by_reg_word_sign r1 r3 r2 r4
 
 		# 2次元座標Ay(r2) = 3次元座標Ay(r2) * PRJz(r14) / 3次元座標Az(r3)
 		## 3次元座標Ay(r2) * PRJz(r14) -> MACL
@@ -503,16 +491,7 @@ f_draw_plate() {
 		## MACL -> r2
 		sh2_copy_to_reg_from_macl r2
 		## r2 / 3次元座標Az(r3) -> r2
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r2 r3
-		done
-		### rotcl r2
-		sh2_rotate_with_carry_left r2
-		### r2=商
-		sh2_extend_unsigned_reg_to_reg_word r2 r2
+		div_reg_by_reg_word_sign r2 r3 r1 r4
 	) >src/f_draw_plate.2.o
 	local sz_2=$(stat -c '%s' src/f_draw_plate.2.o)
 	sh2_rel_jump_if_true $(two_digits_d $((sz_2 / 2)))
@@ -534,25 +513,13 @@ f_draw_plate() {
 	(
 		# PRJz(r14) < Bz(r6) の時
 
-		# 除数(r6)を上位16ビット、下位16ビットを0に設定
-		sh2_shift_left_logical_16 r6
-
 		# 2次元座標Bx(r3) = 3次元座標Bx(r4) * PRJz(r14) / 3次元座標Bz(r6)
 		## 3次元座標Bx(r4) * PRJz(r14) -> MACL
 		sh2_multiply_reg_and_reg_unsigned_word r4 r14
 		## MACL -> r3
 		sh2_copy_to_reg_from_macl r3
 		## r3 / 3次元座標Bz(r6) -> r3
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r3 r6
-		done
-		### rotcl r3
-		sh2_rotate_with_carry_left r3
-		### r3=商
-		sh2_extend_unsigned_reg_to_reg_word r3 r3
+		div_reg_by_reg_word_sign r3 r6 r1 r2
 
 		# 2次元座標By(r4) = 3次元座標By(r5) * PRJz(r14) / 3次元座標Bz(r6)
 		## 3次元座標By(r5) * PRJz(r14) -> MACL
@@ -560,16 +527,7 @@ f_draw_plate() {
 		## MACL -> r4
 		sh2_copy_to_reg_from_macl r4
 		## r4 / 3次元座標Bz(r6) -> r4
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r4 r6
-		done
-		### rotcl r4
-		sh2_rotate_with_carry_left r4
-		### r4=商
-		sh2_extend_unsigned_reg_to_reg_word r4 r4
+		div_reg_by_reg_word_sign r4 r6 r1 r2
 
 		# PRJz(r14) == Bz(r6) の時の処理を飛ばす
 		local sz_4=$(stat -c '%s' src/f_draw_plate.4.o)
@@ -597,25 +555,13 @@ f_draw_plate() {
 	(
 		# PRJz(r14) < Cz(r9) の時
 
-		# 除数(r9)を上位16ビット、下位16ビットを0に設定
-		sh2_shift_left_logical_16 r9
-
 		# 2次元座標Cx(r5) = 3次元座標Cx(r7) * PRJz(r14) / 3次元座標Cz(r9)
 		## 3次元座標Cx(r7) * PRJz(r14) -> MACL
 		sh2_multiply_reg_and_reg_unsigned_word r7 r14
 		## MACL -> r5
 		sh2_copy_to_reg_from_macl r5
 		## r5 / 3次元座標Cz(r9) -> r5
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r5 r9
-		done
-		### rotcl r5
-		sh2_rotate_with_carry_left r5
-		### r5=商
-		sh2_extend_unsigned_reg_to_reg_word r5 r5
+		div_reg_by_reg_word_sign r5 r9 r1 r2
 
 		# 2次元座標Cy(r6) = 3次元座標Cy(r8) * PRJz(r14) / 3次元座標Cz(r9)
 		## 3次元座標Cy(r8) * PRJz(r14) -> MACL
@@ -623,16 +569,7 @@ f_draw_plate() {
 		## MACL -> r6
 		sh2_copy_to_reg_from_macl r6
 		## r6 / 3次元座標Cz(r9) -> r6
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r6 r9
-		done
-		### rotcl r6
-		sh2_rotate_with_carry_left r6
-		### r6=商
-		sh2_extend_unsigned_reg_to_reg_word r6 r6
+		div_reg_by_reg_word_sign r6 r9 r1 r2
 
 		# PRJz(r14) == Cz(r9) の時の処理を飛ばす
 		local sz_6=$(stat -c '%s' src/f_draw_plate.6.o)
@@ -660,25 +597,13 @@ f_draw_plate() {
 	(
 		# PRJz(r14) < Dz(r12) の時
 
-		# 除数(r12)を上位16ビット、下位16ビットを0に設定
-		sh2_shift_left_logical_16 r12
-
 		# 2次元座標Dx(r7) = 3次元座標Dx(r10) * PRJz(r14) / 3次元座標Dz(r12)
 		## 3次元座標Dx(r10) * PRJz(r14) -> MACL
 		sh2_multiply_reg_and_reg_unsigned_word r10 r14
 		## MACL -> r7
 		sh2_copy_to_reg_from_macl r7
 		## r7 / 3次元座標Dz(r12) -> r7
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r7 r12
-		done
-		### rotcl r7
-		sh2_rotate_with_carry_left r7
-		### r7=商
-		sh2_extend_unsigned_reg_to_reg_word r7 r7
+		div_reg_by_reg_word_sign r7 r12 r1 r2
 
 		# 2次元座標Dy(r8) = 3次元座標Dy(r11) * PRJz(r14) / 3次元座標Dz(r12)
 		## 3次元座標Dy(r11) * PRJz(r14) -> MACL
@@ -686,16 +611,7 @@ f_draw_plate() {
 		## MACL -> r8
 		sh2_copy_to_reg_from_macl r8
 		## r8 / 3次元座標Dz(r12) -> r8
-		### フラグの初期化
-		sh2_divide_step0_unsigned
-		### 16回繰り返し
-		for _i in $(seq 16); do
-			sh2_divide_1step_reg_by_reg r8 r12
-		done
-		### rotcl r8
-		sh2_rotate_with_carry_left r8
-		### r8=商
-		sh2_extend_unsigned_reg_to_reg_word r8 r8
+		div_reg_by_reg_word_sign r8 r12 r1 r2
 
 		# PRJz(r14) == Dz(r12) の時の処理を飛ばす
 		local sz_8=$(stat -c '%s' src/f_draw_plate.8.o)

@@ -91,6 +91,22 @@ sh2_add_to_reg_from_reg() {
 	echo -e "add $src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
+# 第1引数のレジスタの内容と第2引数のレジスタの内容とTビットを加算し、
+# 結果を第1引数のレジスタに格納する
+# 演算の結果によってキャリをTビットに反映する
+# 32ビットを超える加算を行うとき使用する
+# 動作イメージ：
+# 第1引数レジスタ + 第2引数レジスタ + T -> 第1引数レジスタ
+# キャリ -> T
+sh2_add_with_carry_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x3${dstnum}\x${srcnum}e"	# addc $src,$dst
+	echo -e "addc $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_add_to_reg_from_val_byte() {
 	local reg=$1
 	local val=$2
@@ -124,6 +140,22 @@ sh2_compare_reg_gt_reg_unsigned() {
 	echo -e "cmp/hi $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+# 符号付き除算の初期設定をする
+# 本命令に続けて1桁分の除算をするDIV1命令などを組み合わせて、
+# 繰り返し除算を行い商を求める
+# 動作イメージ：
+# 第1引数のレジスタのMSB -> Q
+# 第2引数のレジスタのMSB -> M
+# M ^ Q -> T (T = !(M == Q))
+sh2_divide_step0_signed() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x2${regAnum}\x${regBnum}7"	# div0s $regB,$regA
+	echo -e "div0s $regB,$regA\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_divide_step0_unsigned() {
 	echo -en '\x00\x19'	# div0u
 	echo -e 'div0u\t;1' >>$ASM_LIST_FILE
@@ -138,13 +170,35 @@ sh2_divide_1step_reg_by_reg() {
 	echo -e "div1 $divisor,$dividend\t;1" >>$ASM_LIST_FILE
 }
 
-sh2_extend_unsigned_reg_to_reg_word() {
+sh2_extend_signed_to_reg_from_reg_word() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x6${dstnum}\x${srcnum}f"	# exts.w $src,$dst
+	echo -e "exts.w $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_extend_unsigned_to_reg_from_reg_word() {
 	local dst=$1
 	local src=$2
 	local dstnum=$(to_regnum $dst)
 	local srcnum=$(to_regnum $src)
 	echo -en "\x6${dstnum}\x${srcnum}d"	# extu.w $src,$dst
 	echo -e "extu.w $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
+# 2つの汎用レジスタの内容を16ビットで乗算
+# 結果の32ビットをMACLレジスタに格納
+# 演算は符号付き算術演算で行う
+# MACHの内容は変化しない
+sh2_multiply_reg_and_reg_signed_word() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x2${regAnum}\x${regBnum}f"	# muls.w $regB,$regA
+	echo -e "muls.w $regB,$regA\t;1-3" >>$ASM_LIST_FILE
 }
 
 # 2つの汎用レジスタの内容を16ビットで乗算
@@ -167,6 +221,22 @@ sh2_sub_to_reg_from_reg() {
 	local srcnum=$(to_regnum $src)
 	echo -en "\x3${dstnum}\x${srcnum}8"	# sub $src,$dst
 	echo -e "sub $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
+# 第1引数のレジスタの内容から第2引数のてジスタの内容とTビットを減算し、
+# 結果を第1引数のレジスタに格納する
+# 演算の結果によってボローをTビットに反映する
+# 32ビットを超える減算を行うとき使用する
+# 動作イメージ：
+# 第1引数のレジスタ - 第2引数のてジスタ - T -> 第1引数のレジスタ
+# ボロー -> T
+sh2_sub_with_carry_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x3${dstnum}\x${srcnum}a"	# subc $src,$dst
+	echo -e "subc $src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
 sh2_or_to_reg_from_reg() {
@@ -193,9 +263,20 @@ sh2_test_r0_and_val_byte() {
 	echo -e "tst #0x$val,r0\t;1" >>$ASM_LIST_FILE
 }
 
-# 汎用レジスタ Rn の内容を左方向に T ビットを含めて 1 ビットローテート(回転)し、
-# 結果を Rn に格納
-# ローテートしてオペランドの外に出てしまったビットは、T ビットへ転送
+sh2_xor_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x2${dstnum}\x${srcnum}a"	# xor $src,$dst
+	echo -e "xor $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
+# 引数のレジスタの内容を左方向にTビットを含めて1ビットローテート(回転)し、
+# 結果を引数のレジスタに格納
+# ローテートしてオペランドの外に出てしまったビットは、Tビットへ転送
+# 動作イメージ：
+# T <- レジスタ <- T
 sh2_rotate_with_carry_left() {
 	local reg=$1
 	local regnum=$(to_regnum $reg)
