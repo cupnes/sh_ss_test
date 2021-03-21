@@ -825,8 +825,28 @@ f_update_polygon() {
 }
 
 # 全頂点のX座標へ指定された値を加算する関数
-# in  : r2   - 加算する値
+# in  : r2 - 加算する値
+# work: r0 - 作業用
+#     : r3 - 作業用
 f_add_reg_to_all_vertices_x() {
+	# 頂点座標値が並ぶ領域の先頭アドレスをr3へ設定
+	copy_to_reg_from_val_long r3 $var_hexahedron_base
+
+	# Bx
+	local i
+	for i in A B C D E F G H; do
+		if [ "$i" != "A" ]; then
+			## アドレスを進める
+			sh2_add_to_reg_from_val_byte r3 06
+		fi
+		## 変数をr0へロード
+		sh2_copy_to_reg_from_ptr_word r0 r3
+		## r0へr2を加算
+		sh2_add_to_reg_from_reg r0 r2
+		## r0を変数へ書き戻す
+		sh2_copy_to_ptr_from_reg_word r3 r0
+	done
+
 	# return
 	sh2_return_after_next_inst
 	sh2_nop
@@ -932,6 +952,11 @@ f_update_vertex_coordinates() {
 	(
 		# 全頂点のX座標をインクリメント(左移動)
 
+		# 現在のPRをスタックへ退避
+		sh2_copy_to_reg_from_pr r0
+		sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+		sh2_copy_to_ptr_from_reg_long r15 r0
+
 		# 各頂点X座標へ加算する値(0x01)をr2へ設定
 		sh2_set_reg r2 01
 
@@ -939,6 +964,11 @@ f_update_vertex_coordinates() {
 		copy_to_reg_from_val_long r3 $a_add_reg_to_all_vertices_x
 		sh2_abs_call_to_reg_after_next_inst r3
 		sh2_nop
+
+		# PRをスタックから復帰
+		sh2_copy_to_reg_from_ptr_long r0 r15
+		sh2_add_to_reg_from_val_byte r15 04
+		sh2_copy_to_pr_from_reg r0
 	) >src/f_update_vertex_coordinates.6.o
 	local sz_6=$(stat -c '%s' src/f_update_vertex_coordinates.6.o)
 	sh2_rel_jump_if_false $(two_digits_d $((sz_6 / 2)))
@@ -954,6 +984,11 @@ f_update_vertex_coordinates() {
 	(
 		# 全頂点のX座標をデクリメント(右移動)
 
+		# 現在のPRをスタックへ退避
+		sh2_copy_to_reg_from_pr r0
+		sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+		sh2_copy_to_ptr_from_reg_long r15 r0
+
 		# 各頂点X座標へ加算する値(0x01)をr2へ設定
 		sh2_set_reg r2 $(two_comp_d 1)
 
@@ -961,6 +996,11 @@ f_update_vertex_coordinates() {
 		copy_to_reg_from_val_long r3 $a_add_reg_to_all_vertices_x
 		sh2_abs_call_to_reg_after_next_inst r3
 		sh2_nop
+
+		# PRをスタックから復帰
+		sh2_copy_to_reg_from_ptr_long r0 r15
+		sh2_add_to_reg_from_val_byte r15 04
+		sh2_copy_to_pr_from_reg r0
 	) >src/f_update_vertex_coordinates.7.o
 	local sz_7=$(stat -c '%s' src/f_update_vertex_coordinates.7.o)
 	sh2_rel_jump_if_false $(two_digits_d $((sz_7 / 2)))
