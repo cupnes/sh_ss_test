@@ -824,6 +824,14 @@ f_update_polygon() {
 	sh2_nop
 }
 
+# 全頂点のX座標へ指定された値を加算する関数
+# in  : r2   - 加算する値
+f_add_reg_to_all_vertices_x() {
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 頂点座標更新
 ## 頂点座標更新周期
 COORD_UPDATE_CYC=0a
@@ -915,6 +923,50 @@ f_update_vertex_coordinates() {
 	sh2_nop
 	cat src/f_update_vertex_coordinates.4.o
 
+	# ←の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_LEFT
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# 全頂点のX座標をインクリメント(左移動)
+
+		# 各頂点X座標へ加算する値(0x01)をr2へ設定
+		sh2_set_reg r2 01
+
+		# 全頂点のX座標へ指定された値を加算する関数を呼び出す
+		copy_to_reg_from_val_long r3 $a_add_reg_to_all_vertices_x
+		sh2_abs_call_to_reg_after_next_inst r3
+		sh2_nop
+	) >src/f_update_vertex_coordinates.6.o
+	local sz_6=$(stat -c '%s' src/f_update_vertex_coordinates.6.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_6 / 2)))
+	sh2_nop
+	cat src/f_update_vertex_coordinates.6.o
+
+	# →の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_RIGHT
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# 全頂点のX座標をデクリメント(右移動)
+
+		# 各頂点X座標へ加算する値(0x01)をr2へ設定
+		sh2_set_reg r2 $(two_comp_d 1)
+
+		# 全頂点のX座標へ指定された値を加算する関数を呼び出す
+		copy_to_reg_from_val_long r3 $a_add_reg_to_all_vertices_x
+		sh2_abs_call_to_reg_after_next_inst r3
+		sh2_nop
+	) >src/f_update_vertex_coordinates.7.o
+	local sz_7=$(stat -c '%s' src/f_update_vertex_coordinates.7.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_7 / 2)))
+	sh2_nop
+	cat src/f_update_vertex_coordinates.7.o
+
 	# return
 	sh2_return_after_next_inst
 	sh2_nop
@@ -951,10 +1003,17 @@ funcs() {
 	echo -e "a_update_polygon=$a_update_polygon" >>$map_file
 	f_update_polygon
 
-	# 頂点座標更新
+	# 全頂点のX座標へ指定された値を加算
 	f_update_polygon >src/f_update_polygon.o
 	fsz=$(to16 $(stat -c '%s' src/f_update_polygon.o))
-	a_update_vertex_coordinates=$(calc16_8 "${a_update_polygon}+${fsz}")
+	a_add_reg_to_all_vertices_x=$(calc16_8 "${a_update_polygon}+${fsz}")
+	echo -e "a_add_reg_to_all_vertices_x=$a_add_reg_to_all_vertices_x" >>$map_file
+	f_add_reg_to_all_vertices_x
+
+	# 頂点座標更新
+	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
+	fsz=$(to16 $(stat -c '%s' src/f_add_reg_to_all_vertices_x.o))
+	a_update_vertex_coordinates=$(calc16_8 "${a_add_reg_to_all_vertices_x}+${fsz}")
 	echo -e "a_update_vertex_coordinates=$a_update_vertex_coordinates" >>$map_file
 	f_update_vertex_coordinates
 }
