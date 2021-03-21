@@ -1,4 +1,4 @@
-TARGET=035_move_camera.iso
+TARGET=035_move_lr.iso
 
 all: $(TARGET)
 
