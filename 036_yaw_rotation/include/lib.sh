@@ -122,3 +122,30 @@ put_file_to_addr() {
 		sh2_add_to_reg_from_val_byte r1 01
 	done
 }
+
+# $var_sin_coeff_table の領域から
+# 引数のレジスタで指定された角度θに対するsin係数を取得する
+# ※ θは0から359の間の整数で指定すること
+# ※ r0は内部で作業用に使うため、引数で指定しないこと
+# 第1引数: 結果を格納するレジスタ
+# 第2引数: 角度θの値が格納されたレジスタ
+# 第3引数: 作業用レジスタ1(テーブルのアドレスに使用)
+# 第4引数: 作業用レジスタ2(アドレス計算に使用)
+get_sin_coeff_to_reg_for_theta() {
+	local reg_result=$1
+	local reg_theta=$2
+	local reg_table_addr=$3
+	local reg_work=$4
+
+	# $var_sin_coeff_table + ($reg_theta * 2[bytes])
+	# を $reg_table_addr へ格納
+	## $reg_theta * 2 を $reg_work へ格納
+	sh2_copy_to_reg_from_reg $reg_work $reg_theta
+	sh2_shift_left_logical $reg_work
+	## $var_sin_coeff_table + $reg_work を $reg_table_addr へ格納
+	copy_to_reg_from_val_long $reg_table_addr $var_sin_coeff_table
+	sh2_add_to_reg_from_reg $reg_table_addr $reg_work
+
+	# $reg_table_addr が指す先の値を $reg_result へ格納
+	sh2_copy_to_reg_from_ptr_word $reg_result $reg_table_addr
+}
