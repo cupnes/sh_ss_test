@@ -866,6 +866,16 @@ f_add_reg_to_all_vertices_x() {
 	sh2_nop
 }
 
+# 全頂点をY軸(Z-X平面)で指定された角度回転
+# in  : r2 - 加算する値
+# work: r0 - 作業用
+#     : r3 - 作業用
+f_rotate_reg_about_yaxis_to_all_vertices() {
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 頂点座標更新
 ## 頂点座標更新周期
 COORD_UPDATE_CYC=0a
@@ -1064,10 +1074,17 @@ funcs() {
 	echo -e "a_add_reg_to_all_vertices_x=$a_add_reg_to_all_vertices_x" >>$map_file
 	f_add_reg_to_all_vertices_x
 
-	# 頂点座標更新
+	# 全頂点をY軸(Z-X平面)で指定された角度回転
 	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
 	fsz=$(to16 $(stat -c '%s' src/f_add_reg_to_all_vertices_x.o))
-	a_update_vertex_coordinates=$(calc16_8 "${a_add_reg_to_all_vertices_x}+${fsz}")
+	a_rotate_reg_about_yaxis_to_all_vertices=$(calc16_8 "${a_add_reg_to_all_vertices_x}+${fsz}")
+	echo -e "a_rotate_reg_about_yaxis_to_all_vertices=$a_rotate_reg_about_yaxis_to_all_vertices" >>$map_file
+	f_rotate_reg_about_yaxis_to_all_vertices
+
+	# 頂点座標更新
+	f_rotate_reg_about_yaxis_to_all_vertices >src/f_rotate_reg_about_yaxis_to_all_vertices.o
+	fsz=$(to16 $(stat -c '%s' src/f_rotate_reg_about_yaxis_to_all_vertices.o))
+	a_update_vertex_coordinates=$(calc16_8 "${a_rotate_reg_about_yaxis_to_all_vertices}+${fsz}")
 	echo -e "a_update_vertex_coordinates=$a_update_vertex_coordinates" >>$map_file
 	f_update_vertex_coordinates
 }
