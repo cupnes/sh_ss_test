@@ -879,7 +879,7 @@ f_add_reg_to_all_vertices_x() {
 #     : r8 - 作業用(zsinθ)
 # ※ r1を変更しないこと
 #    (呼び出し元で押下状態を格納している)
-f_rotate_reg_about_yaxis_to_all_vertices() {
+f_rotate_right_reg_about_yaxis_to_all_vertices() {
 	# 頂点座標値が並ぶ領域の先頭アドレスをr3へ設定
 	copy_to_reg_from_val_long r3 $var_hexahedron_base
 
@@ -1108,7 +1108,7 @@ f_update_vertex_coordinates() {
 		sh2_set_reg r2 01
 
 		# 全頂点を右回転する関数を呼び出す
-		copy_to_reg_from_val_long r3 $a_rotate_reg_about_yaxis_to_all_vertices
+		copy_to_reg_from_val_long r3 $a_rotate_right_reg_about_yaxis_to_all_vertices
 		sh2_abs_call_to_reg_after_next_inst r3
 		sh2_nop
 
@@ -1168,14 +1168,14 @@ funcs() {
 	# 全頂点をY軸(Z-X平面)で指定された角度回転
 	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
 	fsz=$(to16 $(stat -c '%s' src/f_add_reg_to_all_vertices_x.o))
-	a_rotate_reg_about_yaxis_to_all_vertices=$(calc16_8 "${a_add_reg_to_all_vertices_x}+${fsz}")
-	echo -e "a_rotate_reg_about_yaxis_to_all_vertices=$a_rotate_reg_about_yaxis_to_all_vertices" >>$map_file
-	f_rotate_reg_about_yaxis_to_all_vertices
+	a_rotate_right_reg_about_yaxis_to_all_vertices=$(calc16_8 "${a_add_reg_to_all_vertices_x}+${fsz}")
+	echo -e "a_rotate_right_reg_about_yaxis_to_all_vertices=$a_rotate_right_reg_about_yaxis_to_all_vertices" >>$map_file
+	f_rotate_right_reg_about_yaxis_to_all_vertices
 
 	# 頂点座標更新
-	f_rotate_reg_about_yaxis_to_all_vertices >src/f_rotate_reg_about_yaxis_to_all_vertices.o
-	fsz=$(to16 $(stat -c '%s' src/f_rotate_reg_about_yaxis_to_all_vertices.o))
-	a_update_vertex_coordinates=$(calc16_8 "${a_rotate_reg_about_yaxis_to_all_vertices}+${fsz}")
+	f_rotate_right_reg_about_yaxis_to_all_vertices >src/f_rotate_right_reg_about_yaxis_to_all_vertices.o
+	fsz=$(to16 $(stat -c '%s' src/f_rotate_right_reg_about_yaxis_to_all_vertices.o))
+	a_update_vertex_coordinates=$(calc16_8 "${a_rotate_right_reg_about_yaxis_to_all_vertices}+${fsz}")
 	echo -e "a_update_vertex_coordinates=$a_update_vertex_coordinates" >>$map_file
 	f_update_vertex_coordinates
 }
