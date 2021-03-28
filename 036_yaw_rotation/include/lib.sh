@@ -108,6 +108,7 @@ div_reg_by_reg_word_sign() {
 	sh2_add_to_reg_from_val_byte r15 04
 }
 
+# ※ 作業用にR0,R1,R2を使用する
 put_file_to_addr() {
 	local f=$1
 	local adr=$(extend_digit $2 8)
@@ -131,6 +132,7 @@ put_file_to_addr() {
 # 第2引数: 角度θの値が格納されたレジスタ
 # 第3引数: 作業用レジスタ1(テーブルのアドレスに使用)
 # 第4引数: 作業用レジスタ2(アドレス計算に使用)
+# ※ 引数で指定する作業用レジスタは破壊される
 get_sin_coeff_to_reg_for_theta() {
 	local reg_result=$1
 	local reg_theta=$2
@@ -148,4 +150,50 @@ get_sin_coeff_to_reg_for_theta() {
 
 	# $reg_table_addr が指す先の値を $reg_result へ格納
 	sh2_copy_to_reg_from_ptr_word $reg_result $reg_table_addr
+}
+
+# sinθの掛け算を行う
+# 第1引数: 掛けられる値・結果格納のレジスタ
+# 第2引数: 掛けるsinθのθを格納したレジスタ
+# 第3引数: 作業用レジスタ1
+# 第4引数: 作業用レジスタ2
+# 第5引数: 作業用レジスタ3
+# ※ 作業用にR0を使用する
+multiply_reg_by_sintheta_signed_word() {
+	local reg_multiplicand_result=$1
+	local reg_theta=$2
+	local reg_work1=$3
+	local reg_work2=$4
+	local reg_work3=$5
+
+	# 作業用1・2・3のレジスタをスタックへ退避
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work3
+
+	# 与えられたθに対するsin係数を作業用レジスタ1へ取得
+	get_sin_coeff_to_reg_for_theta $reg_work1 $reg_theta $reg_work2 $reg_work3
+
+	# 掛けられる値 * sin係数(作業用レジスタ1)を結果格納のレジスタへ取得
+	sh2_multiply_reg_by_reg_signed_word $reg_multiplicand_result $reg_work1
+	sh2_copy_to_reg_from_macl $reg_multiplicand_result
+
+	# 掛けられる値 / 1000(0x03e8)を結果格納のレジスタへ取得
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte e8
+	infinite_loop
+	div_reg_by_reg_long_sign $reg_multiplicand_result r0 $reg_work1 $reg_work2
+	## TODO 使用例4をマクロ化
+
+	# 作業用レジスタ3・2・1をスタックから復帰
+	sh2_copy_to_reg_from_ptr_long $reg_work3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long $reg_work2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long $reg_work1 r15
+	sh2_add_to_reg_from_val_byte r15 04
 }
