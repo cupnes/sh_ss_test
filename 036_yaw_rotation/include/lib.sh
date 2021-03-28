@@ -283,3 +283,47 @@ get_cos_coeff_to_reg_for_theta() {
 	# $reg_table_addr が指す先の値を $reg_result へ格納
 	sh2_copy_to_reg_from_ptr_word $reg_result $reg_table_addr
 }
+
+# cosθの掛け算を行う
+# 第1引数: 掛けられる値・結果格納のレジスタ
+# 第2引数: 掛けるcosθのθを格納したレジスタ
+# 第3引数: 作業用レジスタ1
+# 第4引数: 作業用レジスタ2
+# 第5引数: 作業用レジスタ3
+# ※ 作業用にR0を使用する
+multiply_reg_by_costheta_signed_word() {
+	local reg_multiplicand_result=$1
+	local reg_theta=$2
+	local reg_work1=$3
+	local reg_work2=$4
+	local reg_work3=$5
+
+	# 作業用1・2・3のレジスタをスタックへ退避
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work3
+
+	# 与えられたθに対するcos係数を作業用レジスタ1へ取得
+	get_cos_coeff_to_reg_for_theta $reg_work1 $reg_theta $reg_work2 $reg_work3
+
+	# 掛けられる値 * cos係数(作業用レジスタ1)を結果格納のレジスタへ取得
+	sh2_multiply_reg_by_reg_signed_word $reg_multiplicand_result $reg_work1
+	sh2_copy_to_reg_from_macl $reg_multiplicand_result
+
+	# 掛けられる値 / 1000(0x03e8)を結果格納のレジスタへ取得
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte e8
+	div_reg_by_reg_long_sign $reg_multiplicand_result r0 $reg_work1 $reg_work2
+
+	# 作業用レジスタ3・2・1をスタックから復帰
+	sh2_copy_to_reg_from_ptr_long $reg_work3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long $reg_work2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long $reg_work1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+}
