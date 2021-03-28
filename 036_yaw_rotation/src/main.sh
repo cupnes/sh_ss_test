@@ -842,22 +842,24 @@ f_update_polygon() {
 # in  : r2 - 加算する値
 # work: r0 - 作業用
 #     : r3 - 作業用
+# ※ r1を変更しないこと
+#    (呼び出し元で押下状態を格納している)
 f_add_reg_to_all_vertices_x() {
 	# 頂点座標値が並ぶ領域の先頭アドレスをr3へ設定
 	copy_to_reg_from_val_long r3 $var_hexahedron_base
 
-	# Bx
+	# 全頂点のX座標へ加算
 	local i
 	for i in A B C D E F G H; do
 		if [ "$i" != "A" ]; then
-			## アドレスを進める
+			# アドレスを進める
 			sh2_add_to_reg_from_val_byte r3 06
 		fi
-		## 変数をr0へロード
+		# 変数をr0へロード
 		sh2_copy_to_reg_from_ptr_word r0 r3
-		## r0へr2を加算
+		# r0へr2を加算
 		sh2_add_to_reg_from_reg r0 r2
-		## r0を変数へ書き戻す
+		# r0を変数へ書き戻す
 		sh2_copy_to_ptr_from_reg_word r3 r0
 	done
 
@@ -866,11 +868,62 @@ f_add_reg_to_all_vertices_x() {
 	sh2_nop
 }
 
-# 全頂点をY軸(Z-X平面)で指定された角度回転
-# in  : r2 - 加算する値
+# 全頂点をY軸(Z-X平面)で指定された角度右回転
+# in  : r2 - 回転角度[°]
 # work: r0 - 作業用
-#     : r3 - 作業用
+#     : r3 - 作業用(X座標のアドレス)
+#     : r4 - 作業用(X座標の値, xsinθ)
+#     : r5 - 作業用(xcosθ)
+#     : r6 - 作業用(Z座標のアドレス)
+#     : r7 - 作業用(Z座標の値, zcosθ)
+#     : r8 - 作業用(zsinθ)
+# ※ r1を変更しないこと
+#    (呼び出し元で押下状態を格納している)
 f_rotate_reg_about_yaxis_to_all_vertices() {
+	# 頂点座標値が並ぶ領域の先頭アドレスをr3へ設定
+	copy_to_reg_from_val_long r3 $var_hexahedron_base
+
+	# 全頂点をY軸で回転
+	local i
+	for i in A B C D E F G H; do
+		# 回転後のX座標を取得
+		# x' = xcosθ + zsinθ
+		## X座標をr4へロード
+		sh2_copy_to_reg_from_ptr_word r4 r3
+		## x * cosθをr5へ取得
+		sh2_copy_to_reg_from_reg r5 r4
+		multiply_reg_by_costheta_signed_word r5 r2 r3 r4 r6
+		## Z座標のアドレスをr6へロード
+		sh2_copy_to_reg_from_reg r6 r3
+		sh2_add_to_reg_from_val_byte r6 04
+		## Z座標をr7へロード
+		sh2_copy_to_reg_from_ptr_word r7 r6
+		## z * sinθをr8へ取得
+		sh2_copy_to_reg_from_reg r8 r7
+		multiply_reg_by_sintheta_signed_word r8 r2 r3 r4 r5
+		## r5(xcosθ) + r8(zsinθ)をr0へ取得
+		sh2_copy_to_reg_from_reg r0 r5
+		sh2_add_to_reg_from_reg r0 r8
+		## x'(r0)でX座標(r3の指す先)を更新
+		sh2_copy_to_ptr_from_reg_word r3 r0
+
+		# 回転後のZ座標を取得
+		# z' = zcosθ - xsinθ
+		## z * cosθをr7へ取得
+		multiply_reg_by_costheta_signed_word r7 r2 r3 r4 r5
+		## x * sinθをr4へ取得
+		multiply_reg_by_sintheta_signed_word r4 r2 r3 r5 r6
+		## r7(zcosθ) - r4(xsinθ)をr7へ取得
+		sh2_sub_to_reg_from_reg r7 r4
+		## z'(r7)でZ座標(r6の指す先)を更新
+		sh2_copy_to_ptr_from_reg_word r6 r7
+
+		# アドレスを進める
+		if [ "$i" != "H" ]; then
+			sh2_add_to_reg_from_val_byte r3 06
+		fi
+	done
+
 	# return
 	sh2_return_after_next_inst
 	sh2_nop
@@ -909,7 +962,7 @@ f_update_vertex_coordinates() {
 	### 変数の値を書き戻す
 	sh2_copy_to_ptr_from_reg_byte r1 r0
 
-	# 現在の押下状態をr1へロード
+	# 現在の押下状態1をr1へロード
 	## 変数のアドレスをr1へロード
 	copy_to_reg_from_val_long r1 $var_pad_current_state_1
 	## アドレスが指す先の値をr1へロード
@@ -1030,6 +1083,44 @@ f_update_vertex_coordinates() {
 	sh2_rel_jump_if_false $(two_digits_d $((sz_7 / 2)))
 	sh2_nop
 	cat src/f_update_vertex_coordinates.7.o
+
+	# 現在の押下状態2をr1へロード
+	## 変数のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $var_pad_current_state_2
+	## アドレスが指す先の値をr1へロード
+	sh2_copy_to_reg_from_ptr_byte r1 r1
+
+	# Lの押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_L
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# 全頂点をY軸で右回転
+
+		# 現在のPRをスタックへ退避
+		sh2_copy_to_reg_from_pr r0
+		sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+		sh2_copy_to_ptr_from_reg_long r15 r0
+
+		# 回転角度をr2へ設定
+		sh2_set_reg r2 01
+
+		# 全頂点を右回転する関数を呼び出す
+		copy_to_reg_from_val_long r3 $a_rotate_reg_about_yaxis_to_all_vertices
+		sh2_abs_call_to_reg_after_next_inst r3
+		sh2_nop
+
+		# PRをスタックから復帰
+		sh2_copy_to_reg_from_ptr_long r0 r15
+		sh2_add_to_reg_from_val_byte r15 04
+		sh2_copy_to_pr_from_reg r0
+	) >src/f_update_vertex_coordinates.8.o
+	local sz_8=$(stat -c '%s' src/f_update_vertex_coordinates.8.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_8 / 2)))
+	sh2_nop
+	cat src/f_update_vertex_coordinates.8.o
 
 	# return
 	sh2_return_after_next_inst
