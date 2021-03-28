@@ -99,7 +99,67 @@ div_reg_by_reg_word_sign() {
 	# reg_dividend_result=商(2の補数表現)
 	sh2_extend_signed_to_reg_from_reg_word $reg_dividend_result $reg_dividend_result
 
-	# 作業用レジスタ2・1をスタックから復帰
+	# 作業用レジスタ2・1と除数をスタックから復帰
+	sh2_copy_to_reg_from_ptr_long $reg_work2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long $reg_work1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long $reg_divisor r15
+	sh2_add_to_reg_from_val_byte r15 04
+}
+
+# SH-1/SH-2/SH-DSP ソフトウェアマニュアル
+# - 6.1.18 DIV1(DIVide 1 step)
+#   - (6) 使用例 4
+# をマクロ化
+# 第1引数: 被除数と計算結果の商に使うレジスタ(使用例のR2)
+# 第2引数: 除数に使うレジスタ(使用例のR0)
+# 第3引数: 作業用レジスタ1(使用例のR1)
+# 第4引数: 作業用レジスタ2(使用例のR3)
+div_reg_by_reg_long_sign() {
+	local reg_dividend_result=$1
+	local reg_divisor=$2
+	local reg_work1=$3
+	local reg_work2=$4
+
+	# 除数・作業用1・2のレジスタをスタックへ退避
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_divisor
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 $reg_work2
+
+	sh2_copy_to_reg_from_reg $reg_work2 $reg_dividend_result
+	sh2_rotate_with_carry_left $reg_work2
+
+	# 被除数は符号拡張して 64 ビット(reg_work1:reg_dividend_result)
+	sh2_sub_with_carry_to_reg_from_reg $reg_work1 $reg_work1
+
+	# reg_work2=0
+	sh2_xor_to_reg_from_reg $reg_work2 $reg_work2
+
+	# 被除数が負のとき、-1 して 1 の補数表現に変換
+	sh2_sub_with_carry_to_reg_from_reg $reg_dividend_result $reg_work2
+
+	# フラグの初期化
+	sh2_divide_step0_signed $reg_work1 $reg_divisor
+
+	# 32回繰り返し
+	local _i
+	for _i in $(seq 32); do
+		sh2_rotate_with_carry_left $reg_dividend_result
+		sh2_divide_1step_reg_by_reg $reg_work1 $reg_divisor
+	done
+
+	# reg_dividend_result=商(1 の補数表現)
+	sh2_rotate_with_carry_left $reg_dividend_result
+
+	# 商の MSB が 1 のとき、+1 して 2 の補数表現に変換
+	# reg_dividend_result=商(2 の補数表現)
+	sh2_add_with_carry_to_reg_from_reg $reg_dividend_result $reg_work2
+
+	# 作業用レジスタ2・1と除数をスタックから復帰
 	sh2_copy_to_reg_from_ptr_long $reg_work2 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	sh2_copy_to_reg_from_ptr_long $reg_work1 r15
@@ -185,9 +245,7 @@ multiply_reg_by_sintheta_signed_word() {
 	sh2_set_reg r0 03
 	sh2_shift_left_logical_8 r0
 	sh2_or_to_r0_from_val_byte e8
-	infinite_loop
 	div_reg_by_reg_long_sign $reg_multiplicand_result r0 $reg_work1 $reg_work2
-	## TODO 使用例4をマクロ化
 
 	# 作業用レジスタ3・2・1をスタックから復帰
 	sh2_copy_to_reg_from_ptr_long $reg_work3 r15
