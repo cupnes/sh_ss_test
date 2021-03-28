@@ -28,13 +28,18 @@ vars() {
 	var_sin_coeff_table=$VARS_BASE
 	echo -e "var_sin_coeff_table=$var_sin_coeff_table" >>$map_file
 	cat sin_coeff_table.dat
+	## N * cosθ を (N * 係数) / 1000 で計算する係数のテーブル
+	vsz=$(to16 $(stat -c '%s' sin_coeff_table.dat))
+	var_cos_coeff_table=$(calc16_8 "${var_sin_coeff_table}+${vsz}")
+	echo -e "var_cos_coeff_table=$var_cos_coeff_table" >>$map_file
+	cat cos_coeff_table.dat
 
 	# ゲームパッド入力状態
 	## 現在の押下状態
 	## (押下時0)
 	### → ← ↓ ↑ Start A C B
-	vsz=$(to16 $(stat -c '%s' sin_coeff_table.dat))
-	var_pad_current_state_1=$(calc16_8 "${var_sin_coeff_table}+${vsz}")
+	vsz=$(to16 $(stat -c '%s' cos_coeff_table.dat))
+	var_pad_current_state_1=$(calc16_8 "${var_cos_coeff_table}+${vsz}")
 	echo -e "var_pad_current_state_1=$var_pad_current_state_1" >>$map_file
 	echo -en '\xff'
 	### R X Y Z L (bit2-0: 予約)

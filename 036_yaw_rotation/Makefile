@@ -5,11 +5,14 @@ all: $(TARGET)
 $(TARGET): 0.BIN
 	./iso9660.sh $< >$@
 
-0.BIN: sin_coeff_table.dat
+0.BIN: sin_coeff_table.dat cos_coeff_table.dat
 	src/main.sh >$@
 
 sin_coeff_table.dat:
 	../tools/dump_sin_coeff_table.sh >$@
+
+cos_coeff_table.dat:
+	../tools/dump_cos_coeff_table.sh >$@
 
 run: $(TARGET)
 	yabause -a -i $<
