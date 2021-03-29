@@ -20,6 +20,12 @@ MAIN_BASE=06010000
 map_file=map.sh
 rm -f $map_file
 
+debug() {
+	echo "## [$(date '+%T')] $1" >&2
+}
+
+debug 'before: vars()'
+
 vars() {
 	local vsz
 
@@ -1220,68 +1226,73 @@ f_update_vertex_coordinates() {
 	sh2_nop
 }
 
+debug 'before: funcs()'
+
 funcs() {
 	local fsz
 
 	# ゲームパッドの入力状態更新
 	a_update_gamepad_input_status=$FUNCS_BASE
 	echo -e "a_update_gamepad_input_status=$a_update_gamepad_input_status" >>$map_file
-	f_update_gamepad_input_status
+	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
+	cat src/f_update_gamepad_input_status.o
 
 	# 指定された4頂点・カラーのポリゴンを描画するコマンドを
 	# 指定されたアドレスへ配置
-	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
 	fsz=$(to16 $(stat -c '%s' src/f_update_gamepad_input_status.o))
 	a_put_vdp1_command_polygon_draw_to_addr=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
 	echo -e "a_put_vdp1_command_polygon_draw_to_addr=$a_put_vdp1_command_polygon_draw_to_addr" >>$map_file
-	f_put_vdp1_command_polygon_draw_to_addr
+	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
+	cat src/f_put_vdp1_command_polygon_draw_to_addr.o
 
 	# 4つの3次元座標で指定された平面を指定されたカラーで
 	# 指定されたアドレスへ描画
-	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
 	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_polygon_draw_to_addr.o))
 	a_draw_plate=$(calc16_8 "${a_put_vdp1_command_polygon_draw_to_addr}+${fsz}")
 	echo -e "a_draw_plate=$a_draw_plate" >>$map_file
-	f_draw_plate
+	f_draw_plate >src/f_draw_plate.o
+	cat src/f_draw_plate.o
 
 	# ポリゴン描画コマンドの更新
-	f_draw_plate >src/f_draw_plate.o
 	fsz=$(to16 $(stat -c '%s' src/f_draw_plate.o))
 	a_update_polygon=$(calc16_8 "${a_draw_plate}+${fsz}")
 	echo -e "a_update_polygon=$a_update_polygon" >>$map_file
-	f_update_polygon
+	f_update_polygon >src/f_update_polygon.o
+	cat src/f_update_polygon.o
 
 	# 全頂点のX座標へ指定された値を加算
-	f_update_polygon >src/f_update_polygon.o
 	fsz=$(to16 $(stat -c '%s' src/f_update_polygon.o))
 	a_add_reg_to_all_vertices_x=$(calc16_8 "${a_update_polygon}+${fsz}")
 	echo -e "a_add_reg_to_all_vertices_x=$a_add_reg_to_all_vertices_x" >>$map_file
-	f_add_reg_to_all_vertices_x
+	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
+	cat src/f_add_reg_to_all_vertices_x.o
 
 	# 全頂点をY軸(Z-X平面)で指定された角度右回転
-	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
 	fsz=$(to16 $(stat -c '%s' src/f_add_reg_to_all_vertices_x.o))
 	a_rotate_right_reg_about_yaxis_to_all_vertices=$(calc16_8 "${a_add_reg_to_all_vertices_x}+${fsz}")
 	echo -e "a_rotate_right_reg_about_yaxis_to_all_vertices=$a_rotate_right_reg_about_yaxis_to_all_vertices" >>$map_file
-	f_rotate_right_reg_about_yaxis_to_all_vertices
+	f_rotate_right_reg_about_yaxis_to_all_vertices >src/f_rotate_right_reg_about_yaxis_to_all_vertices.o
+	cat src/f_rotate_right_reg_about_yaxis_to_all_vertices.o
 
 	# 全頂点をY軸(Z-X平面)で指定された角度左回転
-	f_rotate_right_reg_about_yaxis_to_all_vertices >src/f_rotate_right_reg_about_yaxis_to_all_vertices.o
 	fsz=$(to16 $(stat -c '%s' src/f_rotate_right_reg_about_yaxis_to_all_vertices.o))
 	a_rotate_left_reg_about_yaxis_to_all_vertices=$(calc16_8 "${a_rotate_right_reg_about_yaxis_to_all_vertices}+${fsz}")
 	echo -e "a_rotate_left_reg_about_yaxis_to_all_vertices=$a_rotate_left_reg_about_yaxis_to_all_vertices" >>$map_file
-	f_rotate_left_reg_about_yaxis_to_all_vertices
+	f_rotate_left_reg_about_yaxis_to_all_vertices >src/f_rotate_left_reg_about_yaxis_to_all_vertices.o
+	cat src/f_rotate_left_reg_about_yaxis_to_all_vertices.o
 
 	# 頂点座標更新
-	f_rotate_left_reg_about_yaxis_to_all_vertices >src/f_rotate_left_reg_about_yaxis_to_all_vertices.o
 	fsz=$(to16 $(stat -c '%s' src/f_rotate_left_reg_about_yaxis_to_all_vertices.o))
 	a_update_vertex_coordinates=$(calc16_8 "${a_rotate_left_reg_about_yaxis_to_all_vertices}+${fsz}")
 	echo -e "a_update_vertex_coordinates=$a_update_vertex_coordinates" >>$map_file
-	f_update_vertex_coordinates
+	f_update_vertex_coordinates >src/f_update_vertex_coordinates.o
+	cat src/f_update_vertex_coordinates.o
 }
 # 変数設定のために空実行
 funcs >/dev/null
 rm -f $map_file
+
+debug 'after: funcs()'
 
 # コマンドテーブル設定
 setup_vram_command_table() {
@@ -1306,6 +1317,8 @@ setup_vram_command_table() {
 	sh2_abs_call_to_reg_after_next_inst r1
 	sh2_nop
 }
+
+debug 'before: main()'
 
 main() {
 	# スタックポインタ(r15)の初期化
@@ -1412,10 +1425,14 @@ main() {
 	sh2_nop
 }
 
+debug 'before: make_bin()'
+
 make_bin() {
 	local file_sz
 	local area_sz
 	local pad_sz
+
+	debug 'before: src/jmp_main.o'
 
 	# メインプログラム領域へジャンプ(30バイト)
 	(
@@ -1425,6 +1442,8 @@ make_bin() {
 	) >src/jmp_main.o
 	cat src/jmp_main.o
 
+	debug 'before: src/vars.o'
+
 	# 変数領域
 	vars >src/vars.o
 	cat src/vars.o
@@ -1432,6 +1451,8 @@ make_bin() {
 	area_sz=$(echo "ibase=16;$FUNCS_BASE - $VARS_BASE" | bc)
 	pad_sz=$((area_sz - file_sz))
 	dd if=/dev/zero bs=1 count=$pad_sz
+
+	debug 'before: src/funcs.o'
 
 	# 関数領域
 	funcs >src/funcs.o
@@ -1441,8 +1462,14 @@ make_bin() {
 	pad_sz=$((area_sz - file_sz))
 	dd if=/dev/zero bs=1 count=$pad_sz
 
+	debug 'before: main'
+
 	# メインプログラム領域
 	main
+
+	debug 'after: main'
 }
 
+debug 'before: make_bin'
 make_bin
+debug 'after: make_bin'
