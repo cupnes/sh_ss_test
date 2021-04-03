@@ -898,7 +898,7 @@ f_rotate_right_reg_about_yaxis_to_all_vertices() {
 		sh2_copy_to_reg_from_ptr_word r4 r3
 		## x * cosθをr5へ取得
 		sh2_copy_to_reg_from_reg r5 r4
-		multiply_reg_by_costheta_signed_word r5 r2 r3 r4 r6
+		multiply_reg_by_costheta_signed_long r5 r2 r3 r4 r6
 		## Z座標のアドレスをr6へロード
 		sh2_copy_to_reg_from_reg r6 r3
 		sh2_add_to_reg_from_val_byte r6 04
@@ -906,7 +906,7 @@ f_rotate_right_reg_about_yaxis_to_all_vertices() {
 		sh2_copy_to_reg_from_ptr_word r7 r6
 		## z * sinθをr8へ取得
 		sh2_copy_to_reg_from_reg r8 r7
-		multiply_reg_by_sintheta_signed_word r8 r2 r3 r4 r5
+		multiply_reg_by_sintheta_signed_long r8 r2 r3 r4 r5
 		## r5(xcosθ) + r8(zsinθ)をr0へ取得
 		sh2_copy_to_reg_from_reg r0 r5
 		sh2_add_to_reg_from_reg r0 r8
@@ -916,9 +916,9 @@ f_rotate_right_reg_about_yaxis_to_all_vertices() {
 		# 回転後のZ座標を取得
 		# z' = zcosθ - xsinθ
 		## z * cosθをr7へ取得
-		multiply_reg_by_costheta_signed_word r7 r2 r3 r4 r5
+		multiply_reg_by_costheta_signed_long r7 r2 r3 r4 r5
 		## x * sinθをr4へ取得
-		multiply_reg_by_sintheta_signed_word r4 r2 r3 r5 r6
+		multiply_reg_by_sintheta_signed_long r4 r2 r3 r5 r6
 		## r7(zcosθ) - r4(xsinθ)をr7へ取得
 		sh2_sub_to_reg_from_reg r7 r4
 		## z'(r7)でZ座標(r6の指す先)を更新
@@ -959,7 +959,7 @@ f_rotate_left_reg_about_yaxis_to_all_vertices() {
 		sh2_copy_to_reg_from_ptr_word r4 r3
 		## x * cosθをr5へ取得
 		sh2_copy_to_reg_from_reg r5 r4
-		multiply_reg_by_costheta_signed_word r5 r2 r3 r4 r6
+		multiply_reg_by_costheta_signed_long r5 r2 r3 r4 r6
 		## Z座標のアドレスをr6へロード
 		sh2_copy_to_reg_from_reg r6 r3
 		sh2_add_to_reg_from_val_byte r6 04
@@ -967,7 +967,7 @@ f_rotate_left_reg_about_yaxis_to_all_vertices() {
 		sh2_copy_to_reg_from_ptr_word r7 r6
 		## z * sinθをr8へ取得
 		sh2_copy_to_reg_from_reg r8 r7
-		multiply_reg_by_sintheta_signed_word r8 r2 r3 r4 r5
+		multiply_reg_by_sintheta_signed_long r8 r2 r3 r4 r5
 		## r5(xcosθ) + r8(zsinθ)をr0へ取得
 		sh2_copy_to_reg_from_reg r0 r5
 		sh2_add_to_reg_from_reg r0 r8
@@ -977,9 +977,9 @@ f_rotate_left_reg_about_yaxis_to_all_vertices() {
 		# 回転後のX座標を取得
 		# x' = xsinθ - zcosθ
 		## z * cosθをr7へ取得
-		multiply_reg_by_costheta_signed_word r7 r2 r3 r4 r5
+		multiply_reg_by_costheta_signed_long r7 r2 r3 r4 r5
 		## x * sinθをr4へ取得
-		multiply_reg_by_sintheta_signed_word r4 r2 r3 r5 r6
+		multiply_reg_by_sintheta_signed_long r4 r2 r3 r5 r6
 		## r4(xsinθ) - r7(zcosθ)をr4へ取得
 		sh2_sub_to_reg_from_reg r4 r7
 		## x'(r4)でX座標(r3の指す先)を更新

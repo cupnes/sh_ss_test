@@ -12,6 +12,7 @@ INCLUDE_LIB_SH=true
 var_sin_coeff_table=0
 
 PI_FORM='(4 * a(1))'
+SINCOS_COEFF_M=000346DC	# 214748
 
 infinite_loop() {
 	sh2_sleep
@@ -199,17 +200,18 @@ get_sin_coeff_to_reg_for_theta() {
 	local reg_table_addr=$3
 	local reg_work=$4
 
-	# $var_sin_coeff_table + ($reg_theta * 2[bytes])
+	# $var_sin_coeff_table + ($reg_theta * 4[bytes])
 	# を $reg_table_addr へ格納
-	## $reg_theta * 2 を $reg_work へ格納
+	## $reg_theta * 4 を $reg_work へ格納
 	sh2_copy_to_reg_from_reg $reg_work $reg_theta
+	sh2_shift_left_logical $reg_work
 	sh2_shift_left_logical $reg_work
 	## $var_sin_coeff_table + $reg_work を $reg_table_addr へ格納
 	copy_to_reg_from_val_long $reg_table_addr $var_sin_coeff_table
 	sh2_add_to_reg_from_reg $reg_table_addr $reg_work
 
 	# $reg_table_addr が指す先の値を $reg_result へ格納
-	sh2_copy_to_reg_from_ptr_word $reg_result $reg_table_addr
+	sh2_copy_to_reg_from_ptr_long $reg_result $reg_table_addr
 }
 
 # sinθの掛け算を行う
@@ -219,7 +221,7 @@ get_sin_coeff_to_reg_for_theta() {
 # 第4引数: 作業用レジスタ2
 # 第5引数: 作業用レジスタ3
 # ※ 作業用にR0を使用する
-multiply_reg_by_sintheta_signed_word() {
+multiply_reg_by_sintheta_signed_long() {
 	local reg_multiplicand_result=$1
 	local reg_theta=$2
 	local reg_work1=$3
@@ -238,14 +240,12 @@ multiply_reg_by_sintheta_signed_word() {
 	get_sin_coeff_to_reg_for_theta $reg_work1 $reg_theta $reg_work2 $reg_work3
 
 	# 掛けられる値 * sin係数(作業用レジスタ1)を結果格納のレジスタへ取得
-	sh2_multiply_reg_by_reg_signed_word $reg_multiplicand_result $reg_work1
+	sh2_multiply_reg_by_reg_signed_long $reg_multiplicand_result $reg_work1
 	sh2_copy_to_reg_from_macl $reg_multiplicand_result
 
-	# 掛けられる値 / 1000(0x03e8)を結果格納のレジスタへ取得
-	sh2_set_reg r0 03
-	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte e8
-	div_reg_by_reg_long_sign $reg_multiplicand_result r0 $reg_work1 $reg_work2
+	# 掛けられる値 / SINCOS_COEFF_M を結果格納のレジスタへ取得
+	copy_to_reg_from_val_long $reg_work1 $SINCOS_COEFF_M
+	div_reg_by_reg_long_sign $reg_multiplicand_result $reg_work1 $reg_work2 $reg_work3
 
 	# 作業用レジスタ3・2・1をスタックから復帰
 	sh2_copy_to_reg_from_ptr_long $reg_work3 r15
@@ -271,17 +271,18 @@ get_cos_coeff_to_reg_for_theta() {
 	local reg_table_addr=$3
 	local reg_work=$4
 
-	# $var_cos_coeff_table + ($reg_theta * 2[bytes])
+	# $var_cos_coeff_table + ($reg_theta * 4[bytes])
 	# を $reg_table_addr へ格納
-	## $reg_theta * 2 を $reg_work へ格納
+	## $reg_theta * 4 を $reg_work へ格納
 	sh2_copy_to_reg_from_reg $reg_work $reg_theta
+	sh2_shift_left_logical $reg_work
 	sh2_shift_left_logical $reg_work
 	## $var_cos_coeff_table + $reg_work を $reg_table_addr へ格納
 	copy_to_reg_from_val_long $reg_table_addr $var_cos_coeff_table
 	sh2_add_to_reg_from_reg $reg_table_addr $reg_work
 
 	# $reg_table_addr が指す先の値を $reg_result へ格納
-	sh2_copy_to_reg_from_ptr_word $reg_result $reg_table_addr
+	sh2_copy_to_reg_from_ptr_long $reg_result $reg_table_addr
 }
 
 # cosθの掛け算を行う
@@ -291,7 +292,7 @@ get_cos_coeff_to_reg_for_theta() {
 # 第4引数: 作業用レジスタ2
 # 第5引数: 作業用レジスタ3
 # ※ 作業用にR0を使用する
-multiply_reg_by_costheta_signed_word() {
+multiply_reg_by_costheta_signed_long() {
 	local reg_multiplicand_result=$1
 	local reg_theta=$2
 	local reg_work1=$3
@@ -310,14 +311,12 @@ multiply_reg_by_costheta_signed_word() {
 	get_cos_coeff_to_reg_for_theta $reg_work1 $reg_theta $reg_work2 $reg_work3
 
 	# 掛けられる値 * cos係数(作業用レジスタ1)を結果格納のレジスタへ取得
-	sh2_multiply_reg_by_reg_signed_word $reg_multiplicand_result $reg_work1
+	sh2_multiply_reg_by_reg_signed_long $reg_multiplicand_result $reg_work1
 	sh2_copy_to_reg_from_macl $reg_multiplicand_result
 
-	# 掛けられる値 / 1000(0x03e8)を結果格納のレジスタへ取得
-	sh2_set_reg r0 03
-	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte e8
-	div_reg_by_reg_long_sign $reg_multiplicand_result r0 $reg_work1 $reg_work2
+	# 掛けられる値 / SINCOS_COEFF_M を結果格納のレジスタへ取得
+	copy_to_reg_from_val_long $reg_work1 $SINCOS_COEFF_M
+	div_reg_by_reg_long_sign $reg_multiplicand_result $reg_work1 $reg_work2 $reg_work3
 
 	# 作業用レジスタ3・2・1をスタックから復帰
 	sh2_copy_to_reg_from_ptr_long $reg_work3 r15

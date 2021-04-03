@@ -188,6 +188,18 @@ sh2_extend_unsigned_to_reg_from_reg_word() {
 	echo -e "extu.w $src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
+# 2つの汎用レジスタの内容を32ビットで乗算
+# 結果の下位側32ビットをMACLレジスタに格納
+# MACHの内容は変化しない
+sh2_multiply_reg_by_reg_signed_long() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x0${regAnum}\x${regBnum}7"	# mul.l $regB,$regA
+	echo -e "mul.l $regB,$regA\t;2-4" >>$ASM_LIST_FILE
+}
+
 # 2つの汎用レジスタの内容を16ビットで乗算
 # 結果の32ビットをMACLレジスタに格納
 # 演算は符号付き算術演算で行う

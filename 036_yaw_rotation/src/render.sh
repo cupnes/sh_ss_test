@@ -5,6 +5,7 @@ RENDER_SH=true
 
 . include/common.sh
 . include/sh2.sh
+. include/ss.sh
 
 # 指定された投影面座標(PRJx,PRJy)をゲームスクリーン座標(GSx,GSy)へ変換
 # GSx = PRJx + (SCREEN_WIDTH / 2)
