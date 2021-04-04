@@ -9,6 +9,7 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 . src/render.sh
+. src/debug.sh
 
 VRAM_DRAW_CMD_BASE=05c00060
 INIT_SP=06004000
@@ -19,10 +20,6 @@ MAIN_BASE=06010000
 
 map_file=map.sh
 rm -f $map_file
-
-debug() {
-	echo "## [$(date '+%T')] $1" >&2
-}
 
 debug 'before: vars()'
 
@@ -58,9 +55,14 @@ vars() {
 	echo -e "var_proj_z=$var_proj_z" >>$map_file
 	echo -en '\x00\x64'	# 100
 
+	# 現在のカメラ座標系のY軸旋回角度
+	var_rotation_angle_y=$(calc16_8 "$var_proj_z+2")
+	echo -e "var_rotation_angle_y=$var_rotation_angle_y" >>$map_file
+	echo -en '\x00\x00'	# 0
+
 	# 六面体の8頂点の3次元座標
 	## 頂点座標が並ぶ領域のベースアドレス
-	var_hexahedron_base=$(calc16_8 "$var_proj_z+2")
+	var_hexahedron_base=$(calc16_8 "$var_rotation_angle_y+2")
 	echo -e "var_hexahedron_base=$var_hexahedron_base" >>$map_file
 	## 頂点A(正面左上)
 	### X (base+0x00)
@@ -277,6 +279,141 @@ f_update_gamepad_input_status() {
 	sh2_nop
 }
 
+# 指定された2次元座標の原点からの距離を算出
+# in  : r5  - 1軸目の値
+#       r7  - 2軸目の値
+# out : r5  - 結果の距離
+# work: r0  - 作業用
+#       r6  - 作業用
+f_calc_distance_2d() {
+	# 戻り値とr0以外で書き換えるレジスタをスタックへ退避
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r7
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r6
+
+	# 1軸目の値(r5)の絶対値をr5へ格納
+	## r5 >= 0 ?
+	sh2_xor_to_reg_from_reg r0 r0
+	sh2_compare_reg_ge_reg_signed r5 r0
+	## trueだったら後続処理を飛ばす
+	(
+		# r5 *= -1
+		sh2_set_reg r0 ff	# -1
+		sh2_multiply_reg_by_reg_signed_word r5 r0
+		sh2_copy_to_reg_from_macl r5
+	) >src/f_calc_distance_2d.1.o
+	local sz_1=$(stat -c '%s' src/f_calc_distance_2d.1.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_calc_distance_2d.1.o
+
+	# 2軸目の値(r7)の絶対値をr7へ格納
+	## r7 >= 0 ?
+	sh2_xor_to_reg_from_reg r0 r0
+	sh2_compare_reg_ge_reg_signed r7 r0
+	## trueだったら後続処理を飛ばす
+	(
+		# r7 *= -1
+		sh2_set_reg r0 ff	# -1
+		sh2_multiply_reg_by_reg_signed_word r7 r0
+		sh2_copy_to_reg_from_macl r7
+	) >src/f_calc_distance_2d.2.o
+	local sz_2=$(stat -c '%s' src/f_calc_distance_2d.2.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_2 / 2)))
+	sh2_nop
+	cat src/f_calc_distance_2d.2.o
+
+	# r5 >= r7 となるようにする
+	# (そうでないなら値を入れ替える)
+	## r5 >= r7 ?
+	sh2_compare_reg_ge_reg_unsigned r5 r7
+	## trueだったら後続処理を飛ばす
+	(
+		# r5とr7の値を入れ替える
+		## r0 <- r5
+		sh2_copy_to_reg_from_reg r0 r5
+		## r5 <- r7
+		sh2_copy_to_reg_from_reg r5 r7
+		## r7 <- r0
+		sh2_copy_to_reg_from_reg r7 r0
+	) >src/f_calc_distance_2d.3.o
+	local sz_3=$(stat -c '%s' src/f_calc_distance_2d.3.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_3 / 2)))
+	sh2_nop
+	cat src/f_calc_distance_2d.3.o
+
+	# (2 * r5) < (5 * r7) ?
+	## r6 = 2 * r5
+	sh2_set_reg r6 02
+	sh2_multiply_reg_by_reg_unsigned_word r6 r5
+	sh2_copy_to_reg_from_macl r6
+	## r0 = 5 * r7
+	sh2_set_reg r0 05
+	sh2_multiply_reg_by_reg_unsigned_word r0 r7
+	sh2_copy_to_reg_from_macl r0
+	## r0 > r6 ?
+	sh2_compare_reg_gt_reg_unsigned r0 r6
+	(
+		# trueの場合
+		## r5 *= 864(0x0360)
+		sh2_set_reg r0 03
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_r0_from_val_byte 60
+		sh2_multiply_reg_by_reg_signed_long r5 r0
+		## r7 *= 569(0x0239)
+		sh2_set_reg r0 02
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_r0_from_val_byte 39
+		sh2_multiply_reg_by_reg_signed_long r7 r0
+	) >src/f_calc_distance_2d.4.o
+	(
+		# falseの場合
+		## r5 *= 1016(0x03f8)
+		sh2_set_reg r0 03
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_r0_from_val_byte f8
+		sh2_multiply_reg_by_reg_signed_long r5 r0
+		## r7 *= 190(0x00be)
+		sh2_set_reg r0 00
+		sh2_or_to_r0_from_val_byte be
+		sh2_multiply_reg_by_reg_signed_long r7 r0
+
+		# trueの場合の処理を飛ばす
+		local sz_4=$(stat -c '%s' src/f_calc_distance_2d.4.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_4 / 2))) 3)
+		sh2_nop
+	) >src/f_calc_distance_2d.5.o
+	## trueだったらジャンプ
+	local sz_5=$(stat -c '%s' src/f_calc_distance_2d.5.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_5 / 2)))
+	sh2_nop
+	cat src/f_calc_distance_2d.5.o	# falseの場合
+	cat src/f_calc_distance_2d.4.o	# trueの場合
+	## r5 += r7
+	sh2_add_to_reg_from_reg r5 r7
+
+	# r5 = (r5 + 512) / 1024
+	## r5 += 512(0x0200)
+	sh2_set_reg r0 02
+	sh2_shift_left_logical_8 r0
+	sh2_add_to_reg_from_reg r5 r0
+	## r5 /= 1024(0x0400)
+	sh2_set_reg r0 04
+	sh2_shift_left_logical_8 r0
+	div_reg_by_reg_long_sign r5 r0 r7 r6
+
+	# 使用したレジスタをスタックから復帰
+	sh2_copy_to_reg_from_ptr_long r6 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_reg_from_ptr_long r7 r15
+	sh2_add_to_reg_from_val_byte r15 04
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 指定された4頂点・カラーのポリゴンを描画するコマンドを
 # 指定されたアドレスへ配置
 # in  : r1  - Ax
@@ -441,6 +578,9 @@ f_draw_plate() {
 	copy_to_reg_from_val_long r14 $var_proj_z
 	sh2_copy_to_reg_from_ptr_word r14 r14
 
+	# [debug] 無限ループ
+	# infinite_loop
+
 	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
 	# 何もせずreturn
 	(
@@ -502,6 +642,9 @@ f_draw_plate() {
 	sh2_nop
 	cat src/f_draw_plate.2.o	# PRJz(r14) < Az(r3) の時
 	# この時点でポリゴン描画の頂点Aの座標(Ax,Ay)を(r1,r2)へ設定完了
+
+	# [debug] 無限ループ
+	# infinite_loop
 
 	## PRJz(r14) == Bz(r6)?
 	sh2_compare_reg_eq_reg r14 r6
@@ -675,6 +818,9 @@ f_update_polygon() {
 	copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r1
+
+	# [debug] 無限ループ
+	# infinite_loop
 
 	# 05c00060
 	# 上面ポリゴン
@@ -913,6 +1059,9 @@ f_rotate_right_reg_about_yaxis_to_all_vertices() {
 		## x'(r0)でX座標(r3の指す先)を更新
 		sh2_copy_to_ptr_from_reg_word r3 r0
 
+		# # [debug] AX == 0かチェック
+		# debug_stop_if_ax_eq_0
+
 		# 回転後のZ座標を取得
 		# z' = zcosθ - xsinθ
 		## z * cosθをr7へ取得
@@ -938,52 +1087,67 @@ f_rotate_right_reg_about_yaxis_to_all_vertices() {
 # 全頂点をY軸(Z-X平面)で指定された角度左回転
 # in  : r2 - 回転角度[°]
 # work: r0 - 作業用
-#     : r3 - 作業用(X座標のアドレス)
-#     : r4 - 作業用(X座標の値, xsinθ)
-#     : r5 - 作業用(xcosθ)
-#     : r6 - 作業用(Z座標のアドレス)
-#     : r7 - 作業用(Z座標の値, zcosθ)
-#     : r8 - 作業用(zsinθ)
+#     : r3 - 作業用(Y軸旋回角度のアドレス)
+#     : r4 - 作業用(Y軸旋回角度の値)
+#     : r5 - 作業用
+#     : r6 - 作業用
+#     : r7 - 作業用
+#     : r8 - 作業用
 # ※ r1を変更しないこと
 #    (呼び出し元で押下状態を格納している)
 f_rotate_left_reg_about_yaxis_to_all_vertices() {
+	# Y軸旋回角度へ回転角度を加算
+	## 変数のアドレスをr3へ設定
+	copy_to_reg_from_val_long r3 $var_rotation_angle_y
+	## Y軸旋回角度をr4へロード
+	sh2_copy_to_reg_from_ptr_word r4 r3
+	## r4へ回転角度r2を加算
+	sh2_add_to_reg_from_reg r4 r2
+	## r4 >= 360(0x0168) ?
+	sh2_set_reg r0 01
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte 68
+	sh2_compare_reg_ge_reg_unsigned r4 r0
+	## falseだったら後続処理を飛ばす
+	(
+		# r4 -= 360(0x0168)
+		sh2_sub_to_reg_from_reg r4 r0
+	) >src/f_rotate_left_reg_about_yaxis_to_all_vertices.1.o
+	local sz_1=$(stat -c '%s' src/f_rotate_left_reg_about_yaxis_to_all_vertices.1.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_rotate_left_reg_about_yaxis_to_all_vertices.1.o
+	## r4を変数へ書き戻す
+	sh2_copy_to_ptr_from_reg_word r3 r4
+
 	# 頂点座標値が並ぶ領域の先頭アドレスをr3へ設定
 	copy_to_reg_from_val_long r3 $var_hexahedron_base
 
 	# 全頂点をY軸で回転
 	local i
 	for i in A B C D E F G H; do
-		# 回転後のZ座標を取得
-		# z' = xcosθ + zsinθ
-		## X座標をr4へロード
-		sh2_copy_to_reg_from_ptr_word r4 r3
-		## x * cosθをr5へ取得
-		sh2_copy_to_reg_from_reg r5 r4
-		multiply_reg_by_costheta_signed_long r5 r2 r3 r4 r6
+		# 原点から頂点への距離rをr5へ取得
+		## X座標をr5へロード
+		sh2_copy_to_reg_from_ptr_word r5 r3
 		## Z座標のアドレスをr6へロード
 		sh2_copy_to_reg_from_reg r6 r3
 		sh2_add_to_reg_from_val_byte r6 04
 		## Z座標をr7へロード
 		sh2_copy_to_reg_from_ptr_word r7 r6
-		## z * sinθをr8へ取得
-		sh2_copy_to_reg_from_reg r8 r7
-		multiply_reg_by_sintheta_signed_long r8 r2 r3 r4 r5
-		## r5(xcosθ) + r8(zsinθ)をr0へ取得
-		sh2_copy_to_reg_from_reg r0 r5
-		sh2_add_to_reg_from_reg r0 r8
-		## x'(r0)でZ座標(r6の指す先)を更新
-		sh2_copy_to_ptr_from_reg_word r6 r0
+		## 距離算出の関数を呼び出す
+		copy_to_reg_from_val_long r8 $a_calc_distance_2d
+		sh2_abs_call_to_reg_after_next_inst r8
+		sh2_nop
 
-		# 回転後のX座標を取得
-		# x' = xsinθ - zcosθ
-		## z * cosθをr7へ取得
-		multiply_reg_by_costheta_signed_long r7 r2 r3 r4 r5
-		## x * sinθをr4へ取得
-		multiply_reg_by_sintheta_signed_long r4 r2 r3 r5 r6
-		## r4(xsinθ) - r7(zcosθ)をr4へ取得
-		sh2_sub_to_reg_from_reg r4 r7
-		## x'(r4)でX座標(r3の指す先)を更新
-		sh2_copy_to_ptr_from_reg_word r3 r4
+		# 回転後の座標を取得
+		## 距離rをr8へもコピー
+		sh2_copy_to_reg_from_reg r8 r5
+		## x' = r * cosθ
+		multiply_reg_by_costheta_signed_long r5 r2 r1 r3 r4
+		sh2_copy_to_ptr_from_reg_word r3 r5
+		## z' = r * sinθ
+		multiply_reg_by_sintheta_signed_long r8 r2 r1 r3 r4
+		sh2_copy_to_ptr_from_reg_word r6 r8
 
 		# アドレスを進める
 		if [ "$i" != "H" ]; then
@@ -1237,10 +1401,17 @@ funcs() {
 	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
 	cat src/f_update_gamepad_input_status.o
 
+	# 指定された2次元座標の原点からの距離を算出
+	fsz=$(to16 $(stat -c '%s' src/f_update_gamepad_input_status.o))
+	a_calc_distance_2d=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
+	echo -e "a_calc_distance_2d=$a_calc_distance_2d" >>$map_file
+	f_calc_distance_2d >src/f_calc_distance_2d.o
+	cat src/f_calc_distance_2d.o
+
 	# 指定された4頂点・カラーのポリゴンを描画するコマンドを
 	# 指定されたアドレスへ配置
-	fsz=$(to16 $(stat -c '%s' src/f_update_gamepad_input_status.o))
-	a_put_vdp1_command_polygon_draw_to_addr=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
+	fsz=$(to16 $(stat -c '%s' src/f_calc_distance_2d.o))
+	a_put_vdp1_command_polygon_draw_to_addr=$(calc16_8 "${a_calc_distance_2d}+${fsz}")
 	echo -e "a_put_vdp1_command_polygon_draw_to_addr=$a_put_vdp1_command_polygon_draw_to_addr" >>$map_file
 	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
 	cat src/f_put_vdp1_command_polygon_draw_to_addr.o
@@ -1388,6 +1559,9 @@ main() {
 
 	# メインループ
 	(
+		# # [debug] AX == 0かチェック
+		# debug_stop_if_ax_eq_0
+
 		# 描画終了を待つ
 		(
 			# r1へEDSRのアドレスを取得
@@ -1404,20 +1578,53 @@ main() {
 		## 即ちTビットがセットされたとき、
 		## 待つ処理を繰り返す
 
-		# 頂点座標更新
-		copy_to_reg_from_val_long r1 $a_update_vertex_coordinates
-		sh2_abs_call_to_reg_after_next_inst r1
-		sh2_nop
+		# [debug] 無限ループ
+		# infinite_loop
+
+		# # 頂点座標更新
+		# copy_to_reg_from_val_long r1 $a_update_vertex_coordinates
+		# sh2_abs_call_to_reg_after_next_inst r1
+		# sh2_nop
+
+		# # [debug] AX == 0かチェック
+		# debug_stop_if_ax_eq_0
+
+		# [debug] 10°ずつ36回右回転
+		## 全頂点を右回転する関数を36回呼び出す
+		local i
+		for i in $(seq 36); do
+			# 回転角度をr2へ設定
+			sh2_set_reg r2 0a
+			# 関数を呼び出す
+			copy_to_reg_from_val_long r3 $a_rotate_left_reg_about_yaxis_to_all_vertices
+			sh2_abs_call_to_reg_after_next_inst r3
+			sh2_nop
+		done
+
+		# # [debug] AX == 0かチェック
+		# debug_stop_if_ax_eq_0
+
+		# [debug] 無限ループ
+		infinite_loop
 
 		# ポリゴン更新
 		copy_to_reg_from_val_long r1 $a_update_polygon
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
 
+		# # [debug] AX == 0かチェック
+		# debug_stop_if_ax_eq_0
+
+		# # [debug] 無限ループ
+		# infinite_loop
+
 		# ゲームパッドの入力状態更新
 		copy_to_reg_from_val_long r1 $a_update_gamepad_input_status
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
+
+		# # [debug] AX == 0かチェック
+		# debug_stop_if_ax_eq_0
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)

@@ -131,6 +131,24 @@ sh2_compare_reg_eq_reg() {
 	echo -e "cmp/eq $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_compare_reg_ge_reg_unsigned() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x3${regAnum}\x${regBnum}2"	# cmp/hs $regB,$regA
+	echo -e "cmp/hs $regB,$regA\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_compare_reg_ge_reg_signed() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x3${regAnum}\x${regBnum}3"	# cmp/ge $regB,$regA
+	echo -e "cmp/ge $regB,$regA\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_compare_reg_gt_reg_unsigned() {
 	local regA=$1
 	local regB=$2

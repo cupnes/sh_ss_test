@@ -6,11 +6,6 @@ INCLUDE_LIB_SH=true
 . include/common.sh
 . include/sh2.sh
 
-# N * sinθ を (N * 係数) / 1000
-# で計算できるようにする係数のテーブル
-# テーブルの実体を作る際に、そのアドレスをこのシェル変数に入れる
-var_sin_coeff_table=0
-
 PI_FORM='(4 * a(1))'
 SINCOS_COEFF_M=000346DC	# 214748
 
