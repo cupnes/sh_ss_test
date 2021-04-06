@@ -1581,31 +1581,31 @@ main() {
 		# [debug] 無限ループ
 		# infinite_loop
 
-		# # 頂点座標更新
-		# copy_to_reg_from_val_long r1 $a_update_vertex_coordinates
-		# sh2_abs_call_to_reg_after_next_inst r1
-		# sh2_nop
+		# 頂点座標更新
+		copy_to_reg_from_val_long r1 $a_update_vertex_coordinates
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
 
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
 
-		# [debug] 10°ずつ36回右回転
-		## 全頂点を右回転する関数を36回呼び出す
-		local i
-		for i in $(seq 36); do
-			# 回転角度をr2へ設定
-			sh2_set_reg r2 0a
-			# 関数を呼び出す
-			copy_to_reg_from_val_long r3 $a_rotate_left_reg_about_yaxis_to_all_vertices
-			sh2_abs_call_to_reg_after_next_inst r3
-			sh2_nop
-		done
+		# # [debug] 10°ずつ36回右回転
+		# ## 全頂点を右回転する関数を36回呼び出す
+		# local i
+		# for i in $(seq 36); do
+		# 	# 回転角度をr2へ設定
+		# 	sh2_set_reg r2 0a
+		# 	# 関数を呼び出す
+		# 	copy_to_reg_from_val_long r3 $a_rotate_left_reg_about_yaxis_to_all_vertices
+		# 	sh2_abs_call_to_reg_after_next_inst r3
+		# 	sh2_nop
+		# done
 
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
 
-		# [debug] 無限ループ
-		infinite_loop
+		# # [debug] 無限ループ
+		# infinite_loop
 
 		# ポリゴン更新
 		copy_to_reg_from_val_long r1 $a_update_polygon
