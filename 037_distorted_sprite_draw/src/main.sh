@@ -414,6 +414,149 @@ f_calc_distance_2d() {
 	sh2_nop
 }
 
+# 指定された4頂点・カラーの変形スプライトを描画するコマンドを
+# 指定されたアドレスへ配置
+# in  : r1  - Ax
+#       r2  - Ay
+#       r3  - Bx
+#       r4  - By
+#       r5  - Cx
+#       r6  - Cy
+#       r7  - Dx
+#       r8  - Dy
+#       r9  - color
+#       r10 - dst addr
+# out : r10 - dst addrへ最後に書き込んだ次のアドレス
+# work: PR  - この関数を呼び出したBSR/JSR命令のアドレス
+#     : r0  - 作業用
+f_put_vdp1_command_distorted_sprite_draw_to_addr() {
+	# CMDCTRL
+	# 0b0000 0000 0000 0010
+	# - JP(b14-b12) = 0b000
+	# - Dir(b5-b4) = 0b00
+	# 0x0002 -> [r10]
+	sh2_set_reg r0 00
+	sh2_or_to_r0_from_val_byte 02
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDLINK
+	# 0x0000 -> [r10]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDPMOD
+	# 0b0000 1000 1110 1000
+	# - MON(b15) = 0 (VDP2の機能を使わない)
+	# - HSS(b12) = 0 (ハイスピードシュリンク無効)
+	# - Pclp(b11) = 1 (クリッピングが必要かどうかの座標計算無効)
+	# - Clip(b10) = 0 (ユーザクリッピング座標に従わない)
+	# - Cmod(b9) = 0 (Clip=0なので無効)
+	# - Mesh(b8) = 0 (メッシュ無効)
+	# - ECD(b7) = 1 (エンドコード無効)
+	# - SPD(b6) = 1 (透明ピクセル無効)
+	# - カラーモード(b5-b3) = 0b101 (RGBモード)
+	# - 色演算(b2-b0) = 0b000 (色演算は全て無効)
+	# 0x08e8 -> [r10]
+	sh2_set_reg r0 08
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte e8
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# TODO
+	# CMDCOLR
+	# r9 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r9
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDSRCA
+	# 0x0000 -> [r10]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDSIZE
+	# 0x0000 -> [r10]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r10 r0
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDXA
+	# 頂点AのX座標
+	# r1 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r1
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDYA
+	# 頂点AのY座標
+	# r2 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r2
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDXB
+	# 頂点BのX座標
+	# r3 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r3
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDYB
+	# 頂点BのY座標
+	# r4 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r4
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDXC
+	# 頂点CのX座標
+	# r5 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r5
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDYC
+	# 頂点CのY座標
+	# r6 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r6
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDXD
+	# 頂点DのX座標
+	# r7 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r7
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDYD
+	# 頂点DのY座標
+	# r8 -> [r10]
+	sh2_copy_to_ptr_from_reg_word r10 r8
+	# r10 += 2
+	sh2_add_to_reg_from_val_byte r10 02
+
+	# CMDGRDA, dummy
+	# 0x00000000 -> [r10]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_long r10 r0
+	# r10 += 4
+	sh2_add_to_reg_from_val_byte r10 04
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 指定された4頂点・カラーのポリゴンを描画するコマンドを
 # 指定されたアドレスへ配置
 # in  : r1  - Ax
