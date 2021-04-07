@@ -424,9 +424,13 @@ f_calc_distance_2d() {
 #       r6  - Cy
 #       r7  - Dx
 #       r8  - Dy
-#       r9  - color
-#       r10 - dst addr
-# out : r10 - dst addrへ最後に書き込んだ次のアドレス
+#       r9  - キャラクタパターンテーブルのアドレス/8
+#       r10 - キャラクタサイズ
+#             - (b15-b14) = 0b00
+#             - (b13-b08) = 幅/8
+#             - (b07-b00) = 高さ
+#       r11 - dst addr
+# out : r11 - dst addrへ最後に書き込んだ次のアドレス
 # work: PR  - この関数を呼び出したBSR/JSR命令のアドレス
 #     : r0  - 作業用
 f_put_vdp1_command_distorted_sprite_draw_to_addr() {
@@ -434,19 +438,19 @@ f_put_vdp1_command_distorted_sprite_draw_to_addr() {
 	# 0b0000 0000 0000 0010
 	# - JP(b14-b12) = 0b000
 	# - Dir(b5-b4) = 0b00
-	# 0x0002 -> [r10]
+	# 0x0002 -> [r11]
 	sh2_set_reg r0 00
 	sh2_or_to_r0_from_val_byte 02
-	sh2_copy_to_ptr_from_reg_word r10 r0
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	sh2_copy_to_ptr_from_reg_word r11 r0
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDLINK
-	# 0x0000 -> [r10]
+	# 0x0000 -> [r11]
 	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_word r10 r0
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	sh2_copy_to_ptr_from_reg_word r11 r0
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDPMOD
 	# 0b0000 1000 1110 1000
@@ -460,97 +464,99 @@ f_put_vdp1_command_distorted_sprite_draw_to_addr() {
 	# - SPD(b6) = 1 (透明ピクセル無効)
 	# - カラーモード(b5-b3) = 0b101 (RGBモード)
 	# - 色演算(b2-b0) = 0b000 (色演算は全て無効)
-	# 0x08e8 -> [r10]
+	# 0x08e8 -> [r11]
 	sh2_set_reg r0 08
 	sh2_shift_left_logical_8 r0
 	sh2_or_to_r0_from_val_byte e8
-	sh2_copy_to_ptr_from_reg_word r10 r0
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	sh2_copy_to_ptr_from_reg_word r11 r0
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
-	# TODO
 	# CMDCOLR
-	# r9 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r9
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# テクスチャパーツでRGBモードなのでこのワードは無視される
+	# 0x0000 -> [r11]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r11 r0
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDSRCA
-	# 0x0000 -> [r10]
-	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_word r10 r0
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# キャラクタパターンテーブルのアドレスを8で割った値を設定する
+	# r9 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r9
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDSIZE
-	# 0x0000 -> [r10]
-	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_word r10 r0
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# キャラクタパターンテーブルに定義したキャラクタの幅と高さを設定する
+	# 幅は8で割った値を設定する
+	# r10 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r10
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDXA
 	# 頂点AのX座標
-	# r1 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r1
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r1 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r1
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDYA
 	# 頂点AのY座標
-	# r2 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r2
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r2 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r2
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDXB
 	# 頂点BのX座標
-	# r3 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r3
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r3 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r3
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDYB
 	# 頂点BのY座標
-	# r4 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r4
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r4 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r4
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDXC
 	# 頂点CのX座標
-	# r5 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r5
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r5 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r5
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDYC
 	# 頂点CのY座標
-	# r6 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r6
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r6 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r6
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDXD
 	# 頂点DのX座標
-	# r7 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r7
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r7 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r7
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDYD
 	# 頂点DのY座標
-	# r8 -> [r10]
-	sh2_copy_to_ptr_from_reg_word r10 r8
-	# r10 += 2
-	sh2_add_to_reg_from_val_byte r10 02
+	# r8 -> [r11]
+	sh2_copy_to_ptr_from_reg_word r11 r8
+	# r11 += 2
+	sh2_add_to_reg_from_val_byte r11 02
 
 	# CMDGRDA, dummy
-	# 0x00000000 -> [r10]
+	# 0x00000000 -> [r11]
 	sh2_set_reg r0 00
-	sh2_copy_to_ptr_from_reg_long r10 r0
-	# r10 += 4
-	sh2_add_to_reg_from_val_byte r10 04
+	sh2_copy_to_ptr_from_reg_long r11 r0
+	# r11 += 4
+	sh2_add_to_reg_from_val_byte r11 04
 
 	# return
 	sh2_return_after_next_inst
@@ -944,6 +950,271 @@ f_draw_plate() {
 
 	# SP+0のdst addrをr10で更新
 	sh2_copy_to_ptr_from_reg_long r15 r10
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# 4つの3次元座標で指定された平面を指定されたテクスチャで
+# 指定されたアドレスへ描画
+# in  : r1   - Ax
+#       r2   - Ay
+#       r3   - Az
+#       r4   - Bx
+#       r5   - By
+#       r6   - Bz
+#       r7   - Cx
+#       r8   - Cy
+#       r9   - Cz
+#       r10  - Dx
+#       r11  - Dy
+#       r12  - Dz
+#       r13  - キャラクタパターンテーブルのアドレス/8
+#       SP+4 - キャラクタサイズ
+#              - (b15-b14) = 0b00
+#              - (b13-b08) = 幅/8
+#              - (b07-b00) = 高さ
+#       SP+0 - dst addr
+# out : SP+0 - dst addrへ最後に書き込んだ次のアドレス
+# work: PR   - この関数を呼び出したBSR/JSR命令のアドレス
+#     : r0   - 作業用
+#     : r14  - 作業用
+f_draw_plate_texture() {
+	local _i
+
+	# 投影面Z座標をr14へロード
+	copy_to_reg_from_val_long r14 $var_proj_z
+	sh2_copy_to_reg_from_ptr_word r14 r14
+
+	# [debug] 無限ループ
+	# infinite_loop
+
+	# 投影面Z座標(PRJz)より小さい(カメラに近い)Z座標が1つでもあれば
+	# 何もせずreturn
+	(
+		# 何もせずreturn
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_draw_plate_texture.1.o
+	local sz_1=$(stat -c '%s' src/f_draw_plate_texture.1.o)
+	## PRJz(r14) > Az(r3)?
+	sh2_compare_reg_gt_reg_unsigned r14 r3
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.1.o
+	## PRJz(r14) > Bz(r6)?
+	sh2_compare_reg_gt_reg_unsigned r14 r6
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.1.o
+	## PRJz(r14) > Cz(r9)?
+	sh2_compare_reg_gt_reg_unsigned r14 r9
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.1.o
+	## PRJz(r14) > Dz(r12)?
+	sh2_compare_reg_gt_reg_unsigned r14 r12
+	sh2_rel_jump_if_false $(two_digits_d $((sz_1 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.1.o
+
+	# 透視投影で2次元座標へ変換
+	# - PRJz < Az or Bz or Cz or Dz の時
+	#   - 2次元座標(x, y) = 3次元座標(x, y) * PRJz / 3次元座標z
+	# - PRJz == Az or Bz or Cz or Dz の時
+	#   - 2次元座標(x, y) = 3次元座標(x, y)
+
+	## PRJz(r14) == Az(r3)?
+	sh2_compare_reg_eq_reg r14 r3
+	(
+		# PRJz(r14) < Az(r3) の時
+
+		# 2次元座標Ax(r1) = 3次元座標Ax(r1) * PRJz(r14) / 3次元座標Az(r3)
+		## 3次元座標Ax(r1) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_signed_word r1 r14
+		## MACL -> r1
+		sh2_copy_to_reg_from_macl r1
+		## r1 / 3次元座標Az(r3) -> r1
+		div_reg_by_reg_word_sign r1 r3 r2 r4
+
+		# 2次元座標Ay(r2) = 3次元座標Ay(r2) * PRJz(r14) / 3次元座標Az(r3)
+		## 3次元座標Ay(r2) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r2 r14
+		## MACL -> r2
+		sh2_copy_to_reg_from_macl r2
+		## r2 / 3次元座標Az(r3) -> r2
+		div_reg_by_reg_word_sign r2 r3 r1 r4
+	) >src/f_draw_plate_texture.2.o
+	local sz_2=$(stat -c '%s' src/f_draw_plate_texture.2.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_2 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.2.o	# PRJz(r14) < Az(r3) の時
+	# この時点でポリゴン描画の頂点Aの座標(Ax,Ay)を(r1,r2)へ設定完了
+
+	# [debug] 無限ループ
+	# infinite_loop
+
+	## PRJz(r14) == Bz(r6)?
+	sh2_compare_reg_eq_reg r14 r6
+	(
+		# PRJz(r14) == Bz(r6) の時
+
+		# 2次元座標Bx(r3) = 3次元座標Bx(r4)
+		sh2_copy_to_reg_from_reg r3 r4
+
+		# 2次元座標By(r4) = 3次元座標By(r5)
+		sh2_copy_to_reg_from_reg r4 r5
+	) >src/f_draw_plate_texture.4.o
+	(
+		# PRJz(r14) < Bz(r6) の時
+
+		# 2次元座標Bx(r3) = 3次元座標Bx(r4) * PRJz(r14) / 3次元座標Bz(r6)
+		## 3次元座標Bx(r4) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r4 r14
+		## MACL -> r3
+		sh2_copy_to_reg_from_macl r3
+		## r3 / 3次元座標Bz(r6) -> r3
+		div_reg_by_reg_word_sign r3 r6 r1 r2
+
+		# 2次元座標By(r4) = 3次元座標By(r5) * PRJz(r14) / 3次元座標Bz(r6)
+		## 3次元座標By(r5) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r5 r14
+		## MACL -> r4
+		sh2_copy_to_reg_from_macl r4
+		## r4 / 3次元座標Bz(r6) -> r4
+		div_reg_by_reg_word_sign r4 r6 r1 r2
+
+		# PRJz(r14) == Bz(r6) の時の処理を飛ばす
+		local sz_4=$(stat -c '%s' src/f_draw_plate_texture.4.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_4 / 2))) 3)
+		sh2_nop
+	) >src/f_draw_plate_texture.3.o
+	local sz_3=$(stat -c '%s' src/f_draw_plate_texture.3.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_3 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.3.o	# PRJz(r14) < Bz(r6) の時
+	cat src/f_draw_plate_texture.4.o	# PRJz(r14) == Bz(r6) の時
+	# この時点でポリゴン描画の頂点Bの座標(Bx,By)を(r3,r4)へ設定完了
+
+	## PRJz(r14) == Cz(r9)?
+	sh2_compare_reg_eq_reg r14 r9
+	(
+		# PRJz(r14) == Cz(r9) の時
+
+		# 2次元座標Cx(r5) = 3次元座標Cx(r7)
+		sh2_copy_to_reg_from_reg r5 r7
+
+		# 2次元座標Cy(r6) = 3次元座標Cy(r8)
+		sh2_copy_to_reg_from_reg r6 r8
+	) >src/f_draw_plate_texture.6.o
+	(
+		# PRJz(r14) < Cz(r9) の時
+
+		# 2次元座標Cx(r5) = 3次元座標Cx(r7) * PRJz(r14) / 3次元座標Cz(r9)
+		## 3次元座標Cx(r7) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r7 r14
+		## MACL -> r5
+		sh2_copy_to_reg_from_macl r5
+		## r5 / 3次元座標Cz(r9) -> r5
+		div_reg_by_reg_word_sign r5 r9 r1 r2
+
+		# 2次元座標Cy(r6) = 3次元座標Cy(r8) * PRJz(r14) / 3次元座標Cz(r9)
+		## 3次元座標Cy(r8) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r8 r14
+		## MACL -> r6
+		sh2_copy_to_reg_from_macl r6
+		## r6 / 3次元座標Cz(r9) -> r6
+		div_reg_by_reg_word_sign r6 r9 r1 r2
+
+		# PRJz(r14) == Cz(r9) の時の処理を飛ばす
+		local sz_6=$(stat -c '%s' src/f_draw_plate_texture.6.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_6 / 2))) 3)
+		sh2_nop
+	) >src/f_draw_plate_texture.5.o
+	local sz_5=$(stat -c '%s' src/f_draw_plate_texture.5.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_5 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.5.o	# PRJz(r14) < Bz(r9) の時
+	cat src/f_draw_plate_texture.6.o	# PRJz(r14) == Bz(r9) の時
+	# この時点でポリゴン描画の頂点Cの座標(Cx,Cy)を(r5,r6)へ設定完了
+
+	## PRJz(r14) == Dz(r12)?
+	sh2_compare_reg_eq_reg r14 r12
+	(
+		# PRJz(r14) == Dz(r12) の時
+
+		# 2次元座標Dx(r7) = 3次元座標Dx(r10)
+		sh2_copy_to_reg_from_reg r7 r10
+
+		# 2次元座標Dy(r8) = 3次元座標Dy(r11)
+		sh2_copy_to_reg_from_reg r8 r11
+	) >src/f_draw_plate_texture.8.o
+	(
+		# PRJz(r14) < Dz(r12) の時
+
+		# 2次元座標Dx(r7) = 3次元座標Dx(r10) * PRJz(r14) / 3次元座標Dz(r12)
+		## 3次元座標Dx(r10) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r10 r14
+		## MACL -> r7
+		sh2_copy_to_reg_from_macl r7
+		## r7 / 3次元座標Dz(r12) -> r7
+		div_reg_by_reg_word_sign r7 r12 r1 r2
+
+		# 2次元座標Dy(r8) = 3次元座標Dy(r11) * PRJz(r14) / 3次元座標Dz(r12)
+		## 3次元座標Dy(r11) * PRJz(r14) -> MACL
+		sh2_multiply_reg_by_reg_unsigned_word r11 r14
+		## MACL -> r8
+		sh2_copy_to_reg_from_macl r8
+		## r8 / 3次元座標Dz(r12) -> r8
+		div_reg_by_reg_word_sign r8 r12 r1 r2
+
+		# PRJz(r14) == Dz(r12) の時の処理を飛ばす
+		local sz_8=$(stat -c '%s' src/f_draw_plate_texture.8.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_8 / 2))) 3)
+		sh2_nop
+	) >src/f_draw_plate_texture.7.o
+	local sz_7=$(stat -c '%s' src/f_draw_plate_texture.7.o)
+	sh2_rel_jump_if_true $(two_digits_d $((sz_7 / 2)))
+	sh2_nop
+	cat src/f_draw_plate_texture.7.o	# PRJz(r14) < Dz(r12) の時
+	cat src/f_draw_plate_texture.8.o	# PRJz(r14) == Dz(r12) の時
+	# この時点でポリゴン描画の頂点Dの座標(Dx,Dy)を(r7,r8)へ設定完了
+
+	# 以上のr1-r8(Ax-Dy)は投影面座標系なので、ゲームスクリーン座標計へ変換
+	transform_to_gs_from_prj r1 r2	# Ax, Ay
+	transform_to_gs_from_prj r3 r4	# Bx, By
+	transform_to_gs_from_prj r5 r6	# Cx, Cy
+	transform_to_gs_from_prj r7 r8	# Dx, Dy
+
+	# 引数r13のキャラクタパターンテーブルのアドレス/8をr9へ設定
+	sh2_copy_to_reg_from_reg r9 r13
+
+	# SP+4のキャラクタサイズをr10へ設定
+	sh2_copy_to_reg_from_reg r10 r15
+	sh2_add_to_reg_from_val_byte r10 04
+	sh2_copy_to_reg_from_ptr_long r10 r10
+
+	# SP+0のdst addrをr11へ設定
+	sh2_copy_to_reg_from_ptr_long r11 r15
+
+	# 現在のPRをスタックへ退避
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# ポリゴン描画コマンドを配置する関数を呼び出す
+	copy_to_reg_from_val_long r12 $a_put_vdp1_command_distorted_sprite_draw_to_addr
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_nop
+
+	# PRをスタックから復帰
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+
+	# SP+0のdst addrをr11で更新
+	sh2_copy_to_ptr_from_reg_long r15 r11
 
 	# return
 	sh2_return_after_next_inst
