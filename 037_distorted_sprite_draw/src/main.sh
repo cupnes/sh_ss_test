@@ -1822,10 +1822,18 @@ funcs() {
 	f_calc_distance_2d >src/f_calc_distance_2d.o
 	cat src/f_calc_distance_2d.o
 
-	# 指定された4頂点・カラーのポリゴンを描画するコマンドを
+	# 指定された4頂点・カラーの変形スプライトを描画するコマンドを
 	# 指定されたアドレスへ配置
 	fsz=$(to16 $(stat -c '%s' src/f_calc_distance_2d.o))
-	a_put_vdp1_command_polygon_draw_to_addr=$(calc16_8 "${a_calc_distance_2d}+${fsz}")
+	a_put_vdp1_command_distorted_sprite_draw_to_addr=$(calc16_8 "${a_calc_distance_2d}+${fsz}")
+	echo -e "a_put_vdp1_command_distorted_sprite_draw_to_addr=$a_put_vdp1_command_distorted_sprite_draw_to_addr" >>$map_file
+	f_put_vdp1_command_distorted_sprite_draw_to_addr >src/f_put_vdp1_command_distorted_sprite_draw_to_addr.o
+	cat src/f_put_vdp1_command_distorted_sprite_draw_to_addr.o
+
+	# 指定された4頂点・カラーのポリゴンを描画するコマンドを
+	# 指定されたアドレスへ配置
+	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_distorted_sprite_draw_to_addr.o))
+	a_put_vdp1_command_polygon_draw_to_addr=$(calc16_8 "${a_put_vdp1_command_distorted_sprite_draw_to_addr}+${fsz}")
 	echo -e "a_put_vdp1_command_polygon_draw_to_addr=$a_put_vdp1_command_polygon_draw_to_addr" >>$map_file
 	f_put_vdp1_command_polygon_draw_to_addr >src/f_put_vdp1_command_polygon_draw_to_addr.o
 	cat src/f_put_vdp1_command_polygon_draw_to_addr.o
@@ -1838,9 +1846,17 @@ funcs() {
 	f_draw_plate >src/f_draw_plate.o
 	cat src/f_draw_plate.o
 
-	# ポリゴン描画コマンドの更新
+	# 4つの3次元座標で指定された平面を指定されたテクスチャで
+	# 指定されたアドレスへ描画
 	fsz=$(to16 $(stat -c '%s' src/f_draw_plate.o))
-	a_update_polygon=$(calc16_8 "${a_draw_plate}+${fsz}")
+	a_draw_plate_texture=$(calc16_8 "${a_draw_plate}+${fsz}")
+	echo -e "a_draw_plate_texture=$a_draw_plate_texture" >>$map_file
+	f_draw_plate_texture >src/f_draw_plate_texture.o
+	cat src/f_draw_plate_texture.o
+
+	# ポリゴン描画コマンドの更新
+	fsz=$(to16 $(stat -c '%s' src/f_draw_plate_texture.o))
+	a_update_polygon=$(calc16_8 "${a_draw_plate_texture}+${fsz}")
 	echo -e "a_update_polygon=$a_update_polygon" >>$map_file
 	f_update_polygon >src/f_update_polygon.o
 	cat src/f_update_polygon.o
