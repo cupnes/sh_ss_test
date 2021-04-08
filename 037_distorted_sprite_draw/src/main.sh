@@ -1394,7 +1394,7 @@ f_update_polygon() {
 	sh2_nop
 
 	# 次にコマンドを配置するVRAMアドレスをr1(戻り値)へ設定
-	sh2_copy_to_reg_from_reg r1 r15
+	sh2_copy_to_reg_from_ptr_long r1 r15
 
 	# 次にコマンドを配置するVRAMアドレスをスタックから破棄
 	sh2_add_to_reg_from_val_byte r15 04
@@ -2038,9 +2038,6 @@ main() {
 
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
-
-		# # [debug] 無限ループ
-		# infinite_loop
 
 		# ポリゴン更新
 		copy_to_reg_from_val_long r1 $a_update_polygon
