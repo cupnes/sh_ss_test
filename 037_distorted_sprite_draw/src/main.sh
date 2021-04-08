@@ -18,6 +18,11 @@ VARS_BASE=0600401E
 FUNCS_BASE=06005000
 MAIN_BASE=06010000
 
+# [debug]
+TEXTURE_IMG='texture.img'
+## 適当にコマンド100(0x64)個分を確保しておく
+VRAM_TEXTURE_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+(${SS_VDP1_COMMAND_SIZE}*64)")
+
 map_file=map.sh
 rm -f $map_file
 
@@ -1222,6 +1227,9 @@ f_draw_plate_texture() {
 }
 
 # ポリゴン描画コマンドの更新
+# out : r1  - 次にコマンドを配置するVRAMアドレス
+# ※ 描画終了コマンドの配置は行わないので
+#    この関数から戻った後、描画終了コマンドを配置すること
 f_update_polygon() {
 	# 現在のPRをスタックへ退避
 	sh2_copy_to_reg_from_pr r0
@@ -1385,11 +1393,8 @@ f_update_polygon() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# 05c000c0、あるいはそれより手前に終了コマンドを設定
-	sh2_set_reg r0 80
-	sh2_shift_left_logical_8 r0
-	sh2_copy_to_reg_from_ptr_long r1 r15
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	# 次にコマンドを配置するVRAMアドレスをr1(戻り値)へ設定
+	sh2_copy_to_reg_from_reg r1 r15
 
 	# 次にコマンドを配置するVRAMアドレスをスタックから破棄
 	sh2_add_to_reg_from_val_byte r15 04
@@ -2041,6 +2046,11 @@ main() {
 		copy_to_reg_from_val_long r1 $a_update_polygon
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
+
+		# r1のアドレス先へ描画終了コマンドを配置
+		sh2_set_reg r0 80
+		sh2_shift_left_logical_8 r0
+		sh2_copy_to_ptr_from_reg_word r1 r0
 
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
