@@ -1409,6 +1409,30 @@ f_update_polygon() {
 	sh2_nop
 }
 
+# スプライト描画コマンドの更新
+# in  : r1  - 次にコマンドを配置するVRAMアドレス
+# out : r1  - 次にコマンドを配置するVRAMアドレス
+# work: r0  - 作業用
+# ※ 描画終了コマンドの配置は行わないので
+#    この関数から戻った後、描画終了コマンドを配置すること
+f_update_sprite() {
+	# 現在のPRをスタックへ退避
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# テクスチャ付きスプライトを3次元座標指定で描画する関数を呼び出す
+
+	# PRをスタックから復帰
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 全頂点のX座標へ指定された値を加算する関数
 # in  : r2 - 加算する値
 # work: r0 - 作業用
@@ -1866,9 +1890,16 @@ funcs() {
 	f_update_polygon >src/f_update_polygon.o
 	cat src/f_update_polygon.o
 
-	# 全頂点のX座標へ指定された値を加算
+	# スプライト描画コマンドの更新
 	fsz=$(to16 $(stat -c '%s' src/f_update_polygon.o))
-	a_add_reg_to_all_vertices_x=$(calc16_8 "${a_update_polygon}+${fsz}")
+	a_update_sprite=$(calc16_8 "${a_update_polygon}+${fsz}")
+	echo -e "a_update_sprite=$a_update_sprite" >>$map_file
+	f_update_sprite >src/f_update_sprite.o
+	cat src/f_update_sprite.o
+
+	# 全頂点のX座標へ指定された値を加算
+	fsz=$(to16 $(stat -c '%s' src/f_update_sprite.o))
+	a_add_reg_to_all_vertices_x=$(calc16_8 "${a_update_sprite}+${fsz}")
 	echo -e "a_add_reg_to_all_vertices_x=$a_add_reg_to_all_vertices_x" >>$map_file
 	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
 	cat src/f_add_reg_to_all_vertices_x.o
