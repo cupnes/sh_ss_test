@@ -111,6 +111,11 @@ calc16_2() {
 	two_digits $(calc16 $bc_form)
 }
 
+calc16_4() {
+	local bc_form=$1
+	extend_digit $(calc16 $bc_form) 4
+}
+
 calc16_8() {
 	local bc_form=$1
 	extend_digit $(calc16 $bc_form) 8

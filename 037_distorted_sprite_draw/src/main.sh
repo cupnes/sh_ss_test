@@ -11,17 +11,18 @@ set -ue
 . src/render.sh
 . src/debug.sh
 
-VRAM_DRAW_CMD_BASE=05c00060
+VRAM_DRAW_CMD_BASE=05C00060
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 VARS_BASE=0600401E
-FUNCS_BASE=06005000
-MAIN_BASE=06010000
+FUNCS_BASE=06100000
+MAIN_BASE=061A0000
 
 # [debug]
 TEXTURE_IMG='texture.img'
 ## 適当にコマンド100(0x64)個分を確保しておく
-VRAM_TEXTURE_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+(${SS_VDP1_COMMAND_SIZE}*64)")
+VRAM_TEXTURE_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")
+VRAM_TEXTURE_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_TEXTURE_OFS}")
 
 map_file=map.sh
 rm -f $map_file
@@ -198,10 +199,69 @@ vars() {
 	echo -e "var_hexahedron_hz=$var_hexahedron_hz" >>$map_file
 	echo -en '\x00\x77'	# 119
 
+	# スプライト座標リスト
+	# 各スプライトはカメラ座標系の4頂点で定義される板
+	var_sprite_ax=$(calc16_8 "$var_hexahedron_hz+2")
+	echo -e "var_sprite_ax=$var_sprite_ax" >>$map_file
+	echo -en '\xff\x60'	# -160
+	var_sprite_ay=$(calc16_8 "$var_sprite_ax+2")
+	echo -e "var_sprite_ay=$var_sprite_ay" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	var_sprite_az=$(calc16_8 "$var_sprite_ay+2")
+	echo -e "var_sprite_az=$var_sprite_az" >>$map_file
+	echo -en '\x00\x64'	# 100
+	var_sprite_bx=$(calc16_8 "$var_sprite_az+2")
+	echo -e "var_sprite_bx=$var_sprite_bx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	var_sprite_by=$(calc16_8 "$var_sprite_bx+2")
+	echo -e "var_sprite_by=$var_sprite_by" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	var_sprite_bz=$(calc16_8 "$var_sprite_by+2")
+	echo -e "var_sprite_bz=$var_sprite_bz" >>$map_file
+	echo -en '\x00\x64'	# 100
+	var_sprite_cx=$(calc16_8 "$var_sprite_bz+2")
+	echo -e "var_sprite_cx=$var_sprite_cx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	var_sprite_cy=$(calc16_8 "$var_sprite_cx+2")
+	echo -e "var_sprite_cy=$var_sprite_cy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	var_sprite_cz=$(calc16_8 "$var_sprite_cy+2")
+	echo -e "var_sprite_cz=$var_sprite_cz" >>$map_file
+	echo -en '\x00\x64'	# 100
+	var_sprite_dx=$(calc16_8 "$var_sprite_cz+2")
+	echo -e "var_sprite_dx=$var_sprite_dx" >>$map_file
+	echo -en '\xff\x60'	# -160
+	var_sprite_dy=$(calc16_8 "$var_sprite_dx+2")
+	echo -e "var_sprite_dy=$var_sprite_dy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	var_sprite_dz=$(calc16_8 "$var_sprite_dy+2")
+	echo -e "var_sprite_dz=$var_sprite_dz" >>$map_file
+	echo -en '\x00\x64'	# 100
+	# テクスチャ画像のオフセットとサイズ
+	# オフセットは8で割った値を指定
+	local tex_ofs_div_8=$(calc16_4 "${VRAM_TEXTURE_OFS}/8")
+	local tex_ofs_div_8_th=$(echo $tex_ofs_div_8 | cut -c1-2)
+	local tex_ofs_div_8_bh=$(echo $tex_ofs_div_8 | cut -c3-4)
+	var_texture_ofs=$(calc16_8 "$var_sprite_dz+2")
+	echo -e "var_texture_ofs=$var_texture_ofs" >>$map_file
+	echo -en "\x${tex_ofs_div_8_th}\x${tex_ofs_div_8_bh}"
+	# サイズは、(b15-b14)=0b00、(b13-b08)=幅/8、(b07-b00)=高さ を指定
+	var_texture_size=$(calc16_8 "$var_texture_ofs+2")
+	echo -e "var_texture_size=$var_texture_size" >>$map_file
+	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
+
 	# 座標更新周期カウンタ
-	var_coord_update_cyc_counter=$(calc16_8 "$var_hexahedron_hz+2")
+	var_coord_update_cyc_counter=$(calc16_8 "$var_texture_size+2")
 	echo -e "var_coord_update_cyc_counter=$var_coord_update_cyc_counter" >>$map_file
 	echo -en '\x00'
+
+	# テクスチャ実データ
+	var_texture_data_size=$(calc16_8 "$var_coord_update_cyc_counter+1")
+	echo -e "var_texture_data_size=$var_texture_data_size" >>$map_file
+	echo -en '\x00\x02\x30\x00'	# (* 320 224 2)143360(0x0002 3000)
+	var_texture_data=$(calc16_8 "$var_texture_data_size+4")
+	echo -e "var_texture_data=$var_texture_data" >>$map_file
+	cat $TEXTURE_IMG
 }
 # 変数設定のために空実行
 vars >/dev/null
@@ -1421,7 +1481,70 @@ f_update_sprite() {
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r0
 
-	# テクスチャ付きスプライトを3次元座標指定で描画する関数を呼び出す
+	# f_draw_plate_texture()の引数設定
+	## SP+4 - キャラクタサイズ
+	##        - (b15-b14) = 0b00
+	##        - (b13-b08) = 幅/8
+	##        - (b07-b00) = 高さ
+	copy_to_reg_from_val_long r2 $var_texture_size
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## SP+0 - dst addr
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r1   - Ax
+	copy_to_reg_from_val_long r1 $var_sprite_ax
+	sh2_copy_to_reg_from_ptr_word r1 r1
+	## r2   - Ay
+	copy_to_reg_from_val_long r2 $var_sprite_ay
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	## r3   - Az
+	copy_to_reg_from_val_long r3 $var_sprite_az
+	sh2_copy_to_reg_from_ptr_word r3 r3
+	## r4   - Bx
+	copy_to_reg_from_val_long r4 $var_sprite_bx
+	sh2_copy_to_reg_from_ptr_word r4 r4
+	## r5   - By
+	copy_to_reg_from_val_long r5 $var_sprite_by
+	sh2_copy_to_reg_from_ptr_word r5 r5
+	## r6   - Bz
+	copy_to_reg_from_val_long r6 $var_sprite_bz
+	sh2_copy_to_reg_from_ptr_word r6 r6
+	## r7   - Cx
+	copy_to_reg_from_val_long r7 $var_sprite_cx
+	sh2_copy_to_reg_from_ptr_word r7 r7
+	## r8   - Cy
+	copy_to_reg_from_val_long r8 $var_sprite_cy
+	sh2_copy_to_reg_from_ptr_word r8 r8
+	## r9   - Cz
+	copy_to_reg_from_val_long r9 $var_sprite_cz
+	sh2_copy_to_reg_from_ptr_word r9 r9
+	## r10  - Dx
+	copy_to_reg_from_val_long r10 $var_sprite_dx
+	sh2_copy_to_reg_from_ptr_word r10 r10
+	## r11  - Dy
+	copy_to_reg_from_val_long r11 $var_sprite_dy
+	sh2_copy_to_reg_from_ptr_word r11 r11
+	## r12  - Dz
+	copy_to_reg_from_val_long r12 $var_sprite_dz
+	sh2_copy_to_reg_from_ptr_word r12 r12
+	## r13  - キャラクタパターンテーブルのアドレス/8
+	copy_to_reg_from_val_long r13 $var_texture_ofs
+	sh2_copy_to_reg_from_ptr_word r13 r13
+
+	# f_draw_plate_texture()を呼び出す
+	copy_to_reg_from_val_long r14 $a_draw_plate_texture
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# 次にコマンドを配置するVRAMアドレスを
+	# スタックからpopしてr1へセット
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+
+	# キャラクタサイズをスタックからpop
+	sh2_add_to_reg_from_val_byte r15 04
 
 	# PRをスタックから復帰
 	sh2_copy_to_reg_from_ptr_long r0 r15
@@ -2070,8 +2193,13 @@ main() {
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
 
-		# ポリゴン更新
-		copy_to_reg_from_val_long r1 $a_update_polygon
+		# # ポリゴン更新
+		# copy_to_reg_from_val_long r1 $a_update_polygon
+		# sh2_abs_call_to_reg_after_next_inst r1
+		# sh2_nop
+
+		# スプライト更新
+		copy_to_reg_from_val_long r1 $a_update_sprite
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
 
