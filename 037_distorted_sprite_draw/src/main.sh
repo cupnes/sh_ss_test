@@ -21,7 +21,7 @@ MAIN_BASE=061A0000
 # [debug]
 TEXTURE_IMG='texture.img'
 ## 適当にコマンド100(0x64)個分を確保しておく
-VRAM_TEXTURE_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")
+VRAM_TEXTURE_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
 VRAM_TEXTURE_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_TEXTURE_OFS}")
 
 map_file=map.sh
@@ -239,7 +239,7 @@ vars() {
 	echo -en '\x00\x64'	# 100
 	# テクスチャ画像のオフセットとサイズ
 	# オフセットは8で割った値を指定
-	local tex_ofs_div_8=$(calc16_4 "${VRAM_TEXTURE_OFS}/8")
+	local tex_ofs_div_8=$(calc16_4 "${VRAM_TEXTURE_OFS}/8")	# 0x0190
 	local tex_ofs_div_8_th=$(echo $tex_ofs_div_8 | cut -c1-2)
 	local tex_ofs_div_8_bh=$(echo $tex_ofs_div_8 | cut -c3-4)
 	var_texture_ofs=$(calc16_8 "$var_sprite_dz+2")
@@ -256,10 +256,10 @@ vars() {
 	echo -en '\x00'
 
 	# テクスチャ実データ
-	var_texture_data_size=$(calc16_8 "$var_coord_update_cyc_counter+1")
-	echo -e "var_texture_data_size=$var_texture_data_size" >>$map_file
-	echo -en '\x00\x02\x30\x00'	# (* 320 224 2)143360(0x0002 3000)
-	var_texture_data=$(calc16_8 "$var_texture_data_size+4")
+	var_texture_pixel_num=$(calc16_8 "$var_coord_update_cyc_counter+1")
+	echo -e "var_texture_pixel_num=$var_texture_pixel_num" >>$map_file
+	echo -en '\x00\x01\x18\x00'	# (* 320 224)71680(0x11800)
+	var_texture_data=$(calc16_8 "$var_texture_pixel_num+4")
 	echo -e "var_texture_data=$var_texture_data" >>$map_file
 	cat $TEXTURE_IMG
 }
@@ -1556,6 +1556,59 @@ f_update_sprite() {
 	sh2_nop
 }
 
+# テクスチャ画像データの更新
+f_update_texture() {
+	# テクスチャ実データアドレスをr1へ設定
+	copy_to_reg_from_val_long r1 $var_texture_data
+
+	# 配置先のVRAMアドレスをr2へ設定
+	## VRAMベースアドレスをr2へ設定
+	copy_to_reg_from_val_long r2 $SS_VDP1_VRAM_ADDR
+	## テクスチャを配置するオフセットをr3へ設定
+	copy_to_reg_from_val_long r3 $var_texture_ofs
+	sh2_copy_to_reg_from_ptr_word r3 r3
+	### 3ビット左シフト(8倍)
+	sh2_shift_left_logical_2 r3
+	sh2_shift_left_logical r3
+	## r2 += r3
+	sh2_add_to_reg_from_reg r2 r3
+
+	# テクスチャのピクセル数/2をr3へ設定
+	copy_to_reg_from_val_long r3 $var_texture_pixel_num
+	sh2_copy_to_reg_from_ptr_long r3 r3
+	sh2_shift_right_logical r3
+
+	# r1のアドレスからr2のアドレスへr3分のデータをロード
+	## r3 > 0 ?
+	sh2_xor_to_reg_from_reg r0 r0
+	sh2_compare_reg_gt_reg_unsigned r3 r0	# 2
+	## falseだったら以降の処理を飛ばす
+	(
+		# r3 > 0
+
+		# [r2] = [r1]
+		sh2_copy_to_reg_from_ptr_long r4 r1
+		sh2_copy_to_ptr_from_reg_long r2 r4
+
+		# r1 += 4, r2 += 4
+		sh2_add_to_reg_from_val_byte r1 04
+		sh2_add_to_reg_from_val_byte r2 04
+
+		# r3 += -1
+		sh2_add_to_reg_from_val_byte r3 $(two_comp_d 1)
+	) >src/f_update_texture.1.o
+	local sz_1=$(stat -c '%s' src/f_update_texture.1.o)
+	sh2_rel_jump_if_false	$(two_digits_d $(((sz_1 + 2 + 2) / 2)))	# 2
+	sh2_nop	# 2
+	cat src/f_update_texture.1.o	# sz_1
+	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((2 + 2 + sz_1 + 2 + 2 + 2) / 2)))	# 2
+	sh2_nop	# 2
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 全頂点のX座標へ指定された値を加算する関数
 # in  : r2 - 加算する値
 # work: r0 - 作業用
@@ -2020,9 +2073,16 @@ funcs() {
 	f_update_sprite >src/f_update_sprite.o
 	cat src/f_update_sprite.o
 
-	# 全頂点のX座標へ指定された値を加算
+	# テクスチャ画像データの更新
 	fsz=$(to16 $(stat -c '%s' src/f_update_sprite.o))
-	a_add_reg_to_all_vertices_x=$(calc16_8 "${a_update_sprite}+${fsz}")
+	a_update_texture=$(calc16_8 "${a_update_sprite}+${fsz}")
+	echo -e "a_update_texture=$a_update_texture" >>$map_file
+	f_update_texture >src/f_update_texture.o
+	cat src/f_update_texture.o
+
+	# 全頂点のX座標へ指定された値を加算
+	fsz=$(to16 $(stat -c '%s' src/f_update_texture.o))
+	a_add_reg_to_all_vertices_x=$(calc16_8 "${a_update_texture}+${fsz}")
 	echo -e "a_add_reg_to_all_vertices_x=$a_add_reg_to_all_vertices_x" >>$map_file
 	f_add_reg_to_all_vertices_x >src/f_add_reg_to_all_vertices_x.o
 	cat src/f_add_reg_to_all_vertices_x.o

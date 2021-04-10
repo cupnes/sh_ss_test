@@ -321,6 +321,20 @@ sh2_shift_left_logical() {
 	echo -e "shll $reg\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_shift_right_logical() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x01"	# shlr $reg
+	echo -e "shlr $reg\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_shift_left_logical_2() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x08"	# shll2 $reg
+	echo -e "shll2 $reg\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_shift_left_logical_8() {
 	local reg=$1
 	local regnum=$(to_regnum $reg)
