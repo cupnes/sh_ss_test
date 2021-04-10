@@ -14,9 +14,9 @@ set -ue
 VRAM_DRAW_CMD_BASE=05C00060
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
-VARS_BASE=0600401E
-FUNCS_BASE=06100000
-MAIN_BASE=061A0000
+VARS_BASE=06004020
+FUNCS_BASE=06028000
+MAIN_BASE=0602D000
 
 # [debug]
 TEXTURE_IMG='texture.img'
@@ -36,12 +36,14 @@ vars() {
 	## N * sinθ を (N * 係数) / 1000 で計算する係数のテーブル
 	var_sin_coeff_table=$VARS_BASE
 	echo -e "var_sin_coeff_table=$var_sin_coeff_table" >>$map_file
-	cat sin_coeff_table.dat
+	cat sin_coeff_table.dat	# 1440 bytes
 	## N * cosθ を (N * 係数) / 1000 で計算する係数のテーブル
 	vsz=$(to16 $(stat -c '%s' sin_coeff_table.dat))
 	var_cos_coeff_table=$(calc16_8 "${var_sin_coeff_table}+${vsz}")
 	echo -e "var_cos_coeff_table=$var_cos_coeff_table" >>$map_file
-	cat cos_coeff_table.dat
+	cat cos_coeff_table.dat	# 1440 bytes
+
+	# 4の倍数バウンダリ
 
 	# ゲームパッド入力状態
 	## 現在の押下状態
@@ -61,6 +63,8 @@ vars() {
 	echo -e "var_proj_z=$var_proj_z" >>$map_file
 	echo -en '\x00\x64'	# 100
 
+	# 4の倍数バウンダリ
+
 	# 現在のカメラ座標系のY軸旋回角度
 	var_rotation_angle_y=$(calc16_8 "$var_proj_z+2")
 	echo -e "var_rotation_angle_y=$var_rotation_angle_y" >>$map_file
@@ -76,6 +80,7 @@ vars() {
 	ofs_hexahedron_ax=00
 	echo -e "var_hexahedron_ax=$var_hexahedron_ax" >>$map_file
 	echo -en '\xFF\xDB'	# -37
+	# 4の倍数バウンダリ
 	### Y (base+0x02)
 	var_hexahedron_ay=$(calc16_8 "$var_hexahedron_ax+2")
 	ofs_hexahedron_ay=02
@@ -86,6 +91,7 @@ vars() {
 	ofs_hexahedron_az=04
 	echo -e "var_hexahedron_az=$var_hexahedron_az" >>$map_file
 	echo -en '\x00\x64'	# 100
+	# 4の倍数バウンダリ
 	## 頂点B(正面右上)
 	### X (base+0x06)
 	var_hexahedron_bx=$(calc16_8 "$var_hexahedron_az+2")
@@ -97,6 +103,7 @@ vars() {
 	ofs_hexahedron_by=08
 	echo -e "var_hexahedron_by=$var_hexahedron_by" >>$map_file
 	echo -en '\x00\x86'	# 134
+	# 4の倍数バウンダリ
 	### Z (base+0x0a)
 	var_hexahedron_bz=$(calc16_8 "$var_hexahedron_by+2")
 	ofs_hexahedron_bz=0a
@@ -108,6 +115,7 @@ vars() {
 	ofs_hexahedron_cx=0c
 	echo -e "var_hexahedron_cx=$var_hexahedron_cx" >>$map_file
 	echo -en '\x00\x25'	# 37
+	# 4の倍数バウンダリ
 	### Y (base+0x0e)
 	var_hexahedron_cy=$(calc16_8 "$var_hexahedron_cx+2")
 	ofs_hexahedron_cy=0e
@@ -118,6 +126,7 @@ vars() {
 	ofs_hexahedron_cz=10
 	echo -e "var_hexahedron_cz=$var_hexahedron_cz" >>$map_file
 	echo -en '\x00\x64'	# 100
+	# 4の倍数バウンダリ
 	## 頂点D(正面左下)
 	### X (base+0x12)
 	var_hexahedron_dx=$(calc16_8 "$var_hexahedron_cz+2")
@@ -129,6 +138,7 @@ vars() {
 	ofs_hexahedron_dy=14
 	echo -e "var_hexahedron_dy=$var_hexahedron_dy" >>$map_file
 	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
 	### Z (base+0x16)
 	var_hexahedron_dz=$(calc16_8 "$var_hexahedron_dy+2")
 	ofs_hexahedron_dz=16
@@ -140,6 +150,7 @@ vars() {
 	ofs_hexahedron_ex=18
 	echo -e "var_hexahedron_ex=$var_hexahedron_ex" >>$map_file
 	echo -en '\xFF\xDB'	# -37
+	# 4の倍数バウンダリ
 	### Y (base+0x1a)
 	var_hexahedron_ey=$(calc16_8 "$var_hexahedron_ex+2")
 	ofs_hexahedron_ey=1a
@@ -150,6 +161,7 @@ vars() {
 	ofs_hexahedron_ez=1c
 	echo -e "var_hexahedron_ez=$var_hexahedron_ez" >>$map_file
 	echo -en '\x00\x77'	# 119
+	# 4の倍数バウンダリ
 	## 頂点F(背面右上)
 	### X (base+0x1e)
 	var_hexahedron_fx=$(calc16_8 "$var_hexahedron_ez+2")
@@ -161,6 +173,7 @@ vars() {
 	ofs_hexahedron_fy=20
 	echo -e "var_hexahedron_fy=$var_hexahedron_fy" >>$map_file
 	echo -en '\x00\x86'	# 134
+	# 4の倍数バウンダリ
 	### Z (base+0x22)
 	var_hexahedron_fz=$(calc16_8 "$var_hexahedron_fy+2")
 	ofs_hexahedron_fz=22
@@ -172,6 +185,7 @@ vars() {
 	ofs_hexahedron_gx=24
 	echo -e "var_hexahedron_gx=$var_hexahedron_gx" >>$map_file
 	echo -en '\x00\x25'	# 37
+	# 4の倍数バウンダリ
 	### Y (base+0x26)
 	var_hexahedron_gy=$(calc16_8 "$var_hexahedron_gx+2")
 	ofs_hexahedron_gy=26
@@ -182,6 +196,7 @@ vars() {
 	ofs_hexahedron_gz=28
 	echo -e "var_hexahedron_gz=$var_hexahedron_gz" >>$map_file
 	echo -en '\x00\x77'	# 119
+	# 4の倍数バウンダリ
 	## 頂点H(背面左下)
 	### X (base+0x2a)
 	var_hexahedron_hx=$(calc16_8 "$var_hexahedron_gz+2")
@@ -193,6 +208,7 @@ vars() {
 	ofs_hexahedron_hy=2c
 	echo -e "var_hexahedron_hy=$var_hexahedron_hy" >>$map_file
 	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
 	### Z (base+0x2e)
 	var_hexahedron_hz=$(calc16_8 "$var_hexahedron_hy+2")
 	ofs_hexahedron_hz=2e
@@ -204,36 +220,42 @@ vars() {
 	var_sprite_ax=$(calc16_8 "$var_hexahedron_hz+2")
 	echo -e "var_sprite_ax=$var_sprite_ax" >>$map_file
 	echo -en '\xff\x60'	# -160
+	# 4の倍数バウンダリ
 	var_sprite_ay=$(calc16_8 "$var_sprite_ax+2")
 	echo -e "var_sprite_ay=$var_sprite_ay" >>$map_file
 	echo -en '\x00\xdf'	# 223
 	var_sprite_az=$(calc16_8 "$var_sprite_ay+2")
 	echo -e "var_sprite_az=$var_sprite_az" >>$map_file
 	echo -en '\x00\x64'	# 100
+	# 4の倍数バウンダリ
 	var_sprite_bx=$(calc16_8 "$var_sprite_az+2")
 	echo -e "var_sprite_bx=$var_sprite_bx" >>$map_file
 	echo -en '\x00\x9f'	# 159
 	var_sprite_by=$(calc16_8 "$var_sprite_bx+2")
 	echo -e "var_sprite_by=$var_sprite_by" >>$map_file
 	echo -en '\x00\xdf'	# 223
+	# 4の倍数バウンダリ
 	var_sprite_bz=$(calc16_8 "$var_sprite_by+2")
 	echo -e "var_sprite_bz=$var_sprite_bz" >>$map_file
 	echo -en '\x00\x64'	# 100
 	var_sprite_cx=$(calc16_8 "$var_sprite_bz+2")
 	echo -e "var_sprite_cx=$var_sprite_cx" >>$map_file
 	echo -en '\x00\x9f'	# 159
+	# 4の倍数バウンダリ
 	var_sprite_cy=$(calc16_8 "$var_sprite_cx+2")
 	echo -e "var_sprite_cy=$var_sprite_cy" >>$map_file
 	echo -en '\x00\x00'	# 0
 	var_sprite_cz=$(calc16_8 "$var_sprite_cy+2")
 	echo -e "var_sprite_cz=$var_sprite_cz" >>$map_file
 	echo -en '\x00\x64'	# 100
+	# 4の倍数バウンダリ
 	var_sprite_dx=$(calc16_8 "$var_sprite_cz+2")
 	echo -e "var_sprite_dx=$var_sprite_dx" >>$map_file
 	echo -en '\xff\x60'	# -160
 	var_sprite_dy=$(calc16_8 "$var_sprite_dx+2")
 	echo -e "var_sprite_dy=$var_sprite_dy" >>$map_file
 	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
 	var_sprite_dz=$(calc16_8 "$var_sprite_dy+2")
 	echo -e "var_sprite_dz=$var_sprite_dz" >>$map_file
 	echo -en '\x00\x64'	# 100
@@ -245,6 +267,7 @@ vars() {
 	var_texture_ofs=$(calc16_8 "$var_sprite_dz+2")
 	echo -e "var_texture_ofs=$var_texture_ofs" >>$map_file
 	echo -en "\x${tex_ofs_div_8_th}\x${tex_ofs_div_8_bh}"
+	# 4の倍数バウンダリ
 	# サイズは、(b15-b14)=0b00、(b13-b08)=幅/8、(b07-b00)=高さ を指定
 	var_texture_size=$(calc16_8 "$var_texture_ofs+2")
 	echo -e "var_texture_size=$var_texture_size" >>$map_file
@@ -255,10 +278,15 @@ vars() {
 	echo -e "var_coord_update_cyc_counter=$var_coord_update_cyc_counter" >>$map_file
 	echo -en '\x00'
 
+	# パディング
+	echo -en '\x00'
+	# 4の倍数バウンダリ
+
 	# テクスチャ実データ
-	var_texture_pixel_num=$(calc16_8 "$var_coord_update_cyc_counter+1")
+	var_texture_pixel_num=$(calc16_8 "$var_coord_update_cyc_counter+2")
 	echo -e "var_texture_pixel_num=$var_texture_pixel_num" >>$map_file
 	echo -en '\x00\x01\x18\x00'	# (* 320 224)71680(0x11800)
+	# 4の倍数バウンダリ
 	var_texture_data=$(calc16_8 "$var_texture_pixel_num+4")
 	echo -e "var_texture_data=$var_texture_data" >>$map_file
 	cat $TEXTURE_IMG
@@ -1573,6 +1601,9 @@ f_update_texture() {
 	## r2 += r3
 	sh2_add_to_reg_from_reg r2 r3
 
+	# [debug] 無限ループ
+	infinite_loop
+
 	# テクスチャのピクセル数/2をr3へ設定
 	copy_to_reg_from_val_long r3 $var_texture_pixel_num
 	sh2_copy_to_reg_from_ptr_long r3 r3
@@ -2274,9 +2305,6 @@ main() {
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
 
-		# # [debug] 無限ループ
-		# infinite_loop
-
 		# ゲームパッドの入力状態更新
 		copy_to_reg_from_val_long r1 $a_update_gamepad_input_status
 		sh2_abs_call_to_reg_after_next_inst r1
@@ -2300,11 +2328,12 @@ make_bin() {
 
 	debug 'before: src/jmp_main.o'
 
-	# メインプログラム領域へジャンプ(30バイト)
+	# メインプログラム領域へジャンプ(32バイト)
 	(
 		copy_to_reg_from_val_long r1 $MAIN_BASE
 		sh2_abs_jump_to_reg_after_next_inst r1
 		sh2_nop
+		sh2_nop	# jmp_main.oのサイズを4の倍数にするためのパディング
 	) >src/jmp_main.o
 	cat src/jmp_main.o
 
