@@ -2144,8 +2144,11 @@ main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
 
-	# VRAMコマンドテーブル初期設定
+	# VRAM初期設定
 	setup_vram_command_table
+	copy_to_reg_from_val_long r1 $a_update_texture
+	sh2_abs_call_to_reg_after_next_inst r1
+	sh2_nop
 
 	# VDP2のシステムレジスタ設定
 	## TVMD
