@@ -1601,9 +1601,6 @@ f_update_texture() {
 	## r2 += r3
 	sh2_add_to_reg_from_reg r2 r3
 
-	# [debug] 無限ループ
-	infinite_loop
-
 	# テクスチャのピクセル数/2をr3へ設定
 	copy_to_reg_from_val_long r3 $var_texture_pixel_num
 	sh2_copy_to_reg_from_ptr_long r3 r3
@@ -2167,6 +2164,11 @@ setup_vram_command_table() {
 	copy_to_reg_from_val_long r1 $a_update_polygon
 	sh2_abs_call_to_reg_after_next_inst r1
 	sh2_nop
+
+	# r1のアドレス先へ描画終了コマンドを配置
+	sh2_set_reg r0 80
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r1 r0
 }
 
 debug 'before: main()'
@@ -2261,9 +2263,6 @@ main() {
 		## 即ちTビットがセットされたとき、
 		## 待つ処理を繰り返す
 
-		# [debug] 無限ループ
-		# infinite_loop
-
 		# 頂点座標更新
 		copy_to_reg_from_val_long r1 $a_update_vertex_coordinates
 		sh2_abs_call_to_reg_after_next_inst r1
@@ -2287,14 +2286,14 @@ main() {
 		# # [debug] AX == 0かチェック
 		# debug_stop_if_ax_eq_0
 
-		# # ポリゴン更新
-		# copy_to_reg_from_val_long r1 $a_update_polygon
-		# sh2_abs_call_to_reg_after_next_inst r1
-		# sh2_nop
+		# ポリゴン更新
+		copy_to_reg_from_val_long r1 $a_update_polygon
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
 
 		# スプライト更新
-		copy_to_reg_from_val_long r1 $a_update_sprite
-		sh2_abs_call_to_reg_after_next_inst r1
+		copy_to_reg_from_val_long r2 $a_update_sprite
+		sh2_abs_call_to_reg_after_next_inst r2
 		sh2_nop
 
 		# r1のアドレス先へ描画終了コマンドを配置
