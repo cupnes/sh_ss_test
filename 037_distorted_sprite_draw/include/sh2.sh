@@ -149,6 +149,15 @@ sh2_compare_reg_ge_reg_signed() {
 	echo -e "cmp/ge $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_compare_reg_gt_reg_signed() {
+	local regA=$1
+	local regB=$2
+	local regAnum=$(to_regnum $regA)
+	local regBnum=$(to_regnum $regB)
+	echo -en "\x3${regAnum}\x${regBnum}7"	# cmp/gt $regB,$regA
+	echo -e "cmp/gt $regB,$regA\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_compare_reg_gt_reg_unsigned() {
 	local regA=$1
 	local regB=$2

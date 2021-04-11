@@ -1608,11 +1608,27 @@ f_update_texture() {
 
 	# r1のアドレスからr2のアドレスへr3分のデータをロード
 	## r3 > 0 ?
-	sh2_xor_to_reg_from_reg r0 r0
-	sh2_compare_reg_gt_reg_unsigned r3 r0	# 2
+	sh2_xor_to_reg_from_reg r0 r0	# 2
+	sh2_compare_reg_gt_reg_signed r3 r0	# 2
 	## falseだったら以降の処理を飛ばす
 	(
 		# r3 > 0
+
+		# 描画終了を待つ
+		(
+			# r4へEDSRのアドレスを取得
+			copy_to_reg_from_val_long r4 $SS_VDP1_EDSR_ADDR
+			# r4の指す先(EDSRの内容)をr0へ取得
+			sh2_copy_to_reg_from_ptr_word r0 r4
+			sh2_test_r0_and_val_byte $SS_VDP1_EDSR_BIT_CEF
+		) >src/f_update_texture.2.o
+		cat src/f_update_texture.2.o
+		local sz_2=$(stat -c '%s' src/f_update_texture.2.o)
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_2) / 2)))
+		sh2_nop
+		## 論理積結果がゼロのとき、
+		## 即ちTビットがセットされたとき、
+		## 待つ処理を繰り返す
 
 		# [r2] = [r1]
 		sh2_copy_to_reg_from_ptr_long r4 r1
@@ -1626,10 +1642,10 @@ f_update_texture() {
 		sh2_add_to_reg_from_val_byte r3 $(two_comp_d 1)
 	) >src/f_update_texture.1.o
 	local sz_1=$(stat -c '%s' src/f_update_texture.1.o)
-	sh2_rel_jump_if_false	$(two_digits_d $(((sz_1 + 2 + 2) / 2)))	# 2
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 + 2 + 2) / 2)))	# 2
 	sh2_nop	# 2
 	cat src/f_update_texture.1.o	# sz_1
-	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((2 + 2 + sz_1 + 2 + 2 + 2) / 2)))	# 2
+	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((2 + 2 + sz_1 + 2 + 2 + 2 + 2) / 2)))	# 2
 	sh2_nop	# 2
 
 	# return
@@ -2290,6 +2306,22 @@ main() {
 		copy_to_reg_from_val_long r1 $a_update_polygon
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
+
+		# 描画終了を待つ
+		(
+			# r2へEDSRのアドレスを取得
+			sh2_copy_to_reg_from_ptr_long r2 r15
+			# r2の指す先(EDSRの内容)をr0へ取得
+			sh2_copy_to_reg_from_ptr_word r0 r2
+			sh2_test_r0_and_val_byte $SS_VDP1_EDSR_BIT_CEF
+		) >src/main.3.o
+		cat src/main.3.o
+		local sz_3=$(stat -c '%s' src/main.3.o)
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
+		sh2_nop
+		## 論理積結果がゼロのとき、
+		## 即ちTビットがセットされたとき、
+		## 待つ処理を繰り返す
 
 		# スプライト更新
 		copy_to_reg_from_val_long r2 $a_update_sprite
