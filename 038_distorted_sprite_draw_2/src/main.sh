@@ -218,6 +218,7 @@ vars() {
 
 	# スプライト座標リスト
 	# 各スプライトはカメラ座標系の4頂点で定義される板
+	# TEXTURE_IMG
 	var_sprite_ax=$(calc16_8 "$var_hexahedron_hz+2")
 	echo -e "var_sprite_ax=$var_sprite_ax" >>$map_file
 	echo -en '\xff\x60'	# -160
@@ -274,8 +275,66 @@ vars() {
 	echo -e "var_texture_size=$var_texture_size" >>$map_file
 	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
 
+	# TEXTURE2_IMG
+	var_sprite2_ax=$(calc16_8 "$var_texture_size+2")
+	echo -e "var_sprite2_ax=$var_sprite2_ax" >>$map_file
+	echo -en '\xff\x60'	# -160
+	# 4の倍数バウンダリ
+	var_sprite2_ay=$(calc16_8 "$var_sprite2_ax+2")
+	echo -e "var_sprite2_ay=$var_sprite2_ay" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	var_sprite2_az=$(calc16_8 "$var_sprite2_ay+2")
+	echo -e "var_sprite2_az=$var_sprite2_az" >>$map_file
+	echo -en '\x00\x82'	# 130
+	# 4の倍数バウンダリ
+	var_sprite2_bx=$(calc16_8 "$var_sprite2_az+2")
+	echo -e "var_sprite2_bx=$var_sprite2_bx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	var_sprite2_by=$(calc16_8 "$var_sprite2_bx+2")
+	echo -e "var_sprite2_by=$var_sprite2_by" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	# 4の倍数バウンダリ
+	var_sprite2_bz=$(calc16_8 "$var_sprite2_by+2")
+	echo -e "var_sprite2_bz=$var_sprite2_bz" >>$map_file
+	echo -en '\x00\x82'	# 130
+	var_sprite2_cx=$(calc16_8 "$var_sprite2_bz+2")
+	echo -e "var_sprite2_cx=$var_sprite2_cx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	# 4の倍数バウンダリ
+	var_sprite2_cy=$(calc16_8 "$var_sprite2_cx+2")
+	echo -e "var_sprite2_cy=$var_sprite2_cy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	var_sprite2_cz=$(calc16_8 "$var_sprite2_cy+2")
+	echo -e "var_sprite2_cz=$var_sprite2_cz" >>$map_file
+	echo -en '\x00\x82'	# 130
+	# 4の倍数バウンダリ
+	var_sprite2_dx=$(calc16_8 "$var_sprite2_cz+2")
+	echo -e "var_sprite2_dx=$var_sprite2_dx" >>$map_file
+	echo -en '\xff\x60'	# -160
+	var_sprite2_dy=$(calc16_8 "$var_sprite2_dx+2")
+	echo -e "var_sprite2_dy=$var_sprite2_dy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
+	var_sprite2_dz=$(calc16_8 "$var_sprite2_dy+2")
+	echo -e "var_sprite2_dz=$var_sprite2_dz" >>$map_file
+	echo -en '\x00\x82'	# 130
+	# テクスチャ画像のオフセットとサイズ
+	# オフセットは8で割った値を指定
+	vsz=$(to16 $(stat -c '%s' $TEXTURE_IMG))
+	tex_ofs_div_8=$(calc16_4 "(${VRAM_TEXTURE_OFS}+${vsz})/8")
+	tex_ofs_div_8_th=$(echo $tex_ofs_div_8 | cut -c1-2)
+	tex_ofs_div_8_bh=$(echo $tex_ofs_div_8 | cut -c3-4)
+	var_texture2_ofs=$(calc16_8 "$var_sprite2_dz+2")
+	echo -e "var_texture2_ofs=$var_texture2_ofs" >>$map_file
+	echo -en "\x${tex_ofs_div_8_th}\x${tex_ofs_div_8_bh}"
+	# 4の倍数バウンダリ
+	# サイズは、(b15-b14)=0b00、(b13-b08)=幅/8、(b07-b00)=高さ を指定
+	var_texture2_size=$(calc16_8 "$var_texture2_ofs+2")
+	echo -e "var_texture2_size=$var_texture2_size" >>$map_file
+	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
+
 	# 座標更新周期カウンタ
-	var_coord_update_cyc_counter=$(calc16_8 "$var_texture_size+2")
+	var_coord_update_cyc_counter=$(calc16_8 "$var_texture2_size+2")
 	echo -e "var_coord_update_cyc_counter=$var_coord_update_cyc_counter" >>$map_file
 	echo -en '\x00'
 
