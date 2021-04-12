@@ -1578,18 +1578,70 @@ f_update_sprite() {
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r0
 
+	# TEXTURE2_IMG
 	# f_draw_plate_texture()の引数設定
 	## SP+4 - キャラクタサイズ
 	##        - (b15-b14) = 0b00
 	##        - (b13-b08) = 幅/8
 	##        - (b07-b00) = 高さ
-	copy_to_reg_from_val_long r2 $var_texture_size
+	copy_to_reg_from_val_long r2 $var_texture2_size
 	sh2_copy_to_reg_from_ptr_word r2 r2
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r2
 	## SP+0 - dst addr
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r1   - Ax
+	copy_to_reg_from_val_long r1 $var_sprite2_ax
+	sh2_copy_to_reg_from_ptr_word r1 r1
+	## r2   - Ay
+	copy_to_reg_from_val_long r2 $var_sprite2_ay
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	## r3   - Az
+	copy_to_reg_from_val_long r3 $var_sprite2_az
+	sh2_copy_to_reg_from_ptr_word r3 r3
+	## r4   - Bx
+	copy_to_reg_from_val_long r4 $var_sprite2_bx
+	sh2_copy_to_reg_from_ptr_word r4 r4
+	## r5   - By
+	copy_to_reg_from_val_long r5 $var_sprite2_by
+	sh2_copy_to_reg_from_ptr_word r5 r5
+	## r6   - Bz
+	copy_to_reg_from_val_long r6 $var_sprite2_bz
+	sh2_copy_to_reg_from_ptr_word r6 r6
+	## r7   - Cx
+	copy_to_reg_from_val_long r7 $var_sprite2_cx
+	sh2_copy_to_reg_from_ptr_word r7 r7
+	## r8   - Cy
+	copy_to_reg_from_val_long r8 $var_sprite2_cy
+	sh2_copy_to_reg_from_ptr_word r8 r8
+	## r9   - Cz
+	copy_to_reg_from_val_long r9 $var_sprite2_cz
+	sh2_copy_to_reg_from_ptr_word r9 r9
+	## r10  - Dx
+	copy_to_reg_from_val_long r10 $var_sprite2_dx
+	sh2_copy_to_reg_from_ptr_word r10 r10
+	## r11  - Dy
+	copy_to_reg_from_val_long r11 $var_sprite2_dy
+	sh2_copy_to_reg_from_ptr_word r11 r11
+	## r12  - Dz
+	copy_to_reg_from_val_long r12 $var_sprite2_dz
+	sh2_copy_to_reg_from_ptr_word r12 r12
+	## r13  - キャラクタパターンテーブルのアドレス/8
+	copy_to_reg_from_val_long r13 $var_texture2_ofs
+	sh2_copy_to_reg_from_ptr_word r13 r13
+
+	# f_draw_plate_texture()を呼び出す
+	copy_to_reg_from_val_long r14 $a_draw_plate_texture
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# TEXTURE_IMG
+	# f_draw_plate_texture()の引数設定
+	## SP+4 - キャラクタサイズ
+	## 変わらないのでそのまま
+	## SP+0 - dst addr
+	## 次のアドレスが格納されているのでこのまま
 	## r1   - Ax
 	copy_to_reg_from_val_long r1 $var_sprite_ax
 	sh2_copy_to_reg_from_ptr_word r1 r1
