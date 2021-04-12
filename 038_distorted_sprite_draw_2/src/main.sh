@@ -2325,6 +2325,19 @@ main() {
 	copy_to_reg_from_val_long r4 $a_update_texture
 	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_nop
+	## TEXTURE2_IMG
+	### テクスチャ実データアドレスをr1へ設定
+	copy_to_reg_from_val_long r1 $var_texture2_data
+	### テクスチャを配置するオフセット/8をr2へ設定
+	copy_to_reg_from_val_long r2 $var_texture2_ofs
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	### テクスチャのピクセル数をr3へ設定
+	copy_to_reg_from_val_long r3 $var_texture2_pixel_num
+	sh2_copy_to_reg_from_ptr_long r3 r3
+	### 関数呼び出し
+	copy_to_reg_from_val_long r4 $a_update_texture
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_nop
 
 	# VDP2のシステムレジスタ設定
 	## TVMD
