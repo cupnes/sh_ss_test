@@ -90,7 +90,7 @@ vars() {
 	var_hexahedron_az=$(calc16_8 "$var_hexahedron_ay+2")
 	ofs_hexahedron_az=04
 	echo -e "var_hexahedron_az=$var_hexahedron_az" >>$map_file
-	echo -en '\x00\x64'	# 100
+	echo -en '\x00\x6e'	# 110
 	# 4の倍数バウンダリ
 	## 頂点B(正面右上)
 	### X (base+0x06)
@@ -108,7 +108,7 @@ vars() {
 	var_hexahedron_bz=$(calc16_8 "$var_hexahedron_by+2")
 	ofs_hexahedron_bz=0a
 	echo -e "var_hexahedron_bz=$var_hexahedron_bz" >>$map_file
-	echo -en '\x00\x64'	# 100
+	echo -en '\x00\x6e'	# 110
 	## 頂点C(正面右下)
 	### X (base+0x0c)
 	var_hexahedron_cx=$(calc16_8 "$var_hexahedron_bz+2")
@@ -125,7 +125,7 @@ vars() {
 	var_hexahedron_cz=$(calc16_8 "$var_hexahedron_cy+2")
 	ofs_hexahedron_cz=10
 	echo -e "var_hexahedron_cz=$var_hexahedron_cz" >>$map_file
-	echo -en '\x00\x64'	# 100
+	echo -en '\x00\x6e'	# 110
 	# 4の倍数バウンダリ
 	## 頂点D(正面左下)
 	### X (base+0x12)
@@ -143,7 +143,7 @@ vars() {
 	var_hexahedron_dz=$(calc16_8 "$var_hexahedron_dy+2")
 	ofs_hexahedron_dz=16
 	echo -e "var_hexahedron_dz=$var_hexahedron_dz" >>$map_file
-	echo -en '\x00\x64'	# 100
+	echo -en '\x00\x6e'	# 110
 	## 頂点E(背面左上)
 	### X (base+0x18)
 	var_hexahedron_ex=$(calc16_8 "$var_hexahedron_dz+2")
@@ -160,7 +160,7 @@ vars() {
 	var_hexahedron_ez=$(calc16_8 "$var_hexahedron_ey+2")
 	ofs_hexahedron_ez=1c
 	echo -e "var_hexahedron_ez=$var_hexahedron_ez" >>$map_file
-	echo -en '\x00\x77'	# 119
+	echo -en '\x00\x81'	# 129
 	# 4の倍数バウンダリ
 	## 頂点F(背面右上)
 	### X (base+0x1e)
@@ -178,7 +178,7 @@ vars() {
 	var_hexahedron_fz=$(calc16_8 "$var_hexahedron_fy+2")
 	ofs_hexahedron_fz=22
 	echo -e "var_hexahedron_fz=$var_hexahedron_fz" >>$map_file
-	echo -en '\x00\x77'	# 119
+	echo -en '\x00\x81'	# 129
 	## 頂点G(背面右下)
 	### X (base+0x24)
 	var_hexahedron_gx=$(calc16_8 "$var_hexahedron_fz+2")
@@ -195,7 +195,7 @@ vars() {
 	var_hexahedron_gz=$(calc16_8 "$var_hexahedron_gy+2")
 	ofs_hexahedron_gz=28
 	echo -e "var_hexahedron_gz=$var_hexahedron_gz" >>$map_file
-	echo -en '\x00\x77'	# 119
+	echo -en '\x00\x81'	# 129
 	# 4の倍数バウンダリ
 	## 頂点H(背面左下)
 	### X (base+0x2a)
@@ -213,7 +213,7 @@ vars() {
 	var_hexahedron_hz=$(calc16_8 "$var_hexahedron_hy+2")
 	ofs_hexahedron_hz=2e
 	echo -e "var_hexahedron_hz=$var_hexahedron_hz" >>$map_file
-	echo -en '\x00\x77'	# 119
+	echo -en '\x00\x81'	# 129
 
 	# スプライト座標リスト
 	# 各スプライトはカメラ座標系の4頂点で定義される板
