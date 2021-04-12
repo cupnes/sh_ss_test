@@ -1706,25 +1706,21 @@ f_update_sprite() {
 }
 
 # テクスチャ画像データの更新
+# in  : r1  - テクスチャ実データアドレス
+#       r2  - 配置先のVRAMオフセット/8
+#             (関数内で配置先のVRAMアドレスへ書き換えられる)
+#       r3  - テクスチャのピクセル数
 f_update_texture() {
-	# テクスチャ実データアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_texture_data
-
 	# 配置先のVRAMアドレスをr2へ設定
-	## VRAMベースアドレスをr2へ設定
-	copy_to_reg_from_val_long r2 $SS_VDP1_VRAM_ADDR
-	## テクスチャを配置するオフセットをr3へ設定
-	copy_to_reg_from_val_long r3 $var_texture_ofs
-	sh2_copy_to_reg_from_ptr_word r3 r3
-	### 3ビット左シフト(8倍)
-	sh2_shift_left_logical_2 r3
-	sh2_shift_left_logical r3
-	## r2 += r3
-	sh2_add_to_reg_from_reg r2 r3
+	## VRAMベースアドレスをr4へ設定
+	copy_to_reg_from_val_long r4 $SS_VDP1_VRAM_ADDR
+	## テクスチャを配置するオフセット/8を3ビット左シフト(8倍)
+	sh2_shift_left_logical_2 r2
+	sh2_shift_left_logical r2
+	## r2 += r4
+	sh2_add_to_reg_from_reg r2 r4
 
 	# テクスチャのピクセル数/2をr3へ設定
-	copy_to_reg_from_val_long r3 $var_texture_pixel_num
-	sh2_copy_to_reg_from_ptr_long r3 r3
 	sh2_shift_right_logical r3
 
 	# r1のアドレスからr2のアドレスへr3分のデータをロード
@@ -2316,8 +2312,18 @@ main() {
 
 	# VRAM初期設定
 	setup_vram_command_table
-	copy_to_reg_from_val_long r1 $a_update_texture
-	sh2_abs_call_to_reg_after_next_inst r1
+	## TEXTURE_IMG
+	### テクスチャ実データアドレスをr1へ設定
+	copy_to_reg_from_val_long r1 $var_texture_data
+	### テクスチャを配置するオフセット/8をr2へ設定
+	copy_to_reg_from_val_long r2 $var_texture_ofs
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	### テクスチャのピクセル数をr3へ設定
+	copy_to_reg_from_val_long r3 $var_texture_pixel_num
+	sh2_copy_to_reg_from_ptr_long r3 r3
+	### 関数呼び出し
+	copy_to_reg_from_val_long r4 $a_update_texture
+	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_nop
 
 	# VDP2のシステムレジスタ設定
