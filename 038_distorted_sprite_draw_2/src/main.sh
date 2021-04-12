@@ -20,6 +20,7 @@ MAIN_BASE=06050000
 
 # [debug]
 TEXTURE_IMG='texture.img'
+TEXTURE2_IMG='texture2.img'
 ## 適当にコマンド100(0x64)個分を確保しておく
 VRAM_TEXTURE_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
 VRAM_TEXTURE_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_TEXTURE_OFS}")
@@ -289,7 +290,16 @@ vars() {
 	# 4の倍数バウンダリ
 	var_texture_data=$(calc16_8 "$var_texture_pixel_num+4")
 	echo -e "var_texture_data=$var_texture_data" >>$map_file
-	cat $TEXTURE_IMG
+	cat $TEXTURE_IMG	# 143360 bytes(140KB)
+	# 4の倍数バウンダリ
+	vsz=$(to16 $(stat -c '%s' $TEXTURE_IMG))
+	var_texture2_pixel_num=$(calc16_8 "${var_texture_data}+${vsz}")
+	echo -e "var_texture2_pixel_num=$var_texture2_pixel_num" >>$map_file
+	echo -en '\x00\x01\x18\x00'	# (* 320 224)71680(0x11800)
+	# 4の倍数バウンダリ
+	var_texture2_data=$(calc16_8 "$var_texture2_pixel_num+4")
+	echo -e "var_texture2_data=$var_texture2_data" >>$map_file
+	cat $TEXTURE2_IMG	# 143360 bytes(140KB)
 }
 # 変数設定のために空実行
 vars >/dev/null
