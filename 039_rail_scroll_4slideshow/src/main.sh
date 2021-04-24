@@ -2226,9 +2226,6 @@ f_update_polygon() {
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r1
 
-	# [debug] 無限ループ
-	# infinite_loop
-
 	# 05c00060
 	# 上面ポリゴン
 	## 六面体上面の4頂点の3次元座標をレジスタへロード
@@ -2832,9 +2829,6 @@ f_rotate_right_reg_about_yaxis_to_all_vertices() {
 		sh2_add_to_reg_from_reg r0 r8
 		## x'(r0)でX座標(r3の指す先)を更新
 		sh2_copy_to_ptr_from_reg_word r3 r0
-
-		# # [debug] AX == 0かチェック
-		# debug_stop_if_ax_eq_0
 
 		# 回転後のZ座標を取得
 		# z' = zcosθ - xsinθ
@@ -3441,9 +3435,6 @@ main() {
 
 	# メインループ
 	(
-		# # [debug] AX == 0かチェック
-		# debug_stop_if_ax_eq_0
-
 		# 描画終了を待つ
 		(
 			# r1へEDSRのアドレスを取得
