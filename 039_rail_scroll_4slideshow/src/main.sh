@@ -23,6 +23,9 @@ TEXTURE1_IMG='texture1.img'
 TEXTURE2_IMG='texture2.img'
 TEXTURE3_IMG='texture3.img'
 TEXTURE4_IMG='texture4.img'
+TEXTURE5_IMG='texture5.img'
+TEXTURE6_IMG='texture6.img'
+TEXTURE7_IMG='texture7.img'
 ## 適当にコマンド100(0x64)個分を確保しておく
 VRAM_TEXTURE_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
 VRAM_TEXTURE_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_TEXTURE_OFS}")
@@ -35,6 +38,9 @@ TEXTURE2_VRAM_OFS=4790	# (0x0c80 + 0x23000(140KB)) / 8
 TEXTURE3_VRAM_OFS=8D90	# (0x0c80 + 0x46000(140KB*2)) / 8
 TEXTURE4_VRAM_OFS_TH=01	# 0x0c80 / 8 = 0x0190
 TEXTURE4_VRAM_OFS_BH=90
+TEXTURE5_VRAM_OFS=4790	# (0x0c80 + 0x23000(140KB)) / 8
+TEXTURE6_VRAM_OFS=8D90	# (0x0c80 + 0x46000(140KB*2)) / 8
+TEXTURE7_VRAM_OFS=0190	# 0x0c80 / 8
 ## スライドのテクスチャのピクセル数
 ### (* 320 224)71680(0x11800)
 TEXTURE_PIXEL_NUM_B23_16=01
@@ -476,8 +482,179 @@ vars() {
 	echo -e "var_texture4_size=$var_texture4_size" >>$map_file
 	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
 
+	# TEXTURE5_IMG
+	var_sprite5_ax=$(calc16_8 "$var_texture4_size+2")
+	echo -e "var_sprite5_ax=$var_sprite5_ax" >>$map_file
+	echo -en '\xff\x60'	# -160
+	# 4の倍数バウンダリ
+	var_sprite5_ay=$(calc16_8 "$var_sprite5_ax+2")
+	echo -e "var_sprite5_ay=$var_sprite5_ay" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	var_sprite5_az=$(calc16_8 "$var_sprite5_ay+2")
+	echo -e "var_sprite5_az=$var_sprite5_az" >>$map_file
+	echo -en '\x00\xdc'	# 220
+	# 4の倍数バウンダリ
+	var_sprite5_bx=$(calc16_8 "$var_sprite5_az+2")
+	echo -e "var_sprite5_bx=$var_sprite5_bx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	var_sprite5_by=$(calc16_8 "$var_sprite5_bx+2")
+	echo -e "var_sprite5_by=$var_sprite5_by" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	# 4の倍数バウンダリ
+	var_sprite5_bz=$(calc16_8 "$var_sprite5_by+2")
+	echo -e "var_sprite5_bz=$var_sprite5_bz" >>$map_file
+	echo -en '\x00\xdc'	# 220
+	var_sprite5_cx=$(calc16_8 "$var_sprite5_bz+2")
+	echo -e "var_sprite5_cx=$var_sprite5_cx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	# 4の倍数バウンダリ
+	var_sprite5_cy=$(calc16_8 "$var_sprite5_cx+2")
+	echo -e "var_sprite5_cy=$var_sprite5_cy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	var_sprite5_cz=$(calc16_8 "$var_sprite5_cy+2")
+	echo -e "var_sprite5_cz=$var_sprite5_cz" >>$map_file
+	echo -en '\x00\xdc'	# 220
+	# 4の倍数バウンダリ
+	var_sprite5_dx=$(calc16_8 "$var_sprite5_cz+2")
+	echo -e "var_sprite5_dx=$var_sprite5_dx" >>$map_file
+	echo -en '\xff\x60'	# -160
+	var_sprite5_dy=$(calc16_8 "$var_sprite5_dx+2")
+	echo -e "var_sprite5_dy=$var_sprite5_dy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
+	var_sprite5_dz=$(calc16_8 "$var_sprite5_dy+2")
+	echo -e "var_sprite5_dz=$var_sprite5_dz" >>$map_file
+	echo -en '\x00\xdc'	# 220
+	# テクスチャ画像のオフセットとサイズ
+	# オフセットは8で割った値を指定
+	tex_ofs_div_8=$TEXTURE5_VRAM_OFS
+	tex_ofs_div_8_th=$(echo $tex_ofs_div_8 | cut -c1-2)
+	tex_ofs_div_8_bh=$(echo $tex_ofs_div_8 | cut -c3-4)
+	var_texture5_ofs=$(calc16_8 "$var_sprite5_dz+2")
+	echo -e "var_texture5_ofs=$var_texture5_ofs" >>$map_file
+	echo -en "\x${tex_ofs_div_8_th}\x${tex_ofs_div_8_bh}"
+	# 4の倍数バウンダリ
+	# サイズは、(b15-b14)=0b00、(b13-b08)=幅/8、(b07-b00)=高さ を指定
+	var_texture5_size=$(calc16_8 "$var_texture5_ofs+2")
+	echo -e "var_texture5_size=$var_texture5_size" >>$map_file
+	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
+
+	# TEXTURE6_IMG
+	var_sprite6_ax=$(calc16_8 "$var_texture5_size+2")
+	echo -e "var_sprite6_ax=$var_sprite6_ax" >>$map_file
+	echo -en '\xff\x60'	# -160
+	# 4の倍数バウンダリ
+	var_sprite6_ay=$(calc16_8 "$var_sprite6_ax+2")
+	echo -e "var_sprite6_ay=$var_sprite6_ay" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	var_sprite6_az=$(calc16_8 "$var_sprite6_ay+2")
+	echo -e "var_sprite6_az=$var_sprite6_az" >>$map_file
+	echo -en '\x00\xfa'	# 250
+	# 4の倍数バウンダリ
+	var_sprite6_bx=$(calc16_8 "$var_sprite6_az+2")
+	echo -e "var_sprite6_bx=$var_sprite6_bx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	var_sprite6_by=$(calc16_8 "$var_sprite6_bx+2")
+	echo -e "var_sprite6_by=$var_sprite6_by" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	# 4の倍数バウンダリ
+	var_sprite6_bz=$(calc16_8 "$var_sprite6_by+2")
+	echo -e "var_sprite6_bz=$var_sprite6_bz" >>$map_file
+	echo -en '\x00\xfa'	# 250
+	var_sprite6_cx=$(calc16_8 "$var_sprite6_bz+2")
+	echo -e "var_sprite6_cx=$var_sprite6_cx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	# 4の倍数バウンダリ
+	var_sprite6_cy=$(calc16_8 "$var_sprite6_cx+2")
+	echo -e "var_sprite6_cy=$var_sprite6_cy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	var_sprite6_cz=$(calc16_8 "$var_sprite6_cy+2")
+	echo -e "var_sprite6_cz=$var_sprite6_cz" >>$map_file
+	echo -en '\x00\xfa'	# 250
+	# 4の倍数バウンダリ
+	var_sprite6_dx=$(calc16_8 "$var_sprite6_cz+2")
+	echo -e "var_sprite6_dx=$var_sprite6_dx" >>$map_file
+	echo -en '\xff\x60'	# -160
+	var_sprite6_dy=$(calc16_8 "$var_sprite6_dx+2")
+	echo -e "var_sprite6_dy=$var_sprite6_dy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
+	var_sprite6_dz=$(calc16_8 "$var_sprite6_dy+2")
+	echo -e "var_sprite6_dz=$var_sprite6_dz" >>$map_file
+	echo -en '\x00\xfa'	# 250
+	# テクスチャ画像のオフセットとサイズ
+	# オフセットは8で割った値を指定
+	tex_ofs_div_8=$TEXTURE6_VRAM_OFS
+	tex_ofs_div_8_th=$(echo $tex_ofs_div_8 | cut -c1-2)
+	tex_ofs_div_8_bh=$(echo $tex_ofs_div_8 | cut -c3-4)
+	var_texture6_ofs=$(calc16_8 "$var_sprite6_dz+2")
+	echo -e "var_texture6_ofs=$var_texture6_ofs" >>$map_file
+	echo -en "\x${tex_ofs_div_8_th}\x${tex_ofs_div_8_bh}"
+	# 4の倍数バウンダリ
+	# サイズは、(b15-b14)=0b00、(b13-b08)=幅/8、(b07-b00)=高さ を指定
+	var_texture6_size=$(calc16_8 "$var_texture6_ofs+2")
+	echo -e "var_texture6_size=$var_texture6_size" >>$map_file
+	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
+
+	# TEXTURE7_IMG
+	var_sprite7_ax=$(calc16_8 "$var_texture6_size+2")
+	echo -e "var_sprite7_ax=$var_sprite7_ax" >>$map_file
+	echo -en '\xff\x60'	# -160
+	# 4の倍数バウンダリ
+	var_sprite7_ay=$(calc16_8 "$var_sprite7_ax+2")
+	echo -e "var_sprite7_ay=$var_sprite7_ay" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	var_sprite7_az=$(calc16_8 "$var_sprite7_ay+2")
+	echo -e "var_sprite7_az=$var_sprite7_az" >>$map_file
+	echo -en '\x01\x18'	# 280
+	# 4の倍数バウンダリ
+	var_sprite7_bx=$(calc16_8 "$var_sprite7_az+2")
+	echo -e "var_sprite7_bx=$var_sprite7_bx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	var_sprite7_by=$(calc16_8 "$var_sprite7_bx+2")
+	echo -e "var_sprite7_by=$var_sprite7_by" >>$map_file
+	echo -en '\x00\xdf'	# 223
+	# 4の倍数バウンダリ
+	var_sprite7_bz=$(calc16_8 "$var_sprite7_by+2")
+	echo -e "var_sprite7_bz=$var_sprite7_bz" >>$map_file
+	echo -en '\x01\x18'	# 280
+	var_sprite7_cx=$(calc16_8 "$var_sprite7_bz+2")
+	echo -e "var_sprite7_cx=$var_sprite7_cx" >>$map_file
+	echo -en '\x00\x9f'	# 159
+	# 4の倍数バウンダリ
+	var_sprite7_cy=$(calc16_8 "$var_sprite7_cx+2")
+	echo -e "var_sprite7_cy=$var_sprite7_cy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	var_sprite7_cz=$(calc16_8 "$var_sprite7_cy+2")
+	echo -e "var_sprite7_cz=$var_sprite7_cz" >>$map_file
+	echo -en '\x01\x18'	# 280
+	# 4の倍数バウンダリ
+	var_sprite7_dx=$(calc16_8 "$var_sprite7_cz+2")
+	echo -e "var_sprite7_dx=$var_sprite7_dx" >>$map_file
+	echo -en '\xff\x60'	# -160
+	var_sprite7_dy=$(calc16_8 "$var_sprite7_dx+2")
+	echo -e "var_sprite7_dy=$var_sprite7_dy" >>$map_file
+	echo -en '\x00\x00'	# 0
+	# 4の倍数バウンダリ
+	var_sprite7_dz=$(calc16_8 "$var_sprite7_dy+2")
+	echo -e "var_sprite7_dz=$var_sprite7_dz" >>$map_file
+	echo -en '\x01\x18'	# 280
+	# テクスチャ画像のオフセットとサイズ
+	# オフセットは8で割った値を指定
+	tex_ofs_div_8=$TEXTURE7_VRAM_OFS
+	tex_ofs_div_8_th=$(echo $tex_ofs_div_8 | cut -c1-2)
+	tex_ofs_div_8_bh=$(echo $tex_ofs_div_8 | cut -c3-4)
+	var_texture7_ofs=$(calc16_8 "$var_sprite7_dz+2")
+	echo -e "var_texture7_ofs=$var_texture7_ofs" >>$map_file
+	echo -en "\x${tex_ofs_div_8_th}\x${tex_ofs_div_8_bh}"
+	# 4の倍数バウンダリ
+	# サイズは、(b15-b14)=0b00、(b13-b08)=幅/8、(b07-b00)=高さ を指定
+	var_texture7_size=$(calc16_8 "$var_texture7_ofs+2")
+	echo -e "var_texture7_size=$var_texture7_size" >>$map_file
+	echo -en '\x28\xe0'	# 幅:(/ 320 8)40(0x28), 高さ:224(0xe0)
+
 	# 座標更新周期カウンタ
-	var_coord_update_cyc_counter=$(calc16_8 "$var_texture4_size+2")
+	var_coord_update_cyc_counter=$(calc16_8 "$var_texture7_size+2")
 	echo -e "var_coord_update_cyc_counter=$var_coord_update_cyc_counter" >>$map_file
 	echo -en '\x00'
 
@@ -521,13 +698,40 @@ vars() {
 	echo -e "var_texture4_data=$var_texture4_data" >>$map_file
 	cat $TEXTURE4_IMG	# 143360 bytes(140KB)
 	# 4の倍数バウンダリ
+	vsz=$(to16 $(stat -c '%s' $TEXTURE4_IMG))
+	var_texture5_pixel_num=$(calc16_8 "${var_texture4_data}+${vsz}")
+	echo -e "var_texture5_pixel_num=$var_texture5_pixel_num" >>$map_file
+	echo -en '\x00\x01\x18\x00'	# (* 320 224)71680(0x11800)
+	# 4の倍数バウンダリ
+	var_texture5_data=$(calc16_8 "$var_texture5_pixel_num+4")
+	echo -e "var_texture5_data=$var_texture5_data" >>$map_file
+	cat $TEXTURE5_IMG	# 143360 bytes(140KB)
+	# 4の倍数バウンダリ
+	vsz=$(to16 $(stat -c '%s' $TEXTURE5_IMG))
+	var_texture6_pixel_num=$(calc16_8 "${var_texture5_data}+${vsz}")
+	echo -e "var_texture6_pixel_num=$var_texture6_pixel_num" >>$map_file
+	echo -en '\x00\x01\x18\x00'	# (* 320 224)71680(0x11800)
+	# 4の倍数バウンダリ
+	var_texture6_data=$(calc16_8 "$var_texture6_pixel_num+4")
+	echo -e "var_texture6_data=$var_texture6_data" >>$map_file
+	cat $TEXTURE6_IMG	# 143360 bytes(140KB)
+	# 4の倍数バウンダリ
+	vsz=$(to16 $(stat -c '%s' $TEXTURE6_IMG))
+	var_texture7_pixel_num=$(calc16_8 "${var_texture6_data}+${vsz}")
+	echo -e "var_texture7_pixel_num=$var_texture7_pixel_num" >>$map_file
+	echo -en '\x00\x01\x18\x00'	# (* 320 224)71680(0x11800)
+	# 4の倍数バウンダリ
+	var_texture7_data=$(calc16_8 "$var_texture7_pixel_num+4")
+	echo -e "var_texture7_data=$var_texture7_data" >>$map_file
+	cat $TEXTURE7_IMG	# 143360 bytes(140KB)
+	# 4の倍数バウンダリ
 
 	# スライドショー用変数
 	## VRAM上の3つ分のテクスチャ領域にロードされている
 	## スライドのZ座標値を保持する変数
 	### 1つ目のテクスチャ領域(0x05C00C80-0x05C23C7F)
-	vsz=$(to16 $(stat -c '%s' $TEXTURE4_IMG))
-	var_slidez_texbuf1=$(calc16_8 "${var_texture4_data}+${vsz}")
+	vsz=$(to16 $(stat -c '%s' $TEXTURE7_IMG))
+	var_slidez_texbuf1=$(calc16_8 "${var_texture7_data}+${vsz}")
 	echo -e "var_slidez_texbuf1=$var_slidez_texbuf1" >>$map_file
 	echo -en '\x00\x64'	# スライド1(TEXTURE1),Z=100
 	### 2つ目のテクスチャ領域(0x05C23C80-0x05C46C7F)
