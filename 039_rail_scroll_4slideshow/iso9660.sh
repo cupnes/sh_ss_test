@@ -47,7 +47,10 @@ gen_ip() {
 	if [ ! -f IP.BIN ]; then
 		wget https://github.com/johannes-fetz/joengine/raw/master/Compiler/COMMON/IP.BIN
 	fi
-	cat IP.BIN
+
+	dd if=IP.BIN bs=1 count=64
+	echo -n "J               "
+	dd if=IP.BIN bs=1 ibs=1 skip=$((64 + 16))
 
 	local ip_bin_sz=$(stat -c '%s' IP.BIN)
 	local padding_sz=$(((SECTOR_BYTES * 16) - ip_bin_sz))
