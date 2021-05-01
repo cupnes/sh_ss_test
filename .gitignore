@@ -5,5 +5,6 @@
 *.BIN
 *.lst
 *.iso
+*.cue
 *.log
 map.sh

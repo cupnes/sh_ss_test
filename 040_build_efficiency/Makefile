@@ -1,9 +1,8 @@
 NAME=040_build_efficiency
 TARGETs=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
-RUN_YABAUSE=yabause -a -i $(NAME).iso -nb
-RUN_MEDNAFEN=mednafen -psx.dbg_level 0 -video.fs 0 -cheats 1 $(NAME).cue
-RUN_CMD=$(RUN_YABAUSE)
+EMU_YABAUSE=yabause -a -nb -i
+EMU_MEDNAFEN=mednafen -psx.dbg_level 0 -video.fs 0 -cheats 1
 
 all: $(TARGETs)
 
@@ -22,8 +21,13 @@ sin_coeff_table.dat:
 cos_coeff_table.dat:
 	$(TOOLS_PATH)/dump_cos_coeff_table.sh >$@
 
-run: $(TARGETs)
-	$(RUN_CMD)
+run_yabause: $(NAME).iso
+	$(EMU_YABAUSE) $<
+
+run_mednafen: $(NAME).cue
+	$(EMU_MEDNAFEN) $<
+
+run: run_yabause
 
 clean:
 	rm -f *~ *.o *.dat *.bin 0.BIN *.lst map.sh $(TARGETs) src/*~	\
@@ -32,4 +36,4 @@ clean:
 clean_all: clean
 	rm -f IP.BIN
 
-.PHONY: run clean clean_all
+.PHONY: run_yabause run_mednafen run clean clean_all
