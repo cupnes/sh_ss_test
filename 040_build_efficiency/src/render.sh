@@ -1,7 +1,7 @@
-if [ "${RENDER_SH+is_defined}" ]; then
+if [ "${SRC_RENDER_SH+is_defined}" ]; then
 	return
 fi
-RENDER_SH=true
+SRC_RENDER_SH=true
 
 . include/common.sh
 . include/sh2.sh

@@ -1,7 +1,7 @@
-if [ "${INCLUDE_DEBUG_SH+is_defined}" ]; then
+if [ "${SRC_DEBUG_SH+is_defined}" ]; then
 	return
 fi
-INCLUDE_DEBUG_SH=true
+SRC_DEBUG_SH=true
 
 debug() {
 	echo "## [$(date '+%T')] $1" >&2
