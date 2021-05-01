@@ -3,7 +3,7 @@ TARGETs=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 RUN_YABAUSE=yabause -a -i $(NAME).iso -nb
 RUN_MEDNAFEN=mednafen -psx.dbg_level 0 -video.fs 0 -cheats 1 $(NAME).cue
-RUN_CMD=$(RUN_MEDNAFEN)
+RUN_CMD=$(RUN_YABAUSE)
 
 all: $(TARGETs)
 
