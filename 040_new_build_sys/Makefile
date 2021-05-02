@@ -1,4 +1,4 @@
-NAME=040_set_clear_color
+NAME=040_new_build_sys
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
