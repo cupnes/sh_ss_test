@@ -37,13 +37,17 @@ two_digits() {
 		echo $val
 		;;
 	*)
-		echo "Error: Invalid digits: %val" 1>&2
+		echo "Error: Invalid digits: $val" 1>&2
 		return 1
 	esac
 }
 
 two_digits_d() {
 	local val_d=$1
+	if [ $val_d -ge 128 ]; then
+		echo "Error: Argument($val_d) must be less than 128." 1>&2
+		return 1
+	fi
 	local val=$(echo "obase=16;$val_d" | bc)
 	two_digits $val
 }
@@ -86,17 +90,37 @@ extend_digit() {
 
 two_comp() {
 	local val=$1
+	if [ $val -eq 0 ]; then
+		echo "Error: Zero is invalid.(arg=$val)" 1>&2
+		return 1
+	fi
 	local val_up=$(echo $val | tr [:lower:] [:upper:])
 	echo "obase=16;ibase=16;100-${val_up}" | bc
 }
 
 two_comp_d() {
 	local val=$1
+	if [ $val -eq 0 ]; then
+		echo "Error: Zero is invalid.(arg=$val)" 1>&2
+		return 1
+	fi
+	if [ $val -ge 128 ]; then
+		echo "Error: Argument($val) must be less than 128." 1>&2
+		return 1
+	fi
 	echo "obase=16;256-${val}" | bc
 }
 
 two_comp_3_d() {
 	local val=$1
+	if [ $val -eq 0 ]; then
+		echo "Error: Zero is invalid.(arg=$val)" 1>&2
+		return 1
+	fi
+	if [ $val -ge 2048 ]; then
+		echo "Error: Argument($val) must be less than 2048." 1>&2
+		return 1
+	fi
 	echo "obase=16;4096-${val}" | bc
 }
 
