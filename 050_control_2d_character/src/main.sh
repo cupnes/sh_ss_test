@@ -6,12 +6,16 @@ set -ue
 . include/sh2.sh
 . include/lib.sh
 
+INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 VARS_BASE=06004020
 FUNCS_BASE=060FA000
 MAIN_BASE=060FF000
 
 main() {
+	# スタックポインタ(r15)の初期化
+	copy_to_reg_from_val_long r15 $INIT_SP
+
 	# 無限ループ
 	infinite_loop
 }
