@@ -5,16 +5,48 @@ set -ue
 
 . include/sh2.sh
 . include/lib.sh
+. include/ss.sh
+. include/vdp1.sh
 
+VRAM_DRAW_CMD_BASE=05C00060
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 VARS_BASE=06004020
 FUNCS_BASE=060FA000
 MAIN_BASE=060FF000
 
+# コマンドテーブル設定
+setup_vram_command_table() {
+	# 05c00000
+	local com_adr=$SS_VDP1_VRAM_ADDR
+	vdp1_command_system_clipping_coordinates >src/system_clipping_coordinates.o
+	put_file_to_addr src/system_clipping_coordinates.o $com_adr
+
+	# 05c00020
+	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_user_clipping_coordinates >src/user_clipping_coordinates.o
+	put_file_to_addr src/user_clipping_coordinates.o $com_adr
+
+	# 05c00040
+	com_adr=$(calc16 "$com_adr+20")
+	vdp1_command_local_coordinates >src/local_coordinates.o
+	put_file_to_addr src/local_coordinates.o $com_adr
+
+	# # r1へ次にコマンドを配置するVRAMアドレスを設定
+	# copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
+
+	# r1のアドレス先へ描画終了コマンドを配置
+	sh2_set_reg r0 80
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r1 r0
+}
+
 main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
+
+	# VRAM初期設定
+	setup_vram_command_table
 
 	# 無限ループ
 	infinite_loop
