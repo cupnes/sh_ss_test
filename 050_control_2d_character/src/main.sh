@@ -12,8 +12,9 @@ set -ue
 . src/funcs_map.sh
 
 VRAM_DRAW_CMD_BASE=05C00060
-VRAM_CPT_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
-VRAM_CPT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_CPT_OFS}")	# 0x05c00c80
+VRAM_CMD_SIZE_HEX=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
+VRAM_CPT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_CMD_SIZE_HEX}")	# 0x05c00c80
+VRAM_CLT_BASE=05C00F00
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 
@@ -66,6 +67,33 @@ setup_vram_character_pattern_table() {
 	sh2_nop
 }
 
+# カラールックアップテーブル設定
+setup_vram_color_lookup_table() {
+	# 配置先アドレスをr1へ設定
+	copy_to_reg_from_val_long r1 $VRAM_CLT_BASE
+
+	# | 0 | 透明 | 0x0000 |
+	sh2_xor_to_reg_from_reg r0 r0
+	sh2_copy_to_ptr_from_reg_word r1 r0
+
+	# | 1 | 白   | 0x7fff |
+	sh2_add_to_reg_from_val_byte r1 02
+	sh2_set_reg r0 7f
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ff
+	sh2_copy_to_ptr_from_reg_word r1 r0
+
+	# | 2 | 透明 | 0x0000 |
+	# | : |  :   |   :     |
+	# | f | 透明 | 0x0000 |
+	sh2_xor_to_reg_from_reg r0 r0
+	local _i
+	for _i in $(seq 2 15); do
+		sh2_add_to_reg_from_val_byte r1 02
+		sh2_copy_to_ptr_from_reg_word r1 r0
+	done
+}
+
 main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
@@ -73,6 +101,7 @@ main() {
 	# VRAM初期設定
 	setup_vram_command_table
 	setup_vram_character_pattern_table
+	setup_vram_color_lookup_table
 
 	# 無限ループ
 	infinite_loop
