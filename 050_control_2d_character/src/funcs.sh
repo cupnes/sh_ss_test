@@ -9,3 +9,5 @@ funcs() {
 
 	touch $map_file
 }
+
+funcs

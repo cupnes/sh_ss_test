@@ -8,3 +8,4 @@
 *.cue
 *.log
 map.sh
+*_map.sh

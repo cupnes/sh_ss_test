@@ -7,13 +7,11 @@ set -ue
 . include/lib.sh
 . include/ss.sh
 . include/vdp1.sh
+. include/memmap.sh
 
 VRAM_DRAW_CMD_BASE=05C00060
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
-VARS_BASE=06004020
-FUNCS_BASE=060FA000
-MAIN_BASE=060FF000
 
 # コマンドテーブル設定
 setup_vram_command_table() {

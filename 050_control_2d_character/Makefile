@@ -15,7 +15,7 @@ $(NAME).iso: 0.BIN
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o src/funcs_map.sh
 	./$< >$@
 
-src/vars.o src/vars_map.sh: src/vars.sh
+src/vars.o src/vars_map.sh: src/vars.sh character.lut
 	src/vars.sh >src/vars.o
 
 src/funcs.o src/funcs_map.sh: src/funcs.sh src/vars_map.sh
