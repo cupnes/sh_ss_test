@@ -74,6 +74,16 @@ four_digits() {
 	esac
 }
 
+four_digits_d() {
+	local val_d=$1
+	if [ $val_d -ge 32768 ]; then
+		echo "Error: Argument($val_d) must be less than 32768." 1>&2
+		return 1
+	fi
+	local val=$(echo "obase=16;$val_d" | bc)
+	four_digits $val
+}
+
 extend_digit() {
 	local val=$1
 	local expected_digits=$2

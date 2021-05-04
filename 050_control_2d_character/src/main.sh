@@ -35,8 +35,13 @@ setup_vram_command_table() {
 	vdp1_command_local_coordinates >src/local_coordinates.o
 	put_file_to_addr src/local_coordinates.o $com_adr
 
-	# # r1へ次にコマンドを配置するVRAMアドレスを設定
-	# copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
+	# r1へ次にコマンドを配置するVRAMアドレスを設定
+	copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
+
+	# 矩形スプライト
+	copy_to_reg_from_val_long r2 $a_put_vdp1_command_scaled_sprite_draw_to_addr
+	sh2_abs_call_to_reg_after_next_inst r2
+	sh2_nop
 
 	# r1のアドレス先へ描画終了コマンドを配置
 	sh2_set_reg r0 80
@@ -55,10 +60,11 @@ setup_vram_character_pattern_table() {
 	copy_to_reg_from_val_long r2 $var_char_pat_tbl_dat
 
 	# r3へテクスチャファイルのバイト数設定
-	# ※ 16 <= バイト数 <= 255 であること
-	local sz=$(stat -c '%s' character.lut)
-	sh2_xor_to_reg_from_reg r0 r0
-	sh2_or_to_r0_from_val_byte $(to16 $sz)
+	# ※ バイト数 <= 32767 であること
+	local sz_hex=$(four_digits_d $(stat -c '%s' character.lut))
+	sh2_set_reg r0 $(echo $sz_hex | cut -c1-2)
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $sz_hex | cut -c3-4)
 	sh2_copy_to_reg_from_reg r3 r0
 
 	# f_memcpy()を実行する
@@ -76,11 +82,9 @@ setup_vram_color_lookup_table() {
 	sh2_xor_to_reg_from_reg r0 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# | 1 | 白   | 0x7fff |
+	# | 1 | 白   | 0xffff |
 	sh2_add_to_reg_from_val_byte r1 02
-	sh2_set_reg r0 7f
-	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte ff
+	sh2_set_reg r0 ff
 	sh2_copy_to_ptr_from_reg_word r1 r0
 
 	# | 2 | 透明 | 0x0000 |
@@ -102,6 +106,60 @@ main() {
 	setup_vram_command_table
 	setup_vram_character_pattern_table
 	setup_vram_color_lookup_table
+
+	# VDP2のシステムレジスタ設定
+	## TVMD
+	## - DISP(b15) = 1
+	## - BDCLMD(b8) = 1
+	## - LSMD(b7-b6) = 0b00
+	## - VRESO(b5-b4) = 0b00
+	## - HRESO(b2-b0) = 0b000
+	copy_to_reg_from_val_long r4 $SS_VDP2_TVMD_ADDR
+	sh2_set_reg r0 81
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r4 r0
+	## BGON
+	sh2_add_to_reg_from_val_byte r4 20
+	sh2_set_reg r0 00
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r4 r0
+	## PRISA
+	sh2_add_to_reg_from_val_byte r4 68
+	sh2_add_to_reg_from_val_byte r4 68
+	sh2_set_reg r0 06
+	sh2_copy_to_ptr_from_reg_word r4 r0
+
+	# VDP1のシステムレジスタ設定
+	## TVMR
+	## - VBE(b3) = 0
+	## - TVM(b2-b0) = 0b000
+	copy_to_reg_from_val_long r3 $SS_VDP1_TVMR_ADDR
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r3 r0
+	## FBCR(TVMRの2バイト先)
+	sh2_add_to_reg_from_val_byte r3 02
+	sh2_copy_to_ptr_from_reg_word r3 r0
+	## PTMR(FBCRの2バイト先)
+	sh2_add_to_reg_from_val_byte r3 02
+	## PTM(b1-b0) = 0b10
+	sh2_set_reg r0 02
+	sh2_copy_to_ptr_from_reg_word r3 r0
+	## EWDR(PTMRの2バイト先)
+	sh2_add_to_reg_from_val_byte r3 02
+	sh2_set_reg r0 80
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r3 r0
+	## EWLR(EWDRの2バイト先)
+	sh2_add_to_reg_from_val_byte r3 02
+	sh2_set_reg r0 00
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r3 r0
+	## EWRR(EWLRの2バイト先)
+	sh2_add_to_reg_from_val_byte r3 02
+	sh2_set_reg r0 50
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte df
+	sh2_copy_to_ptr_from_reg_word r3 r0
 
 	# 無限ループ
 	infinite_loop
