@@ -8,8 +8,12 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 . include/memmap.sh
+. src/vars_map.sh
+. src/funcs_map.sh
 
 VRAM_DRAW_CMD_BASE=05C00060
+VRAM_CPT_OFS=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
+VRAM_CPT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_CPT_OFS}")	# 0x05c00c80
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 
@@ -39,12 +43,36 @@ setup_vram_command_table() {
 	sh2_copy_to_ptr_from_reg_word r1 r0
 }
 
+# キャラクタパターンテーブル設定
+setup_vram_character_pattern_table() {
+	local sz
+
+	# r1へコピー先のVRAMアドレス設定
+	copy_to_reg_from_val_long r1 $VRAM_CPT_BASE
+
+	# r2へコピー元のデータアドレス設定
+	copy_to_reg_from_val_long r2 $var_char_pat_tbl_dat
+
+	# r3へテクスチャファイルのバイト数設定
+	# ※ 16 <= バイト数 <= 255 であること
+	local sz=$(stat -c '%s' character.lut)
+	sh2_xor_to_reg_from_reg r0 r0
+	sh2_or_to_r0_from_val_byte $(to16 $sz)
+	sh2_copy_to_reg_from_reg r3 r0
+
+	# f_memcpy()を実行する
+	copy_to_reg_from_val_long r4 $a_memcpy
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_nop
+}
+
 main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
 
 	# VRAM初期設定
 	setup_vram_command_table
+	setup_vram_character_pattern_table
 
 	# 無限ループ
 	infinite_loop

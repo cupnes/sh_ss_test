@@ -12,7 +12,7 @@ $(NAME).cue: $(NAME).iso
 $(NAME).iso: 0.BIN
 	./iso9660.sh $< >$@
 
-0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o src/funcs_map.sh
+0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o src/funcs_map.sh character.lut
 	./$< >$@
 
 src/vars.o src/vars_map.sh: src/vars.sh character.lut
