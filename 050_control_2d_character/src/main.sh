@@ -191,12 +191,12 @@ main() {
 		copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
 
 		# 矩形スプライト
-		copy_to_reg_from_val_long r2 $var_manju_x
+		copy_to_reg_from_val_long r2 $var_character_x
 		sh2_copy_to_reg_from_ptr_long r2 r2
 		sh2_set_reg r0 $SQUARE_WIDTH
 		sh2_multiply_reg_by_reg_unsigned_word r2 r0
 		sh2_copy_to_reg_from_macl r2
-		copy_to_reg_from_val_long r3 $var_manju_y
+		copy_to_reg_from_val_long r3 $var_character_y
 		sh2_copy_to_reg_from_ptr_long r3 r3
 		sh2_set_reg r0 $SQUARE_HEIGHT
 		sh2_multiply_reg_by_reg_unsigned_word r3 r0
@@ -212,6 +212,11 @@ main() {
 
 		# ゲームパッドの入力状態更新
 		copy_to_reg_from_val_long r1 $a_update_gamepad_input_status
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
+
+		# 入力に応じてキャラクタの座標更新
+		copy_to_reg_from_val_long r1 $a_update_character_coordinates
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
 	) >src/main.1.o
