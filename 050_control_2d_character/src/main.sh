@@ -44,21 +44,6 @@ setup_vram_command_table() {
 	# r1へ次にコマンドを配置するVRAMアドレスを設定
 	copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
 
-	# 矩形スプライト
-	copy_to_reg_from_val_long r2 $var_manju_x
-	sh2_copy_to_reg_from_ptr_long r2 r2
-	sh2_set_reg r0 $SQUARE_WIDTH
-	sh2_multiply_reg_by_reg_unsigned_word r2 r0
-	sh2_copy_to_reg_from_macl r2
-	copy_to_reg_from_val_long r3 $var_manju_y
-	sh2_copy_to_reg_from_ptr_long r3 r3
-	sh2_set_reg r0 $SQUARE_HEIGHT
-	sh2_multiply_reg_by_reg_unsigned_word r3 r0
-	sh2_copy_to_reg_from_macl r3
-	copy_to_reg_from_val_long r4 $a_put_vdp1_command_scaled_sprite_draw_to_addr
-	sh2_abs_call_to_reg_after_next_inst r4
-	sh2_nop
-
 	# r1のアドレス先へ描画終了コマンドを配置
 	sh2_set_reg r0 80
 	sh2_shift_left_logical_8 r0
@@ -199,6 +184,31 @@ main() {
 		## 論理積結果がゼロのとき、
 		## 即ちTビットがセットされたとき、
 		## 待つ処理を繰り返す
+
+		# VRAM更新処理
+
+		# r1へ次にコマンドを配置するVRAMアドレスを設定
+		copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
+
+		# 矩形スプライト
+		copy_to_reg_from_val_long r2 $var_manju_x
+		sh2_copy_to_reg_from_ptr_long r2 r2
+		sh2_set_reg r0 $SQUARE_WIDTH
+		sh2_multiply_reg_by_reg_unsigned_word r2 r0
+		sh2_copy_to_reg_from_macl r2
+		copy_to_reg_from_val_long r3 $var_manju_y
+		sh2_copy_to_reg_from_ptr_long r3 r3
+		sh2_set_reg r0 $SQUARE_HEIGHT
+		sh2_multiply_reg_by_reg_unsigned_word r3 r0
+		sh2_copy_to_reg_from_macl r3
+		copy_to_reg_from_val_long r4 $a_put_vdp1_command_scaled_sprite_draw_to_addr
+		sh2_abs_call_to_reg_after_next_inst r4
+		sh2_nop
+
+		# r1のアドレス先へ描画終了コマンドを配置
+		sh2_set_reg r0 80
+		sh2_shift_left_logical_8 r0
+		sh2_copy_to_ptr_from_reg_word r1 r0
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
