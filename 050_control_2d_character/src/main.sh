@@ -39,8 +39,12 @@ setup_vram_command_table() {
 	copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
 
 	# 矩形スプライト
-	copy_to_reg_from_val_long r2 $a_put_vdp1_command_scaled_sprite_draw_to_addr
-	sh2_abs_call_to_reg_after_next_inst r2
+	sh2_xor_to_reg_from_reg r0 r0
+	sh2_or_to_r0_from_val_byte 90
+	sh2_copy_to_reg_from_reg r2 r0
+	sh2_set_reg r3 60
+	copy_to_reg_from_val_long r4 $a_put_vdp1_command_scaled_sprite_draw_to_addr
+	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_nop
 
 	# r1のアドレス先へ描画終了コマンドを配置
