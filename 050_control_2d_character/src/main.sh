@@ -177,8 +177,33 @@ main() {
 	sh2_or_to_r0_from_val_byte df
 	sh2_copy_to_ptr_from_reg_word r3 r0
 
-	# 無限ループ
-	infinite_loop
+	# EDSRのアドレスをスタックへ積んでおく
+	copy_to_reg_from_val_long r1 $SS_VDP1_EDSR_ADDR
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+
+	# メインループ
+	(
+		# 描画終了を待つ
+		(
+			# r1へEDSRのアドレスを取得
+			sh2_copy_to_reg_from_ptr_long r1 r15
+			# r1の指す先(EDSRの内容)をr0へ取得
+			sh2_copy_to_reg_from_ptr_word r0 r1
+			sh2_test_r0_and_val_byte $SS_VDP1_EDSR_BIT_CEF
+		) >src/main.2.o
+		cat src/main.2.o
+		local sz_2=$(stat -c '%s' src/main.2.o)
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_2) / 2)))
+		sh2_nop
+		## 論理積結果がゼロのとき、
+		## 即ちTビットがセットされたとき、
+		## 待つ処理を繰り返す
+	) >src/main.1.o
+	cat src/main.1.o
+	local sz_1=$(stat -c '%s' src/main.1.o)
+	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((4 + sz_1) / 2)))
+	sh2_nop
 }
 
 make_bin() {
