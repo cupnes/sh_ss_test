@@ -209,6 +209,11 @@ main() {
 		sh2_set_reg r0 80
 		sh2_shift_left_logical_8 r0
 		sh2_copy_to_ptr_from_reg_word r1 r0
+
+		# ゲームパッドの入力状態更新
+		copy_to_reg_from_val_long r1 $a_update_gamepad_input_status
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)

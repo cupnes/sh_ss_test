@@ -5,7 +5,10 @@ set -ue
 
 . include/common.sh
 . include/sh2.sh
+. include/lib.sh
+. include/ss.sh
 . include/memmap.sh
+. src/vars_map.sh
 
 # 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
 # in  : r1  - コピー先アドレス
@@ -179,6 +182,87 @@ f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 	sh2_nop
 }
 
+# ゲームパッドの入力状態更新
+# work: r0* - 作業用
+#       r1* - 作業用
+#       r2* - 作業用
+# ※ *が付いているレジスタは、この関数内で何らかの書き換えが行われる
+f_update_gamepad_input_status() {
+	# SFへ1をセット
+	## SFのアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_SF_ADDR
+	## r0へ0x01をセット
+	sh2_set_reg r0 01
+	## r1の指す先(SF)へr0の値(0x01)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# IREG2へ0xf0をセット
+	## IREG2のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_IREG2_ADDR
+	## r0へ0xf0をセット
+	sh2_set_reg r0 f0
+	## r1の指す先(IREG2)へr0の値(0xf0)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# IREG1へ0x08をセット
+	## IREG1のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_IREG1_ADDR
+	## r0へ0x08をセット
+	sh2_set_reg r0 08
+	## r1の指す先(IREG1)へr0の値(0x08)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# IREG0へ0x00をセット
+	## IREG0のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_IREG0_ADDR
+	## r0へ0x00をセット
+	sh2_xor_to_reg_from_reg r0 r0
+	## r1の指す先(IREG0)へr0の値(0x00)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# COMREGへINTBACKをセット
+	## COMREGのアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_COMREG_ADDR
+	## r0へINTBACKをセット
+	sh2_set_reg r0 $SS_SMPC_COMREG_INTBACK
+	## r1の指す先(COMREG)へr0の値(INTBACK)を設定
+	sh2_copy_to_ptr_from_reg_byte r1 r0
+
+	# SFが0になるのを待つ
+	## SFのアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_SF_ADDR
+	## r0へr1の指す先(SF)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r0 r1
+	## bit0が1の間、ここで待つ
+	sh2_test_r0_and_val_byte 01
+	sh2_rel_jump_if_false $(two_comp_d 4)
+	sh2_nop
+
+	# OREG2(1st Data)を変数へロード
+	## OREG2のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_OREG2_ADDR
+	## r2へr1の指す先(OREG2)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r2 r1
+	## 変数のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $var_pad_current_state_1
+	## r1の指す先(変数)へr2の値を格納
+	sh2_copy_to_ptr_from_reg_byte r1 r2
+
+	# OREG3(2nd Data)を変数へロード
+	## OREG3のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $SS_SMPC_OREG3_ADDR
+	## r2へr1の指す先(OREG3)の値をロード
+	sh2_copy_to_reg_from_ptr_byte r2 r1
+	## 変数のアドレスをr1へロード
+	copy_to_reg_from_val_long r1 $var_pad_current_state_2
+	## r1の指す先(変数)へr2の値を格納
+	sh2_copy_to_ptr_from_reg_byte r1 r2
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 funcs() {
 	local fsz
 
@@ -198,6 +282,13 @@ funcs() {
 	echo -e "a_put_vdp1_command_scaled_sprite_draw_to_addr=$a_put_vdp1_command_scaled_sprite_draw_to_addr" >>$map_file
 	f_put_vdp1_command_scaled_sprite_draw_to_addr >src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
 	cat src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
+
+	# ゲームパッドの入力状態更新
+	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o))
+	a_update_gamepad_input_status=$(calc16_8 "${a_put_vdp1_command_scaled_sprite_draw_to_addr}+${fsz}")
+	echo -e "a_update_gamepad_input_status=$a_update_gamepad_input_status" >>$map_file
+	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
+	cat src/f_update_gamepad_input_status.o
 }
 
 funcs
