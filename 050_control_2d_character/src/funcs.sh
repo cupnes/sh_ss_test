@@ -48,9 +48,11 @@ f_memcpy() {
 
 # 指定された属性値の矩形スプライト描画コマンド(不動点指定)を
 # 指定されたアドレスへ配置する
-# in  : r1  - 配置先アドレス
-# work: r0  - 作業用
-# ※ in,workは共にこの関数で書き換えられる
+# in  : r1* - 配置先アドレス
+#     : r2  - 不動点X座標
+#     : r3  - 不動点Y座標
+# work: r0* - 作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
 # ※ r1は最後に書き込みを行った次のアドレスが指定された状態で帰る
 f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 	# CMDCTRL
@@ -130,17 +132,15 @@ f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 
 	# CMDXA
 	# 不動点X座標
-	# 0x0000 -> [r1]
-	sh2_xor_to_reg_from_reg r0 r0
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r2 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r2
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
 
 	# CMDYA
 	# 不動点Y座標
-	# 0x0000 -> [r1]
-	sh2_xor_to_reg_from_reg r0 r0
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r3 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r3
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
 
