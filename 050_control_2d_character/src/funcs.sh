@@ -118,13 +118,12 @@ f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 	# CMDSIZE
 	# キャラクタパターンテーブルに定義したキャラクタの幅と高さを設定する
 	# 幅は8で割った値を設定する
-	# - 幅/8(b13-b8) = (/ 40 8.0)5.0 = 0b000101
-	# - 高さ(b7-b0) = 28 = 0b0001 1100 (0x1c)
-	# 0b0000 0101 0001 1100
-	# 0x051c -> [r1]
-	sh2_set_reg r0 05
+	# - 幅/8(b13-b8) = (/ 16 8.0)2.0 = 0x02
+	# - 高さ(b7-b0) = 16 = 0x10
+	# 0x0210 -> [r1]
+	sh2_set_reg r0 02
 	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte 1c
+	sh2_or_to_r0_from_val_byte 10
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
@@ -147,18 +146,18 @@ f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 
 	# CMDXB
 	# 表示幅
-	# 40 = 0x28
-	# 0x0028 -> [r1]
-	sh2_set_reg r0 28
+	# 16 = 0x10
+	# 0x0010 -> [r1]
+	sh2_set_reg r0 10
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
 
 	# CMDYB
 	# 表示高さ
-	# 28 = 0x1c
-	# 0x001c -> [r1]
-	sh2_set_reg r0 1c
+	# 16 = 0x10
+	# 0x0010 -> [r1]
+	sh2_set_reg r0 10
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
