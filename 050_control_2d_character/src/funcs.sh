@@ -335,95 +335,89 @@ f_update_character_coordinates() {
 	sh2_nop
 	cat src/f_update_character_coordinates.2.o
 
-	# # ↑の押下確認
-	# sh2_copy_to_reg_from_reg r0 r1
-	# sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_UP
-	# ## 押下されていないとき、論理積の結果がゼロでなく、
-	# ## Tビットがクリアされる(false)
-	# ## その場合、座標更新処理を飛ばす
-	# (
-	# 	# 投影面Z座標をインクリメント(カメラ前進)
+	# ↑の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_UP
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# ↑が押下されている場合
 
-	# 	# 変数のアドレスをr2へロード
-	# 	copy_to_reg_from_val_long r2 $var_proj_z
+		# キャラクタY座標をデクリメント
 
-	# 	# 座標値をr3へロード
-	# 	sh2_copy_to_reg_from_ptr_word r3 r2
+		# 変数のアドレスをr2へロード
+		copy_to_reg_from_val_long r2 $var_character_y
 
-	# 	# 座標値をインクリメント
-	# 	sh2_add_to_reg_from_val_byte r3 01
+		# 座標値をr0へロード
+		sh2_copy_to_reg_from_ptr_long r0 r2
 
-	# 	# 座標値を変数へ書き戻す
-	# 	sh2_copy_to_ptr_from_reg_word r2 r3
-	# ) >src/f_update_character_coordinates.4.o
-	# local sz_4=$(stat -c '%s' src/f_update_character_coordinates.4.o)
-	# sh2_rel_jump_if_false $(two_digits_d $((sz_4 / 2)))
-	# sh2_nop
-	# cat src/f_update_character_coordinates.4.o
+		# 座標値をデクリメント
+		sh2_add_to_reg_from_val_byte r0 $(two_comp_d 1)
 
-	# # ←の押下確認
-	# sh2_copy_to_reg_from_reg r0 r1
-	# sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_LEFT
-	# ## 押下されていないとき、論理積の結果がゼロでなく、
-	# ## Tビットがクリアされる(false)
-	# ## その場合、座標更新処理を飛ばす
-	# (
-	# 	# 全頂点のX座標をインクリメント(左移動)
+		# 座標値を変数へ書き戻す
+		sh2_copy_to_ptr_from_reg_long r2 r0
+	) >src/f_update_character_coordinates.3.o
+	local sz_3=$(stat -c '%s' src/f_update_character_coordinates.3.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_3 / 2)))
+	sh2_nop
+	cat src/f_update_character_coordinates.3.o
 
-	# 	# 現在のPRをスタックへ退避
-	# 	sh2_copy_to_reg_from_pr r0
-	# 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	# 	sh2_copy_to_ptr_from_reg_long r15 r0
+	# ←の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_LEFT
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# ←が押下されている場合
 
-	# 	# 各頂点X座標へ加算する値(0x01)をr2へ設定
-	# 	sh2_set_reg r2 01
+		# キャラクタX座標をデクリメント
 
-	# 	# 全頂点のX座標へ指定された値を加算する関数を呼び出す
-	# 	copy_to_reg_from_val_long r3 $a_add_reg_to_all_vertices_x
-	# 	sh2_abs_call_to_reg_after_next_inst r3
-	# 	sh2_nop
+		# 変数のアドレスをr2へロード
+		copy_to_reg_from_val_long r2 $var_character_x
 
-	# 	# PRをスタックから復帰
-	# 	sh2_copy_to_reg_from_ptr_long r0 r15
-	# 	sh2_add_to_reg_from_val_byte r15 04
-	# 	sh2_copy_to_pr_from_reg r0
-	# ) >src/f_update_character_coordinates.6.o
-	# local sz_6=$(stat -c '%s' src/f_update_character_coordinates.6.o)
-	# sh2_rel_jump_if_false $(two_digits_d $((sz_6 / 2)))
-	# sh2_nop
-	# cat src/f_update_character_coordinates.6.o
+		# 座標値をr0へロード
+		sh2_copy_to_reg_from_ptr_long r0 r2
 
-	# # →の押下確認
-	# sh2_copy_to_reg_from_reg r0 r1
-	# sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_RIGHT
-	# ## 押下されていないとき、論理積の結果がゼロでなく、
-	# ## Tビットがクリアされる(false)
-	# ## その場合、座標更新処理を飛ばす
-	# (
-	# 	# 全頂点のX座標をデクリメント(右移動)
+		# 座標値をデクリメント
+		sh2_add_to_reg_from_val_byte r0 $(two_comp_d 1)
 
-	# 	# 現在のPRをスタックへ退避
-	# 	sh2_copy_to_reg_from_pr r0
-	# 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	# 	sh2_copy_to_ptr_from_reg_long r15 r0
+		# 座標値を変数へ書き戻す
+		sh2_copy_to_ptr_from_reg_long r2 r0
+	) >src/f_update_character_coordinates.4.o
+	local sz_4=$(stat -c '%s' src/f_update_character_coordinates.4.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_4 / 2)))
+	sh2_nop
+	cat src/f_update_character_coordinates.4.o
 
-	# 	# 各頂点X座標へ加算する値(0x01)をr2へ設定
-	# 	sh2_set_reg r2 $(two_comp_d 1)
+	# →の押下確認
+	sh2_copy_to_reg_from_reg r0 r1
+	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_RIGHT
+	## 押下されていないとき、論理積の結果がゼロでなく、
+	## Tビットがクリアされる(false)
+	## その場合、座標更新処理を飛ばす
+	(
+		# →が押下されている場合
 
-	# 	# 全頂点のX座標へ指定された値を加算する関数を呼び出す
-	# 	copy_to_reg_from_val_long r3 $a_add_reg_to_all_vertices_x
-	# 	sh2_abs_call_to_reg_after_next_inst r3
-	# 	sh2_nop
+		# キャラクタX座標をインクリメント
 
-	# 	# PRをスタックから復帰
-	# 	sh2_copy_to_reg_from_ptr_long r0 r15
-	# 	sh2_add_to_reg_from_val_byte r15 04
-	# 	sh2_copy_to_pr_from_reg r0
-	# ) >src/f_update_character_coordinates.7.o
-	# local sz_7=$(stat -c '%s' src/f_update_character_coordinates.7.o)
-	# sh2_rel_jump_if_false $(two_digits_d $((sz_7 / 2)))
-	# sh2_nop
-	# cat src/f_update_character_coordinates.7.o
+		# 変数のアドレスをr2へロード
+		copy_to_reg_from_val_long r2 $var_character_x
+
+		# 座標値をr0へロード
+		sh2_copy_to_reg_from_ptr_long r0 r2
+
+		# 座標値をインクリメント
+		sh2_add_to_reg_from_val_byte r0 01
+
+		# 座標値を変数へ書き戻す
+		sh2_copy_to_ptr_from_reg_long r2 r0
+	) >src/f_update_character_coordinates.5.o
+	local sz_5=$(stat -c '%s' src/f_update_character_coordinates.5.o)
+	sh2_rel_jump_if_false $(two_digits_d $((sz_5 / 2)))
+	sh2_nop
+	cat src/f_update_character_coordinates.5.o
 
 	# return
 	sh2_return_after_next_inst
