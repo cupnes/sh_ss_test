@@ -88,7 +88,7 @@ setup_vram_color_lookup_table() {
 	sh2_copy_to_ptr_from_reg_word r1 r0
 
 	# | 2 | 透明 | 0x0000 |
-	# | : |  :   |   :     |
+	# | : |  :   |   :    |
 	# | f | 透明 | 0x0000 |
 	sh2_xor_to_reg_from_reg r0 r0
 	local _i
