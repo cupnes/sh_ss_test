@@ -18,6 +18,12 @@ VRAM_CLT_BASE=05C00F00
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 
+# マスの大きさ[px]
+# ※ sh2_set_reg()でそのまま設定する
+# 　 マイナスで符号拡張しないように0x80未満であること
+SQUARE_WIDTH=10	# 16
+SQUARE_HEIGHT=10	# 16
+
 # コマンドテーブル設定
 setup_vram_command_table() {
 	# 05c00000
@@ -41,8 +47,14 @@ setup_vram_command_table() {
 	# 矩形スプライト
 	copy_to_reg_from_val_long r2 $var_manju_x
 	sh2_copy_to_reg_from_ptr_long r2 r2
+	sh2_set_reg r0 $SQUARE_WIDTH
+	sh2_multiply_reg_by_reg_unsigned_word r2 r0
+	sh2_copy_to_reg_from_macl r2
 	copy_to_reg_from_val_long r3 $var_manju_y
 	sh2_copy_to_reg_from_ptr_long r3 r3
+	sh2_set_reg r0 $SQUARE_HEIGHT
+	sh2_multiply_reg_by_reg_unsigned_word r3 r0
+	sh2_copy_to_reg_from_macl r3
 	copy_to_reg_from_val_long r4 $a_put_vdp1_command_scaled_sprite_draw_to_addr
 	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_nop
