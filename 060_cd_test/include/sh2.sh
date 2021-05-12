@@ -3,6 +3,8 @@ if [ "${INCLUDE_SH2_SH+is_defined}" ]; then
 fi
 INCLUDE_SH2_SH=true
 
+SH2_SR_BIT_I3210=000000f0
+
 ASM_LIST_FILE=asm.lst
 rm -f $ASM_LIST_FILE
 
@@ -414,6 +416,13 @@ sh2_return_after_next_inst() {
 	echo -e 'rts\t;2' >>$ASM_LIST_FILE
 }
 
+sh2_copy_to_sr_from_reg() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x0e"	# ldc $reg,sr
+	echo -e "ldc $reg,sr\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_copy_to_pr_from_reg() {
 	local reg=$1
 	local regnum=$(to_regnum $reg)
@@ -429,6 +438,13 @@ sh2_nop() {
 sh2_sleep() {
 	echo -en '\x00\x1b'	# sleep
 	echo -e 'sleep\t;3' >>$ASM_LIST_FILE
+}
+
+sh2_copy_to_reg_from_sr() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x0${regnum}\x02"	# stc sr,$reg
+	echo -e "stc sr,$reg\t;1" >>$ASM_LIST_FILE
 }
 
 sh2_copy_to_reg_from_macl() {

@@ -100,6 +100,11 @@ setup_vram_color_lookup_table() {
 }
 
 main() {
+	# NMI以外の全ての割り込みをマスクする
+	sh2_copy_to_reg_from_sr r0
+	sh2_or_to_r0_from_val_byte $(echo $SH2_SR_BIT_I3210 | cut -c7-8)
+	sh2_copy_to_sr_from_reg r0
+
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
 
@@ -186,11 +191,10 @@ main() {
 		## 待つ処理を繰り返す
 
 		# VRAM更新処理
-
-		# r1へ次にコマンドを配置するVRAMアドレスを設定
+		## r1へ次にコマンドを配置するVRAMアドレスを設定
 		copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
 
-		# 矩形スプライト
+		## 矩形スプライト
 		copy_to_reg_from_val_long r2 $var_character_x
 		sh2_copy_to_reg_from_ptr_long r2 r2
 		sh2_set_reg r0 $SQUARE_WIDTH
@@ -205,17 +209,18 @@ main() {
 		sh2_abs_call_to_reg_after_next_inst r4
 		sh2_nop
 
-		# r1のアドレス先へ描画終了コマンドを配置
+		## r1のアドレス先へ描画終了コマンドを配置
 		sh2_set_reg r0 80
 		sh2_shift_left_logical_8 r0
 		sh2_copy_to_ptr_from_reg_word r1 r0
 
-		# ゲームパッドの入力状態更新
+		# VRAMアクセス無しの周期処理
+		## ゲームパッドの入力状態更新
 		copy_to_reg_from_val_long r1 $a_update_gamepad_input_status
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
 
-		# 入力に応じてキャラクタの座標更新
+		## 入力に応じてキャラクタの座標更新
 		copy_to_reg_from_val_long r1 $a_update_character_coordinates
 		sh2_abs_call_to_reg_after_next_inst r1
 		sh2_nop
