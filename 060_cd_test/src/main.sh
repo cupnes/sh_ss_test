@@ -8,8 +8,10 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 . include/memmap.sh
+. include/common.sh
 . src/vars_map.sh
 . src/funcs_map.sh
+. src/cd.sh
 
 VRAM_DRAW_CMD_BASE=05C00060
 VRAM_CMD_SIZE_HEX=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
@@ -107,6 +109,9 @@ main() {
 
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
+
+	# [debug]
+	cd_exec_command r1 r2 r3 r4 r5
 
 	# VRAM初期設定
 	setup_vram_command_table
