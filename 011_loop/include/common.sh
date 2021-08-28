@@ -65,6 +65,19 @@ two_comp_d() {
 	echo "obase=16;256-${val}" | bc
 }
 
+two_comp_3_d() {
+	local val=$1
+	if [ $val -eq 0 ]; then
+		echo "Error: Zero is invalid.(arg=$val)" 1>&2
+		return 1
+	fi
+	if [ $val -ge 2048 ]; then
+		echo "Error: Argument($val) must be less than 2048." 1>&2
+		return 1
+	fi
+	echo "obase=16;4096-${val}" | bc
+}
+
 calc16() {
 	local bc_form=$1
 	local form_up=$(echo $bc_form | tr [:lower:] [:upper:])
