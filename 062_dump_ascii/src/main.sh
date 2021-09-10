@@ -19,8 +19,8 @@ INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 
 # 出力する起点の座標
-OUTPUT_BASE_X=00
-OUTPUT_BASE_Y=0a
+OUTPUT_BASE_X=10
+OUTPUT_BASE_Y=10
 
 # コマンドテーブル設定
 setup_vram_command_table() {
