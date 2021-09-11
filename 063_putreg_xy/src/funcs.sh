@@ -27,6 +27,53 @@ f_div_reg_by_reg_long_sign() {
 	sh2_nop
 }
 
+# 16進数1桁をASCIIコードへ変換
+# in  : r1* - 16進数の値(下位4ビットしか見ない)
+# out : r1* - ASCIIコード
+# work: r0* - 作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
+f_conv_to_ascii_from_hex() {
+	# 下位4ビットを抽出
+	sh2_set_reg r0 0f
+	sh2_and_to_reg_from_reg r1 r0
+
+	# r1 >= 0x0a ?
+	sh2_set_reg r0 0a
+	sh2_compare_reg_ge_reg_unsigned r1 r0
+	(
+		# r1 >= 0x0a の場合
+
+		# HEX_DISP_A + (r1 - 0x0a) をr1へ設定
+		## r0 = 0x0a
+		sh2_set_reg r0 0a
+		## r1 = r1 - r0
+		sh2_sub_to_reg_from_reg r1 r0
+		## r0 = HEX_DISP_A
+		sh2_set_reg r0 $HEX_DISP_A
+		## r1 = r1 + r0
+		sh2_add_to_reg_from_reg r1 r0
+	) >src/f_conv_to_ascii_from_hex.1.o
+	(
+		# r1 < 0x0a の場合
+
+		# ASCII_0 + r1 をr1へ設定
+		sh2_add_to_reg_from_val_byte r1 $ASCII_0
+
+		# r1 >= 0x0a の場合の処理を飛ばす
+		local sz_1=$(stat -c '%s' src/f_conv_to_ascii_from_hex.1.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_1 / 2))) 3)
+		sh2_nop
+	) >src/f_conv_to_ascii_from_hex.2.o
+	local sz_2=$(stat -c '%s' src/f_conv_to_ascii_from_hex.2.o)
+	sh2_rel_jump_if_true $(two_digits_d $(((sz_2 - 2) / 2)))
+	cat src/f_conv_to_ascii_from_hex.2.o	# r1 < 0x0a の場合
+	cat src/f_conv_to_ascii_from_hex.1.o	# r1 >= 0x0a の場合
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
 # in  : r1  - コピー先アドレス
 #       r2  - コピー元アドレス
@@ -510,9 +557,16 @@ funcs() {
 	f_div_reg_by_reg_long_sign >src/f_div_reg_by_reg_long_sign.o
 	cat src/f_div_reg_by_reg_long_sign.o
 
-	# 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
+	# 16進数1桁をASCIIコードへ変換
 	fsz=$(to16 $(stat -c '%s' src/f_div_reg_by_reg_long_sign.o))
-	a_memcpy=$(calc16_8 "${a_div_reg_by_reg_long_sign}+${fsz}")
+	a_conv_to_ascii_from_hex=$(calc16_8 "${a_div_reg_by_reg_long_sign}+${fsz}")
+	echo -e "a_conv_to_ascii_from_hex=$a_conv_to_ascii_from_hex" >>$map_file
+	f_conv_to_ascii_from_hex >src/f_conv_to_ascii_from_hex.o
+	cat src/f_conv_to_ascii_from_hex.o
+
+	# 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
+	fsz=$(to16 $(stat -c '%s' src/f_conv_to_ascii_from_hex.o))
+	a_memcpy=$(calc16_8 "${a_conv_to_ascii_from_hex}+${fsz}")
 	echo -e "a_memcpy=$a_memcpy" >>$map_file
 	f_memcpy >src/f_memcpy.o
 	cat src/f_memcpy.o
@@ -560,6 +614,13 @@ funcs() {
 	echo -e "a_putstr_xy=$a_putstr_xy" >>$map_file
 	f_putstr_xy >src/f_putstr_xy.o
 	cat src/f_putstr_xy.o
+
+	# r1の値を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_putstr_xy.o))
+	a_putreg_xy=$(calc16_8 "${a_putstr_xy}+${fsz}")
+	echo -e "a_putreg_xy=$a_putreg_xy" >>$map_file
+	f_putreg_xy >src/f_putreg_xy.o
+	cat src/f_putreg_xy.o
 }
 
 funcs

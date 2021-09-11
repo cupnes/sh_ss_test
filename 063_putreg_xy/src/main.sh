@@ -18,9 +18,11 @@ VRAM_CPT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_CMD_SIZE_HEX}")	# 0x05c00c
 INIT_SP=06004000
 PROGRAM_ENTRY_ADDR=06004000
 
-# 出力する起点の座標
-OUTPUT_BASE_X=10
-OUTPUT_BASE_Y=10
+# 出力する座標
+OUTPUT_X1=10
+OUTPUT_Y1=10
+OUTPUT_X2=10
+OUTPUT_Y2=20
 
 # コマンドテーブル設定
 setup_vram_command_table() {
@@ -84,63 +86,20 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# 文字列出力
-	## 文字列出力の関数アドレスをr11へ設定
-	copy_to_reg_from_val_long r11 $a_putstr_xy
+	# 関数のアドレスをr12へ設定
+	copy_to_reg_from_val_long r12 $a_putreg_xy
 
-	## 文字列のアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_output_str1
-	## X,Y座標をr2,r3へ設定
-	sh2_set_reg r2 $OUTPUT_BASE_X
-	sh2_set_reg r3 $OUTPUT_BASE_Y
-	## 関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
+	# 出力1
+	copy_to_reg_from_val_long r1 babebeef
+	sh2_set_reg r2 $OUTPUT_X1
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_set_reg r3 $OUTPUT_Y1
 
-	## 文字列のアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_output_str2
-	## X,Y座標をr2,r3へ設定
-	sh2_set_reg r2 $OUTPUT_BASE_X
-	sh2_add_to_reg_from_val_byte r3 $CON_FONT_HEIGHT
-	## 関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
-
-	## 文字列のアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_output_str3
-	## X,Y座標をr2,r3へ設定
-	sh2_set_reg r2 $OUTPUT_BASE_X
-	sh2_add_to_reg_from_val_byte r3 $CON_FONT_HEIGHT
-	## 関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
-
-	## 文字列のアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_output_str4
-	## X,Y座標をr2,r3へ設定
-	sh2_set_reg r2 $OUTPUT_BASE_X
-	sh2_add_to_reg_from_val_byte r3 $CON_FONT_HEIGHT
-	## 関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
-
-	## 文字列のアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_output_str5
-	## X,Y座標をr2,r3へ設定
-	sh2_set_reg r2 $OUTPUT_BASE_X
-	sh2_add_to_reg_from_val_byte r3 $CON_FONT_HEIGHT
-	## 関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
-
-	## 文字列のアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_output_str6
-	## X,Y座標をr2,r3へ設定
-	sh2_set_reg r2 $OUTPUT_BASE_X
-	sh2_add_to_reg_from_val_byte r3 $CON_FONT_HEIGHT
-	## 関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_nop
+	# 出力2
+	copy_to_reg_from_val_long r1 00000000
+	sh2_set_reg r2 $OUTPUT_X2
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_set_reg r3 $OUTPUT_Y2
 
 	# 描画終了コマンドを配置
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_addr

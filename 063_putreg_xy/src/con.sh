@@ -12,6 +12,13 @@ ASCII_PRINTABLE_1ST_CHR=20	# スペース
 # 無いとは思うが、0x80以上の値に変更する際は、
 # この変数をレジスタロードした後、extu.b命令でバイトからゼロ拡張するようにする
 
+ASCII_0=30
+
+# 16進で16を表示する際のASCIIコード
+HEX_DISP_A=41
+# ここで0x41('A')を指定すれば16進表記は大文字になるし
+# ここで0x61('a')を指定すれば16進表記は小文字になる
+
 CON_FONT_SIZE=80	# 128バイト
 CON_FONT_WIDTH=10	# 16px
 CON_FONT_HEIGHT=10	# 16px
@@ -184,6 +191,157 @@ f_putstr_xy() {
 	local sz_1=$(stat -c '%s' src/f_putstr_xy.1.o)
 	sh2_rel_jump_if_true $(two_digits_d $(((sz_1 - 2) / 2)))	# 2
 	cat src/f_putstr_xy.1.o
+
+	# PRをスタックから復帰しreturn
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# r1の値を指定された座標に出力
+# in  : r1* - 出力する値
+#     : r2* - X座標
+#     : r3  - Y座標
+# work: r0* - 作業用
+#     : r4* - 作業用
+#     : r5* - putchar_xy()作業用
+#     : r6* - putchar_xy()作業用
+#     : r7* - putchar_xy()作業用
+#     : r8* - 作業用(a_conv_to_ascii_from_hex)
+#     : r9* - 作業用(a_putchar_xy)
+#     : r10*- 作業用(出力する値(r1))
+#     : r11*- 作業用(X座標(r2))
+#     : macl* (putchar_xy()でmulu.wを行う)
+# ※ *が付いているレジスタはこの関数内で変更される
+# ※ 折返し無し
+f_putreg_xy() {
+	# PRをスタックへ退避
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# 作業用変数設定
+	## a_conv_to_ascii_from_hexをr8へ設定
+	copy_to_reg_from_val_long r8 $a_conv_to_ascii_from_hex
+	## a_putchar_xyをr9へ設定
+	copy_to_reg_from_val_long r9 $a_putchar_xy
+	# 出力する値(r1)をr10へコピー
+	sh2_copy_to_reg_from_reg r10 r1
+	# X座標(r2)をr11へコピー
+	sh2_copy_to_reg_from_reg r11 r2
+
+	# b31-b28
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## 出力
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_nop
+
+	# b27-b24
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
+
+	# b23-b20
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
+
+	# b19-b16
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
+
+	# b15-b12
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
+
+	# b11-b8
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
+
+	# b7-b4
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
+
+	# b3-b0
+	## 4ビット左ローテート
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	sh2_rotate_left r10
+	## ASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## X座標をフォント幅分進めて出力
+	sh2_add_to_reg_from_val_byte r11 $CON_FONT_WIDTH
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_copy_to_reg_from_reg r2 r11
 
 	# PRをスタックから復帰しreturn
 	sh2_copy_to_reg_from_ptr_long r0 r15
