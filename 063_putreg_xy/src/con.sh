@@ -145,7 +145,7 @@ f_putchar_xy() {
 #     : r10*- 作業用
 #     : macl* (putchar_xy()でmulu.wを行う)
 # ※ *が付いているレジスタはこの関数内で変更される
-# ※ 改行はしない
+# ※ 折返し無し
 f_putstr_xy() {
 	# PRをスタックへ退避
 	sh2_copy_to_reg_from_pr r0
