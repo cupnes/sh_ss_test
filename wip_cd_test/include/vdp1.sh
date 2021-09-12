@@ -5,6 +5,13 @@ INCLUDE_VDP1_SH=true
 
 . include/ss.sh
 
+VRAM_DRAW_CMD_BASE=05C00060
+VRAM_CLT_BASE=05C03C80
+
+# 描画コマンドのCMDCOLR設定用
+# VDP1 RAM先頭(0x05C00000)からのオフセットを8で割った2バイトの値
+VRAM_CLT_BASE_CMDCOLR=0790
+
 vdp1_command_system_clipping_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1001

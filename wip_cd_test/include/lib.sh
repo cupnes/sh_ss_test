@@ -9,13 +9,15 @@ INCLUDE_LIB_SH=true
 PI_FORM='(4 * a(1))'
 SINCOS_COEFF_M=000346DC	# 214748
 
+busy_loop() {
+	sh2_rel_jump_after_next_inst $(two_comp_3_d 2)
+	sh2_nop
+}
+
 infinite_loop() {
 	sh2_sleep
 	sh2_rel_jump_after_next_inst $(two_comp_3_d 3)
 	sh2_nop
-
-	# sh2_rel_jump_after_next_inst $(two_comp_3_d 2)
-	# sh2_nop
 }
 
 # ※ 作業用にR0を使用する

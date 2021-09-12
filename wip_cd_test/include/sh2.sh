@@ -117,6 +117,15 @@ sh2_add_to_reg_from_val_byte() {
 	echo -e "add #0x$val,$reg\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_and_to_reg_from_reg() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x2${dstnum}\x${srcnum}9"	# and $src,$dst
+	echo -e "and $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_and_to_r0_from_val_byte() {
 	local val=$1
 	echo -en "\xc9\x${val}"	# and #0x$val,r0
@@ -133,6 +142,7 @@ sh2_compare_reg_eq_reg() {
 	echo -e "cmp/eq $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+# 無符号で regA >= regB のとき 1→T
 sh2_compare_reg_ge_reg_unsigned() {
 	local regA=$1
 	local regB=$2
@@ -208,6 +218,15 @@ sh2_extend_signed_to_reg_from_reg_word() {
 	echo -e "exts.w $src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_extend_unsigned_to_reg_from_reg_byte() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x6${dstnum}\x${srcnum}c"	# extu.b $src,$dst
+	echo -e "extu.b $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_extend_unsigned_to_reg_from_reg_word() {
 	local dst=$1
 	local src=$2
@@ -255,6 +274,7 @@ sh2_multiply_reg_by_reg_unsigned_word() {
 	echo -e "mulu.w $regB,$regA\t;1-3" >>$ASM_LIST_FILE
 }
 
+# dst = dst - src
 sh2_sub_to_reg_from_reg() {
 	local dst=$1
 	local src=$2
@@ -311,6 +331,20 @@ sh2_xor_to_reg_from_reg() {
 	local srcnum=$(to_regnum $src)
 	echo -en "\x2${dstnum}\x${srcnum}a"	# xor $src,$dst
 	echo -e "xor $src,$dst\t;1" >>$ASM_LIST_FILE
+}
+
+# 引数のレジスタの内容を左方向に1ビットローテート(回転)し、
+# 結果を引数のレジスタに格納
+# ローテートしてオペランドの外に出てしまったビットは、Tビットへ転送
+# 動作イメージ：
+#            [T]
+#             ↑
+# (b0へ) ← [b31] ← ... ← [b0] ← (b31から)
+sh2_rotate_left() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x04"	# rotl $reg
+	echo -e "rotl $reg\t;1" >>$ASM_LIST_FILE
 }
 
 # 引数のレジスタの内容を左方向にTビットを含めて1ビットローテート(回転)し、

@@ -12,14 +12,18 @@ $(NAME).cue: $(NAME).iso
 $(NAME).iso: 0.BIN
 	./iso9660.sh $< >$@
 
-0.BIN: src/main.sh src/cd.sh src/vars.o src/vars_map.sh src/funcs.o src/funcs_map.sh character.lut
+0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
+	src/funcs_map.sh src/vdp.sh
 	./$< >$@
 
-src/vars.o src/vars_map.sh: src/vars.sh character.lut
+src/funcs.o src/funcs_map.sh: src/funcs.sh src/vars_map.sh src/con.sh
+	src/funcs.sh >src/funcs.o
+
+src/vars.o src/vars_map.sh: src/vars.sh font.lut
 	src/vars.sh >src/vars.o
 
-src/funcs.o src/funcs_map.sh: src/funcs.sh src/vars_map.sh
-	src/funcs.sh >src/funcs.o
+font.lut: lut
+	cat $</* >$@
 
 run_yabause: $(NAME).iso
 	$(EMU_YABAUSE) $<
@@ -30,8 +34,8 @@ run_mednafen: $(NAME).cue
 run: run_yabause
 
 clean:
-	rm -f *~ *.o *.dat *.bin 0.BIN *.lst map.sh $(TARGETS) src/*~	\
-	src/*.o src/*_map.sh include/*~
+	rm -f *~ font.lut *.o *.dat *.bin 0.BIN *.lst src/*_map.sh	\
+	$(TARGETS) src/*~ src/*.o include/*~
 
 clean_all: clean
 	rm -f IP.BIN

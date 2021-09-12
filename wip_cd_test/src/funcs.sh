@@ -8,7 +8,71 @@ set -ue
 . include/lib.sh
 . include/ss.sh
 . include/memmap.sh
+. include/vdp1.sh
 . src/vars_map.sh
+. src/con.sh
+
+# 符号付き32ビット除算
+# in  : r1  - 被除数
+#     : r0* - 除数
+# out : r1  - 計算結果の商
+# work: r2* - 作業用
+#       r3* - 作業用
+# ※ *が付いているレジスタはこの関数の冒頭/末尾でスタックへの退避/復帰を行う
+f_div_reg_by_reg_long_sign() {
+	div_reg_by_reg_long_sign r1 r0 r2 r3
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# 16進数1桁をASCIIコードへ変換
+# in  : r1* - 16進数の値(下位4ビットしか見ない)
+# out : r1* - ASCIIコード
+# work: r0* - 作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
+f_conv_to_ascii_from_hex() {
+	# 下位4ビットを抽出
+	sh2_set_reg r0 0f
+	sh2_and_to_reg_from_reg r1 r0
+
+	# r1 >= 0x0a ?
+	sh2_set_reg r0 0a
+	sh2_compare_reg_ge_reg_unsigned r1 r0
+	(
+		# r1 >= 0x0a の場合
+
+		# HEX_DISP_A + (r1 - 0x0a) をr1へ設定
+		## r0 = 0x0a
+		sh2_set_reg r0 0a
+		## r1 = r1 - r0
+		sh2_sub_to_reg_from_reg r1 r0
+		## r0 = HEX_DISP_A
+		sh2_set_reg r0 $HEX_DISP_A
+		## r1 = r1 + r0
+		sh2_add_to_reg_from_reg r1 r0
+	) >src/f_conv_to_ascii_from_hex.1.o
+	(
+		# r1 < 0x0a の場合
+
+		# ASCII_0 + r1 をr1へ設定
+		sh2_add_to_reg_from_val_byte r1 $ASCII_0
+
+		# r1 >= 0x0a の場合の処理を飛ばす
+		local sz_1=$(stat -c '%s' src/f_conv_to_ascii_from_hex.1.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_1 / 2))) 3)
+		sh2_nop
+	) >src/f_conv_to_ascii_from_hex.2.o
+	local sz_2=$(stat -c '%s' src/f_conv_to_ascii_from_hex.2.o)
+	sh2_rel_jump_if_true $(two_digits_d $(((sz_2 - 2) / 2)))
+	cat src/f_conv_to_ascii_from_hex.2.o	# r1 < 0x0a の場合
+	cat src/f_conv_to_ascii_from_hex.1.o	# r1 >= 0x0a の場合
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
 
 # 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
 # in  : r1  - コピー先アドレス
@@ -49,11 +113,116 @@ f_memcpy() {
 	sh2_nop
 }
 
+# 指定された属性値の定形スプライト描画コマンドを指定されたアドレスへ配置する
+# in  : r1* - 配置先アドレス
+#     : r2  - X座標
+#     : r3  - Y座標
+#     : r4  - キャラクタアドレス/8(下位2ビットは0)
+# work: r0* - 作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
+# ※ r1は最後に書き込みを行った次のアドレスが指定された状態で帰る
+f_put_vdp1_command_normal_sprite_draw_to_addr() {
+	# CMDCTRL
+	# 0b0000 0000 0000 0000
+	# - JP(b14-b12) = 0b000
+	# - Dir(b5-b4) = 0b00
+	# 0x0000 -> [r1]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDLINK
+	# 0x0000 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDPMOD
+	# 0b0000 1000 1000 1000
+	# - MON(b15) = 0 (VDP2の機能を使わない)
+	# - Pclp(b11) = 1 (クリッピングが必要かどうかの座標計算無効)
+	# - Clip(b10) = 0 (ユーザクリッピング座標に従わない)
+	# - Cmod(b9) = 0 (Clip=0なので無効)
+	# - Mesh(b8) = 0 (メッシュ無効)
+	# - ECD(b7) = 1 (エンドコード無効)
+	# - SPD(b6) = 0 (透明ピクセル有効)
+	# - カラーモード(b5-b3) = 0b001 (ルックアップテーブルモード)
+	# - 色演算(b2-b0) = 0b000 (色演算は全て無効)
+	# 0x0888 -> [r1]
+	sh2_set_reg r0 08
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte 88
+	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDCOLR
+	# カラールックアップテーブルのアドレスを8で割った値を指定する
+	sh2_set_reg r0 $(echo $VRAM_CLT_BASE_CMDCOLR | cut -c1-2)
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $VRAM_CLT_BASE_CMDCOLR | cut -c3-4)
+	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDSRCA
+	# キャラクタパターンテーブルのアドレスを8で割った値を設定する
+	# r4 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r4
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDSIZE
+	# キャラクタパターンテーブルに定義したキャラクタの幅と高さを設定する
+	# 幅は8で割った値を設定する
+	# - 幅/8(b13-b8) = (/ 16 8.0)2.0 = 0x02
+	# - 高さ(b7-b0) = 16 = 0x10
+	# 0x0210 -> [r1]
+	sh2_set_reg r0 02
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte 10
+	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDXA
+	# 不動点X座標
+	# r2 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r2
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# CMDYA
+	# 不動点Y座標
+	# r3 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r3
+	# r1 += 2
+	sh2_add_to_reg_from_val_byte r1 02
+
+	# don't care
+	# 2 * 6 = 12バイト分
+	# r1 += 12 (0x0c)
+	sh2_add_to_reg_from_val_byte r1 0c
+
+	# CMDGRDA, dummy
+	# 0x00000000 -> [r1]
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_long r1 r0
+	# r1 += 4
+	sh2_add_to_reg_from_val_byte r1 04
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 指定された属性値の矩形スプライト描画コマンド(不動点指定)を
 # 指定されたアドレスへ配置する
 # in  : r1* - 配置先アドレス
 #     : r2  - 不動点X座標
 #     : r3  - 不動点Y座標
+#     : r4  - キャラクタアドレス/8(下位2ビットは0)
 # work: r0* - 作業用
 # ※ *が付いているレジスタはこの関数で書き換えられる
 # ※ r1は最後に書き込みを行った次のアドレスが指定された状態で帰る
@@ -111,12 +280,8 @@ f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 
 	# CMDSRCA
 	# キャラクタパターンテーブルのアドレスを8で割った値を設定する
-	# 0x0c80 / 8 = 0x0190
-	# 0x0190 -> [r1]
-	sh2_set_reg r0 01
-	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte 90
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	# r4 -> [r1]
+	sh2_copy_to_ptr_from_reg_word r1 r4
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
 
@@ -316,19 +481,8 @@ f_update_character_coordinates() {
 	(
 		# ↓が押下されている場合
 
-		# キャラクタY座標をインクリメント
-
-		# 変数のアドレスをr2へロード
-		copy_to_reg_from_val_long r2 $var_character_y
-
-		# 座標値をr0へロード
-		sh2_copy_to_reg_from_ptr_long r0 r2
-
-		# 座標値をインクリメント
-		sh2_add_to_reg_from_val_byte r0 01
-
-		# 座標値を変数へ書き戻す
-		sh2_copy_to_ptr_from_reg_long r2 r0
+		# 何もしない
+		sh2_nop
 	) >src/f_update_character_coordinates.2.o
 	local sz_2=$(stat -c '%s' src/f_update_character_coordinates.2.o)
 	sh2_rel_jump_if_false $(two_digits_d $((sz_2 / 2)))
@@ -344,19 +498,8 @@ f_update_character_coordinates() {
 	(
 		# ↑が押下されている場合
 
-		# キャラクタY座標をデクリメント
-
-		# 変数のアドレスをr2へロード
-		copy_to_reg_from_val_long r2 $var_character_y
-
-		# 座標値をr0へロード
-		sh2_copy_to_reg_from_ptr_long r0 r2
-
-		# 座標値をデクリメント
-		sh2_add_to_reg_from_val_byte r0 $(two_comp_d 1)
-
-		# 座標値を変数へ書き戻す
-		sh2_copy_to_ptr_from_reg_long r2 r0
+		# 何もしない
+		sh2_nop
 	) >src/f_update_character_coordinates.3.o
 	local sz_3=$(stat -c '%s' src/f_update_character_coordinates.3.o)
 	sh2_rel_jump_if_false $(two_digits_d $((sz_3 / 2)))
@@ -372,19 +515,8 @@ f_update_character_coordinates() {
 	(
 		# ←が押下されている場合
 
-		# キャラクタX座標をデクリメント
-
-		# 変数のアドレスをr2へロード
-		copy_to_reg_from_val_long r2 $var_character_x
-
-		# 座標値をr0へロード
-		sh2_copy_to_reg_from_ptr_long r0 r2
-
-		# 座標値をデクリメント
-		sh2_add_to_reg_from_val_byte r0 $(two_comp_d 1)
-
-		# 座標値を変数へ書き戻す
-		sh2_copy_to_ptr_from_reg_long r2 r0
+		# 何もしない
+		sh2_nop
 	) >src/f_update_character_coordinates.4.o
 	local sz_4=$(stat -c '%s' src/f_update_character_coordinates.4.o)
 	sh2_rel_jump_if_false $(two_digits_d $((sz_4 / 2)))
@@ -400,19 +532,8 @@ f_update_character_coordinates() {
 	(
 		# →が押下されている場合
 
-		# キャラクタX座標をインクリメント
-
-		# 変数のアドレスをr2へロード
-		copy_to_reg_from_val_long r2 $var_character_x
-
-		# 座標値をr0へロード
-		sh2_copy_to_reg_from_ptr_long r0 r2
-
-		# 座標値をインクリメント
-		sh2_add_to_reg_from_val_byte r0 01
-
-		# 座標値を変数へ書き戻す
-		sh2_copy_to_ptr_from_reg_long r2 r0
+		# 何もしない
+		sh2_nop
 	) >src/f_update_character_coordinates.5.o
 	local sz_5=$(stat -c '%s' src/f_update_character_coordinates.5.o)
 	sh2_rel_jump_if_false $(two_digits_d $((sz_5 / 2)))
@@ -430,16 +551,38 @@ funcs() {
 	map_file=src/funcs_map.sh
 	rm -f $map_file
 
+	# 符号付き32ビット除算
+	a_div_reg_by_reg_long_sign=$FUNCS_BASE
+	echo -e "a_div_reg_by_reg_long_sign=$a_div_reg_by_reg_long_sign" >>$map_file
+	f_div_reg_by_reg_long_sign >src/f_div_reg_by_reg_long_sign.o
+	cat src/f_div_reg_by_reg_long_sign.o
+
+	# 16進数1桁をASCIIコードへ変換
+	fsz=$(to16 $(stat -c '%s' src/f_div_reg_by_reg_long_sign.o))
+	a_conv_to_ascii_from_hex=$(calc16_8 "${a_div_reg_by_reg_long_sign}+${fsz}")
+	echo -e "a_conv_to_ascii_from_hex=$a_conv_to_ascii_from_hex" >>$map_file
+	f_conv_to_ascii_from_hex >src/f_conv_to_ascii_from_hex.o
+	cat src/f_conv_to_ascii_from_hex.o
+
 	# 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
-	a_memcpy=$FUNCS_BASE
+	fsz=$(to16 $(stat -c '%s' src/f_conv_to_ascii_from_hex.o))
+	a_memcpy=$(calc16_8 "${a_conv_to_ascii_from_hex}+${fsz}")
 	echo -e "a_memcpy=$a_memcpy" >>$map_file
 	f_memcpy >src/f_memcpy.o
 	cat src/f_memcpy.o
 
-	# 指定された属性値の矩形スプライト描画コマンド(不動点指定)を
+	# 指定された属性値の定形スプライト描画コマンドを
 	# 指定されたアドレスへ配置する
 	fsz=$(to16 $(stat -c '%s' src/f_memcpy.o))
-	a_put_vdp1_command_scaled_sprite_draw_to_addr=$(calc16_8 "${a_memcpy}+${fsz}")
+	a_put_vdp1_command_normal_sprite_draw_to_addr=$(calc16_8 "${a_memcpy}+${fsz}")
+	echo -e "a_put_vdp1_command_normal_sprite_draw_to_addr=$a_put_vdp1_command_normal_sprite_draw_to_addr" >>$map_file
+	f_put_vdp1_command_normal_sprite_draw_to_addr >src/f_put_vdp1_command_normal_sprite_draw_to_addr.o
+	cat src/f_put_vdp1_command_normal_sprite_draw_to_addr.o
+
+	# 指定された属性値の矩形スプライト描画コマンド(不動点指定)を
+	# 指定されたアドレスへ配置する
+	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_normal_sprite_draw_to_addr.o))
+	a_put_vdp1_command_scaled_sprite_draw_to_addr=$(calc16_8 "${a_put_vdp1_command_normal_sprite_draw_to_addr}+${fsz}")
 	echo -e "a_put_vdp1_command_scaled_sprite_draw_to_addr=$a_put_vdp1_command_scaled_sprite_draw_to_addr" >>$map_file
 	f_put_vdp1_command_scaled_sprite_draw_to_addr >src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
 	cat src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
@@ -457,6 +600,27 @@ funcs() {
 	echo -e "a_update_character_coordinates=$a_update_character_coordinates" >>$map_file
 	f_update_character_coordinates >src/f_update_character_coordinates.o
 	cat src/f_update_character_coordinates.o
+
+	# 指定された文字(ASCII)を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_update_character_coordinates.o))
+	a_putchar_xy=$(calc16_8 "${a_update_character_coordinates}+${fsz}")
+	echo -e "a_putchar_xy=$a_putchar_xy" >>$map_file
+	f_putchar_xy >src/f_putchar_xy.o
+	cat src/f_putchar_xy.o
+
+	# 指定された文字列を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_putchar_xy.o))
+	a_putstr_xy=$(calc16_8 "${a_putchar_xy}+${fsz}")
+	echo -e "a_putstr_xy=$a_putstr_xy" >>$map_file
+	f_putstr_xy >src/f_putstr_xy.o
+	cat src/f_putstr_xy.o
+
+	# r1の値を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_putstr_xy.o))
+	a_putreg_xy=$(calc16_8 "${a_putstr_xy}+${fsz}")
+	echo -e "a_putreg_xy=$a_putreg_xy" >>$map_file
+	f_putreg_xy >src/f_putreg_xy.o
+	cat src/f_putreg_xy.o
 }
 
 funcs
