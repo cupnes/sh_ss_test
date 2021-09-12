@@ -387,32 +387,45 @@ gen_dir_root() {
 		# System Use (size LEN_DRの残り)
 
 		if [ -n "$SUB_FILE" ]; then
+			(
+				# Extended Attribute Record Length (size 1)
+				echo -en '\x00'
+				# Location of Extent (size 8)
+				echo_4bytes "$SUB_FILE_START_SECTOR_NUM_HEX"
+				echo_4bytes_be "$SUB_FILE_START_SECTOR_NUM_HEX"
+				# Data Length (size 8)
+				echo_4bytes "$SUB_FILE_SIZE_HEX"
+				echo_4bytes_be "$SUB_FILE_SIZE_HEX"
+				# Recording Date and Time (size 7)
+				echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
+				# File Flags (size 1)
+				echo -en '\x00'
+				# File Unit Size (size 1)
+				echo -en '\x00'
+				# Interleave Gap Size (size 1)
+				echo -en '\x00'
+				# Volume Sequence Number (size 4)
+				echo -en '\x01\x00\x00\x01'
+				# Length of File Identifier(LEN_FI) (size 1)
+				fi="${SUB_FILE};1"
+				echo -en "\x$(two_digits $(to16 $(echo -n "$fi" | wc -c)))"
+				# File Identifier (size LEN_FI)
+				echo -n "$fi"
+			) >dirrec_${SUB_FILE}.o
+			sz=$(($(stat -c '%s' dirrec_${SUB_FILE}.o) + 1))
+			need_pad="false"
+			if [ $((sz % 2)) -eq 1 ]; then
+				need_pad="true"
+				sz=$((sz + 1))
+			fi
 			# Length of Directory Record(LEN_DR) (size 1)
-			# 49 = 0x31
-			echo -en '\x31'
-			# Extended Attribute Record Length (size 1)
-			echo -en '\x00'
-			# Location of Extent (size 8)
-			echo_4bytes "$SUB_FILE_START_SECTOR_NUM_HEX"
-			echo_4bytes_be "$SUB_FILE_START_SECTOR_NUM_HEX"
-			# Data Length (size 8)
-			echo_4bytes "$SUB_FILE_SIZE_HEX"
-			echo_4bytes_be "$SUB_FILE_SIZE_HEX"
-			# Recording Date and Time (size 7)
-			echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
-			# File Flags (size 1)
-			echo -en '\x00'
-			# File Unit Size (size 1)
-			echo -en '\x00'
-			# Interleave Gap Size (size 1)
-			echo -en '\x00'
-			# Volume Sequence Number (size 4)
-			echo -en '\x01\x00\x00\x01'
-			# Length of File Identifier(LEN_FI) (size 1)
-			echo -en '\x0b'
-			# File Identifier (size LEN_FI)
-			echo -n 'hello.txt;1'
+			echo -en "\x$(two_digits $(to16 $sz))"
+			# ファイルへダンプしたレコード本体
+			cat dirrec_${SUB_FILE}.o
 			# Padding Field(レコードサイズを偶数にするためのパディング)
+			if [ "$need_pad" = "true" ]; then
+				echo -en '\x00'
+			fi
 			# System Use (size LEN_DRの残り)
 		fi
 	) >dir_root.o
