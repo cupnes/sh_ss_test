@@ -8,14 +8,14 @@ set -ue
 SECTOR_BYTES=2048
 
 usage() {
-	echo "$0 - Outputs an ISO image containing the specified BIN file to the standard output." 1>&2
+	echo "$0 - Outputs an ISO image containing the specified file(s) to the standard output." 1>&2
 	echo 1>&2
 	echo 'Usage:' 1>&2
-	echo -e "\t$0 BIN_FILE" 1>&2
+	echo -e "\t$0 BIN_FILE [SUB_FILE]" 1>&2
 	echo -e "\t$0 -h" 1>&2
 }
 
-if [ $# -ne 1 ]; then
+if [ $# -ne 1 -a $# -ne 2 ]; then
 	usage
 	exit 1
 fi
@@ -24,8 +24,10 @@ if [ "$1" = '-h' ]; then
 	exit 0
 fi
 BIN_FILE="$1"
-
-# BIN_FILEは1セクタ(2048バイト)以内という制限
+SUB_FILE=''
+if [ $# -eq 2 ]; then
+	SUB_FILE="$2"
+fi
 
 # BIN_FILEのバイト数
 BIN_FILE_SIZE=$(stat -c '%s' $BIN_FILE)
@@ -33,11 +35,22 @@ BIN_FILE_SIZE=$(stat -c '%s' $BIN_FILE)
 BIN_FILE_SIZE_HEX="$(extend_digit $(to16 $BIN_FILE_SIZE) 8)"
 ## セクタ数
 BIN_FILE_NUM_SECTORS=$(((BIN_FILE_SIZE + SECTOR_BYTES - 1) / SECTOR_BYTES))
+# BIN_FILEを配置するセクタ番号
+BIN_FILE_START_SECTOR_NUM=21
+BIN_FILE_START_SECTOR_NUM_HEX="$(extend_digit $(to16 $BIN_FILE_START_SECTOR_NUM) 8)"
+
+# SUB_FILEのバイト数
+SUB_FILE_SIZE=$(stat -c '%s' $SUB_FILE)
+## 8桁の16進数
+SUB_FILE_SIZE_HEX="$(extend_digit $(to16 $SUB_FILE_SIZE) 8)"
+## セクタ数
+SUB_FILE_NUM_SECTORS=$(((SUB_FILE_SIZE + SECTOR_BYTES - 1) / SECTOR_BYTES))
+# SUB_FILEを配置するセクタ番号
+SUB_FILE_START_SECTOR_NUM=$((BIN_FILE_START_SECTOR_NUM + BIN_FILE_NUM_SECTORS))
+SUB_FILE_START_SECTOR_NUM_HEX="$(extend_digit $(to16 $SUB_FILE_START_SECTOR_NUM) 8)"
 
 # ISOファイルサイズをセクタ数で指定する(Both Endian)
-# BIN_FILEが1セクタなら合計22(0x16)セクタ
-# セクタ数 = 21 + $BIN_FILE_SIZE / $SECTOR_BYTES
-ISO_FILE_NUM_SECTORS=$((21 + BIN_FILE_NUM_SECTORS))
+ISO_FILE_NUM_SECTORS=$((21 + BIN_FILE_NUM_SECTORS + SUB_FILE_NUM_SECTORS))
 ## 8桁の16進数
 ISO_FILE_NUM_SECTORS_HEX="$(extend_digit $(to16 $ISO_FILE_NUM_SECTORS) 8)"
 
@@ -330,8 +343,8 @@ gen_dir_root() {
 		# Extended Attribute Record Length (size 1)
 		echo -en '\x00'
 		# Location of Extent (size 8)
-		# 21(0x15) セクタ目
-		echo -en '\x15\x00\x00\x00\x00\x00\x00\x15'
+		echo_4bytes "$BIN_FILE_START_SECTOR_NUM_HEX"
+		echo_4bytes_be "$BIN_FILE_START_SECTOR_NUM_HEX"
 		# Data Length (size 8)
 		echo_4bytes "$BIN_FILE_SIZE_HEX"
 		echo_4bytes_be "$BIN_FILE_SIZE_HEX"
@@ -351,6 +364,36 @@ gen_dir_root() {
 		echo -n '0.BIN;1'
 		# Padding Field(レコードサイズを偶数にするためのパディング)
 		# System Use (size LEN_DRの残り)
+
+		if [ -n "$SUB_FILE" ]; then
+			# Length of Directory Record(LEN_DR) (size 1)
+			# 49 = 0x31
+			echo -en '\x31'
+			# Extended Attribute Record Length (size 1)
+			echo -en '\x00'
+			# Location of Extent (size 8)
+			echo_4bytes "$SUB_FILE_START_SECTOR_NUM_HEX"
+			echo_4bytes_be "$SUB_FILE_START_SECTOR_NUM_HEX"
+			# Data Length (size 8)
+			echo_4bytes "$SUB_FILE_SIZE_HEX"
+			echo_4bytes_be "$SUB_FILE_SIZE_HEX"
+			# Recording Date and Time (size 7)
+			echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
+			# File Flags (size 1)
+			echo -en '\x00'
+			# File Unit Size (size 1)
+			echo -en '\x00'
+			# Interleave Gap Size (size 1)
+			echo -en '\x00'
+			# Volume Sequence Number (size 4)
+			echo -en '\x01\x00\x00\x01'
+			# Length of File Identifier(LEN_FI) (size 1)
+			echo -en '\x0b'
+			# File Identifier (size LEN_FI)
+			echo -n 'hello.txt;1'
+			# Padding Field(レコードサイズを偶数にするためのパディング)
+			# System Use (size LEN_DRの残り)
+		fi
 	) >dir_root.o
 	cat dir_root.o
 
@@ -382,11 +425,9 @@ main() {
 	gen_mpath_tbl
 	# sector 20(0x14)
 	gen_dir_root
-	# sector 21(0x15)
+	# sector 21(0x15)-
 	gen_file $BIN_FILE
-
-	# total 22(0x16) sectors
-	# 22 * 2048 = 45056(0xb000) bytes
+	gen_file $SUB_FILE
 }
 
 main
