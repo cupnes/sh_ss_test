@@ -40,7 +40,11 @@ BIN_FILE_START_SECTOR_NUM=21
 BIN_FILE_START_SECTOR_NUM_HEX="$(extend_digit $(to16 $BIN_FILE_START_SECTOR_NUM) 8)"
 
 # SUB_FILEのバイト数
-SUB_FILE_SIZE=$(stat -c '%s' $SUB_FILE)
+if [ -n "$SUB_FILE" ]; then
+	SUB_FILE_SIZE=$(stat -c '%s' $SUB_FILE)
+else
+	SUB_FILE_SIZE=0
+fi
 ## 8桁の16進数
 SUB_FILE_SIZE_HEX="$(extend_digit $(to16 $SUB_FILE_SIZE) 8)"
 ## セクタ数
@@ -337,32 +341,49 @@ gen_dir_root() {
 		# Padding Field(レコードサイズを偶数にするためのパディング)
 		# System Use (size LEN_DRの残り)
 
+		local fi
+		local sz
+		local need_pad
+
+		(
+			# Extended Attribute Record Length (size 1)
+			echo -en '\x00'
+			# Location of Extent (size 8)
+			echo_4bytes "$BIN_FILE_START_SECTOR_NUM_HEX"
+			echo_4bytes_be "$BIN_FILE_START_SECTOR_NUM_HEX"
+			# Data Length (size 8)
+			echo_4bytes "$BIN_FILE_SIZE_HEX"
+			echo_4bytes_be "$BIN_FILE_SIZE_HEX"
+			# Recording Date and Time (size 7)
+			echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
+			# File Flags (size 1)
+			echo -en '\x00'
+			# File Unit Size (size 1)
+			echo -en '\x00'
+			# Interleave Gap Size (size 1)
+			echo -en '\x00'
+			# Volume Sequence Number (size 4)
+			echo -en '\x01\x00\x00\x01'
+			# Length of File Identifier(LEN_FI) (size 1)
+			fi="${BIN_FILE};1"
+			echo -en "\x$(two_digits $(to16 $(echo -n "$fi" | wc -c)))"
+			# File Identifier (size LEN_FI)
+			echo -n "$fi"
+		) >dirrec_${BIN_FILE}.o
+		sz=$(($(stat -c '%s' dirrec_${BIN_FILE}.o) + 1))
+		need_pad="false"
+		if [ $((sz % 2)) -eq 1 ]; then
+			need_pad="true"
+			sz=$((sz + 1))
+		fi
 		# Length of Directory Record(LEN_DR) (size 1)
-		# 0x28 = 40
-		echo -en '\x28'
-		# Extended Attribute Record Length (size 1)
-		echo -en '\x00'
-		# Location of Extent (size 8)
-		echo_4bytes "$BIN_FILE_START_SECTOR_NUM_HEX"
-		echo_4bytes_be "$BIN_FILE_START_SECTOR_NUM_HEX"
-		# Data Length (size 8)
-		echo_4bytes "$BIN_FILE_SIZE_HEX"
-		echo_4bytes_be "$BIN_FILE_SIZE_HEX"
-		# Recording Date and Time (size 7)
-		echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
-		# File Flags (size 1)
-		echo -en '\x00'
-		# File Unit Size (size 1)
-		echo -en '\x00'
-		# Interleave Gap Size (size 1)
-		echo -en '\x00'
-		# Volume Sequence Number (size 4)
-		echo -en '\x01\x00\x00\x01'
-		# Length of File Identifier(LEN_FI) (size 1)
-		echo -en '\x07'
-		# File Identifier (size LEN_FI)
-		echo -n '0.BIN;1'
+		echo -en "\x$(two_digits $(to16 $sz))"
+		# ファイルへダンプしたレコード本体
+		cat dirrec_${BIN_FILE}.o
 		# Padding Field(レコードサイズを偶数にするためのパディング)
+		if [ "$need_pad" = "true" ]; then
+			echo -en '\x00'
+		fi
 		# System Use (size LEN_DRの残り)
 
 		if [ -n "$SUB_FILE" ]; then
@@ -427,7 +448,9 @@ main() {
 	gen_dir_root
 	# sector 21(0x15)-
 	gen_file $BIN_FILE
-	gen_file $SUB_FILE
+	if [ -n "$SUB_FILE" ]; then
+		gen_file $SUB_FILE
+	fi
 }
 
 main
