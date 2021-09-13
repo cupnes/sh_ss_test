@@ -142,10 +142,10 @@ make_bin() {
 	area_sz=$(echo "ibase=16;$FUNCS_BASE - $VARS_BASE" | bc)
 	pad_sz=$((area_sz - file_sz))
 	if [ $pad_sz -lt 0 ]; then
-		echo 'Error: variable area overflow.' 1>&2
+		echo 'Error: variable area overflow.' >&2
 		exit 1
 	fi
-	cat <<EOF 1>&2
+	cat <<EOF >&2
 [variable area (unit: byte)]
 - size : $area_sz
 - used : $file_sz
@@ -159,10 +159,10 @@ EOF
 	area_sz=$(echo "ibase=16;$MAIN_BASE - $FUNCS_BASE" | bc)
 	pad_sz=$((area_sz - file_sz))
 	if [ $pad_sz -lt 0 ]; then
-		echo 'Error: function area overflow.' 1>&2
+		echo 'Error: function area overflow.' >&2
 		exit 1
 	fi
-	cat <<EOF 1>&2
+	cat <<EOF >&2
 [function area (unit: byte)]
 - size : $area_sz
 - used : $file_sz

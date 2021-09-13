@@ -8,11 +8,11 @@ set -ue
 SECTOR_BYTES=2048
 
 usage() {
-	echo "$0 - Outputs an ISO image containing the specified file(s) to the standard output." 1>&2
-	echo 1>&2
-	echo 'Usage:' 1>&2
-	echo -e "\t$0 BIN_FILE [SUB_FILE]" 1>&2
-	echo -e "\t$0 -h" 1>&2
+	echo "$0 - Outputs an ISO image containing the specified file(s) to the standard output." >&2
+	echo >&2
+	echo 'Usage:' >&2
+	echo -e "\t$0 BIN_FILE [SUB_FILE]" >&2
+	echo -e "\t$0 -h" >&2
 }
 
 if [ $# -ne 1 -a $# -ne 2 ]; then
