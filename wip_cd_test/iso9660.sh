@@ -15,7 +15,7 @@ usage() {
 	echo -e "\t$0 -h" >&2
 }
 
-if [ $# -ne 1 -a $# -ne 2 ]; then
+if [ $# -ne 1 ] && [ $# -ne 2 ]; then
 	usage
 	exit 1
 fi
