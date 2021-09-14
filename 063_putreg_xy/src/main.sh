@@ -90,7 +90,7 @@ main() {
 	copy_to_reg_from_val_long r12 $a_putreg_xy
 
 	# 出力1
-	copy_to_reg_from_val_long r1 babebeef
+	copy_to_reg_from_val_long r1 beefcafe
 	sh2_set_reg r2 $OUTPUT_X1
 	sh2_abs_call_to_reg_after_next_inst r12
 	sh2_set_reg r3 $OUTPUT_Y1
