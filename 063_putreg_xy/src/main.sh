@@ -117,12 +117,16 @@ make_bin() {
 	local area_sz
 	local pad_sz
 
-	# メインプログラム領域へジャンプ(32バイト)
+	# エントリポイントのアドレスを取得し
+	# メインプログラム領域へジャンプ
 	(
-		copy_to_reg_from_val_long r1 $MAIN_BASE
+		sh2_rel_call_to_reg_after_next_inst 000
+		sh2_nop
+		sh2_copy_to_reg_from_pr r2
+		copy_to_reg_from_val_long r1 $MAIN_BASE	# 26
 		sh2_abs_jump_to_reg_after_next_inst r1
 		sh2_nop
-		sh2_nop	# jmp_main.oのサイズを4の倍数にするためのパディング
+		sh2_nop	# jmp_main.oのサイズを4の倍数にするためのパディング(TBD)
 	) >src/jmp_main.o
 	cat src/jmp_main.o
 

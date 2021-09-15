@@ -429,6 +429,12 @@ sh2_rel_jump_after_next_inst() {
 	echo -e "bra 0x$offset\t;2" >>$ASM_LIST_FILE
 }
 
+sh2_rel_call_to_reg_after_next_inst() {
+	local offset=$1
+	echo -en "\xb$(echo $offset | cut -c1)\x$(echo $offset | cut -c2-3)"	# bsr $offset
+	echo -e "bsr $offset\t;2" >>$ASM_LIST_FILE
+}
+
 sh2_abs_jump_to_reg_after_next_inst() {
 	local reg=$1
 	local regnum=$(to_regnum $reg)
