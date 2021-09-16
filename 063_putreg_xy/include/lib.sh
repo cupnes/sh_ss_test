@@ -169,6 +169,10 @@ div_reg_by_reg_long_sign() {
 	sh2_add_to_reg_from_val_byte r15 04
 }
 
+# 指定されたファイルを指定されたアドレスへ配置する
+# 第1引数: ファイル
+# 第2引数: アドレス
+# 戻り値(R1): 最終バイトを配置したアドレス+1
 # ※ 作業用にR0,R1,R2を使用する
 put_file_to_addr() {
 	local f=$1

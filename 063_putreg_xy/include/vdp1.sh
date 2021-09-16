@@ -12,6 +12,7 @@ VRAM_CLT_BASE=05C03C80
 # VDP1 RAM先頭(0x05C00000)からのオフセットを8で割った2バイトの値
 VRAM_CLT_BASE_CMDCOLR=0790
 
+# システムクリッピング座標設定コマンドを標準出力へ出力する
 vdp1_command_system_clipping_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1001
@@ -49,6 +50,7 @@ vdp1_command_system_clipping_coordinates() {
 	echo -en '\x00\x00'
 }
 
+# ユーザクリッピング座標設定コマンドを標準出力へ出力する
 vdp1_command_user_clipping_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1000
@@ -86,6 +88,7 @@ vdp1_command_user_clipping_coordinates() {
 	echo -en '\x00\x00'
 }
 
+# 相対座標設定コマンドを標準出力へ出力する
 vdp1_command_local_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1010

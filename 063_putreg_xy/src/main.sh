@@ -25,6 +25,10 @@ OUTPUT_X2=10
 OUTPUT_Y2=20
 
 # コマンドテーブル設定
+# work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
+#     : r1* - put_file_to_addrの作業用
+#     : r2* - put_file_to_addrの作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
 setup_vram_command_table() {
 	# 05c00000
 	local com_adr=$SS_VDP1_VRAM_ADDR
@@ -51,6 +55,9 @@ setup_vram_command_table() {
 }
 
 # カラールックアップテーブル設定
+# work: r0* - copy_to_reg_from_val_longの作業用
+#     : r1* - この中の作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
 setup_vram_color_lookup_table() {
 	# 配置先アドレスをr1へ設定
 	copy_to_reg_from_val_long r1 $VRAM_CLT_BASE
@@ -75,9 +82,33 @@ setup_vram_color_lookup_table() {
 	done
 }
 
+# メイン関数
+# in  : r2*  - エントリポイントのアドレス+4
+# work: r0*  - copy_to_reg_from_val_long,setup_vram_command_table,
+#              setup_vram_color_lookup_table,f_putreg_xy(),この中の作業用
+#     : r1*  - setup_vram_command_table,setup_vram_color_lookup_table,
+#              f_putreg_xy(),この中の作業用
+#     : r2*  - setup_vram_command_table,f_putreg_xy(),この中の作業用
+#     : r3*  - vdp_init,この中の作業用
+#     : r4*  - vdp_init,f_putreg_xy()の作業用
+#     : r5*  - f_putreg_xy()の作業用
+#     : r6*  - f_putreg_xy()の作業用
+#     : r7*  - f_putreg_xy()の作業用
+#     : r8*  - f_putreg_xy()の作業用
+#     : r9*  - f_putreg_xy()の作業用
+#     : r10* - f_putreg_xy()の作業用
+#     : r11* - f_putreg_xy()の作業用
+#     : r12* - この中の作業用
+#     : r13* - この中の作業用
+#     : macl*- f_putreg_xy()の作業用
+# ※ *が付いているレジスタはこの関数で書き換えられる
 main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
+
+	# r13 = r2 - 4
+	sh2_add_to_reg_from_val_byte r2 $(two_comp_d 4)
+	sh2_copy_to_reg_from_reg r13 r2
 
 	# VRAM初期設定
 	setup_vram_command_table
@@ -89,14 +120,14 @@ main() {
 	# 関数のアドレスをr12へ設定
 	copy_to_reg_from_val_long r12 $a_putreg_xy
 
-	# 出力1
+	# 出力1：任意の4バイトの値
 	copy_to_reg_from_val_long r1 beefcafe
 	sh2_set_reg r2 $OUTPUT_X1
 	sh2_abs_call_to_reg_after_next_inst r12
 	sh2_set_reg r3 $OUTPUT_Y1
 
-	# 出力2
-	copy_to_reg_from_val_long r1 00000000
+	# 出力2：エントリポイントアドレス
+	sh2_copy_to_reg_from_reg r1 r13
 	sh2_set_reg r2 $OUTPUT_X2
 	sh2_abs_call_to_reg_after_next_inst r12
 	sh2_set_reg r3 $OUTPUT_Y2
@@ -123,10 +154,11 @@ make_bin() {
 		sh2_rel_call_to_reg_after_next_inst 000
 		sh2_nop
 		sh2_copy_to_reg_from_pr r2
-		copy_to_reg_from_val_long r1 $MAIN_BASE	# 26
+		copy_to_reg_from_val_long r1 $MAIN_BASE
 		sh2_abs_jump_to_reg_after_next_inst r1
 		sh2_nop
-		sh2_nop	# jmp_main.oのサイズを4の倍数にするためのパディング(TBD)
+		# jmp_main.oのサイズを4の倍数にするためのパディング
+		## 無しでOK(これでjmp_main.oは36バイト)
 	) >src/jmp_main.o
 	cat src/jmp_main.o
 
