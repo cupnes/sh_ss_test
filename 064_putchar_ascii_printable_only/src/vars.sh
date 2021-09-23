@@ -58,13 +58,11 @@ vars() {
 	# con: 現在のカーソル座標
 	var_con_cur_x=$(calc16_8 "$var_font_dat+2F80")
 	echo -e "var_con_cur_x=$var_con_cur_x" >>$map_file
-	echo -en "\x$(echo $CON_CUR_INIT_X | cut -c1-2)"
-	echo -en "\x$(echo $CON_CUR_INIT_X | cut -c3-4)"
+	echo -en "\x00\x$CON_AREA_X"
 	## 2バイト境界
 	var_con_cur_y=$(calc16_8 "$var_con_cur_x+2")
 	echo -e "var_con_cur_y=$var_con_cur_y" >>$map_file
-	echo -en "\x$(echo $CON_CUR_INIT_Y | cut -c1-2)"
-	echo -en "\x$(echo $CON_CUR_INIT_Y | cut -c3-4)"
+	echo -en "\x00\x$CON_AREA_Y"
 	## 4バイト境界
 }
 

@@ -168,6 +168,7 @@ sh2_compare_reg_gt_reg_signed() {
 	echo -e "cmp/gt $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+# 無符号で regA > regB のとき 1→T
 sh2_compare_reg_gt_reg_unsigned() {
 	local regA=$1
 	local regB=$2

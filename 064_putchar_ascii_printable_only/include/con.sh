@@ -3,6 +3,19 @@ if [ "${INCLUDE_CON_SH+is_defined}" ]; then
 fi
 INCLUDE_CON_SH=true
 
-# カーソルの初期座標
-CON_CUR_INIT_X=0000
-CON_CUR_INIT_Y=0000
+CON_FONT_SIZE=80	# 128バイト
+CON_FONT_WIDTH=10	# 16px
+CON_FONT_HEIGHT=10	# 16px
+
+# コンソール領域
+## 座標
+CON_AREA_X=10	# 16
+CON_AREA_Y=10	# 16
+## 幅/高さ
+CON_AREA_WIDTH_CH=0a	# 10文字分
+CON_AREA_HEIGHT_CH=0a	# 10文字分
+CON_AREA_WIDTH_PX=$(four_digits $(calc16 "${CON_FONT_WIDTH}*${CON_AREA_WIDTH_CH}"))
+CON_AREA_HEIGHT_PX=$(four_digits $(calc16 "${CON_FONT_HEIGHT}*${CON_AREA_HEIGHT_CH}"))
+## 座標+幅/高さ
+CON_OUTSIDE_X=$(four_digits $(calc16 "${CON_AREA_X}+${CON_AREA_WIDTH_PX}"))
+CON_OUTSIDE_Y=$(four_digits $(calc16 "${CON_AREA_Y}+${CON_AREA_HEIGHT_PX}"))

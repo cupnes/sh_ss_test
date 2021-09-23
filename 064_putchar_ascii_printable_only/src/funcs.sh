@@ -628,6 +628,13 @@ funcs() {
 	echo -e "a_con_init=$a_con_init" >>$map_file
 	f_con_init >src/f_con_init.o
 	cat src/f_con_init.o
+
+	# カーソルを1文字分進める
+	fsz=$(to16 $(stat -c '%s' src/f_con_init.o))
+	a_forward_cursor=$(calc16_8 "${a_con_init}+${fsz}")
+	echo -e "a_forward_cursor=$a_forward_cursor" >>$map_file
+	f_forward_cursor >src/f_forward_cursor.o
+	cat src/f_forward_cursor.o
 }
 
 funcs

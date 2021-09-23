@@ -21,18 +21,6 @@ HEX_DISP_A=41
 # ここで0x41('A')を指定すれば16進表記は大文字になるし
 # ここで0x61('a')を指定すれば16進表記は小文字になる
 
-CON_FONT_SIZE=80	# 128バイト
-CON_FONT_WIDTH=10	# 16px
-CON_FONT_HEIGHT=10	# 16px
-
-# コンソール領域の座標・幅/高さ
-CON_AREA_X=10	# 16
-CON_AREA_Y=10	# 16
-CON_AREA_WIDTH_CH=0a	# 10文字分
-CON_AREA_HEIGHT_CH=0a	# 10文字分
-CON_AREA_WIDTH_PX=$(four_digits $(calc16 "${CON_FONT_WIDTH}*${CON_AREA_WIDTH_CH}"))
-CON_AREA_HEIGHT_PX=$(four_digits $(calc16 "${CON_FONT_HEIGHT}*${CON_AREA_HEIGHT_CH}"))
-
 # 指定された文字(ASCII)を指定された座標に出力
 # in  : r1* - ASCIIコード
 #     : r2* - X座標
@@ -379,15 +367,137 @@ f_con_init() {
 
 	# カーソル座標をリセット
 	## X
-	copy_to_reg_from_val_long r1 $(extend_digit $CON_CUR_INIT_X 8)
+	sh2_set_reg r1 $CON_AREA_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 	copy_to_reg_from_val_long r2 $var_con_cur_x
 	sh2_copy_to_ptr_from_reg_word r2 r1
 	## Y
-	copy_to_reg_from_val_long r1 $(extend_digit $CON_CUR_INIT_Y 8)
+	sh2_set_reg r1 $CON_AREA_Y
+	sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 	copy_to_reg_from_val_long r2 $var_con_cur_y
 	sh2_copy_to_ptr_from_reg_word r2 r1
 
 	# 退避したレジスタを復帰しreturn
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# カーソルを1文字分進める
+# work: r0 - 作業用
+#     : r1 - 作業用
+#     : r2 - 作業用
+#     : r3 - 作業用
+#     : r4 - 作業用
+#     : r5 - 作業用
+f_forward_cursor() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r3
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r3
+
+	# カーソルX座標の変数のアドレスをr1へ取得
+	copy_to_reg_from_val_long r1 $var_con_cur_x
+
+	# カーソルX座標をr2へ取得
+	sh2_copy_to_reg_from_ptr_word r2 r1
+	sh2_extend_unsigned_to_reg_from_reg_word r2 r2
+
+	# r2 += CON_FONT_WIDTH
+	sh2_add_to_reg_from_val_byte r2 $CON_FONT_WIDTH
+
+	# r2 >= CON_OUTSIDE_X ?
+	copy_to_reg_from_val_long r3 $(extend_digit $CON_OUTSIDE_X 8)
+	sh2_compare_reg_ge_reg_unsigned r2 r3
+	(
+		# r2 >= CON_OUTSIDE_X の場合
+
+		# 変更が発生するレジスタを退避
+		## r4
+		sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+		sh2_copy_to_ptr_from_reg_long r15 r4
+		## r5
+		sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+		sh2_copy_to_ptr_from_reg_long r15 r5
+
+		# r2 = CON_AREA_X
+		sh2_set_reg r2 $CON_AREA_X
+		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+		# カーソルY座標の変数のアドレスをr3へ取得
+		copy_to_reg_from_val_long r3 $var_con_cur_y
+
+		# カーソルY座標をr4へ取得
+		sh2_copy_to_reg_from_ptr_word r4 r3
+		sh2_extend_unsigned_to_reg_from_reg_word r4 r4
+
+		# r4 += CON_FONT_HEIGHT
+		sh2_add_to_reg_from_val_byte r4 $CON_FONT_HEIGHT
+
+		# r4 >= CON_OUTSIDE_Y ?
+		copy_to_reg_from_val_long r5 $(extend_digit $CON_OUTSIDE_Y 8)
+		sh2_compare_reg_ge_reg_unsigned r4 r5
+		(
+			# r4 >= CON_OUTSIDE_Y の場合
+
+			# 変更が発生するレジスタを退避
+
+			# r4 = CON_AREA_Y
+			sh2_set_reg r4 $CON_AREA_Y
+			sh2_extend_unsigned_to_reg_from_reg_byte r4 r4
+
+			# コンソール領域をクリアする
+			## TODO コンソール領域をクリアする関数を実装し
+			##      ここで呼び出す
+
+			# 退避したレジスタを復帰
+		) >src/f_forward_cursor.2.o
+		## T == 0 なら r4 >= CON_OUTSIDE_Y の場合の処理を飛ばす
+		local sz_2=$(stat -c '%s' src/f_forward_cursor.2.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_2 - 2) / 2)))
+		cat src/f_forward_cursor.2.o
+
+		# r4をカーソルY座標の変数へ設定
+		sh2_copy_to_ptr_from_reg_word r3 r4
+
+		# 退避したレジスタを復帰
+		## r5
+		sh2_copy_to_reg_from_ptr_long r5 r15
+		sh2_add_to_reg_from_val_byte r15 04
+		## r4
+		sh2_copy_to_reg_from_ptr_long r4 r15
+		sh2_add_to_reg_from_val_byte r15 04
+	) >src/f_forward_cursor.1.o
+	## T == 0 なら r2 >= CON_OUTSIDE_X の場合の処理を飛ばす
+	local sz_1=$(stat -c '%s' src/f_forward_cursor.1.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_1 - 2) / 2)))
+	cat src/f_forward_cursor.1.o
+
+	# r2をカーソルX座標の変数へ設定
+	sh2_copy_to_ptr_from_reg_word r1 r2
+
+	# 退避したレジスタを復帰しreturn
+	## r3
+	sh2_copy_to_reg_from_ptr_long r3 r15
+	sh2_add_to_reg_from_val_byte r15 04
 	## r2
 	sh2_copy_to_reg_from_ptr_long r2 r15
 	sh2_add_to_reg_from_val_byte r15 04
