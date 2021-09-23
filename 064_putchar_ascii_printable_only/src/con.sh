@@ -5,6 +5,7 @@ SRC_CON_SH=true
 
 . include/sh2.sh
 . include/ss.sh
+. include/common.sh
 . src/vars_map.sh
 
 ASCII_PRINTABLE_1ST_CHR=20	# スペース
@@ -22,6 +23,14 @@ HEX_DISP_A=41
 CON_FONT_SIZE=80	# 128バイト
 CON_FONT_WIDTH=10	# 16px
 CON_FONT_HEIGHT=10	# 16px
+
+# コンソール領域の座標・幅/高さ
+CON_AREA_X=10	# 16
+CON_AREA_Y=10	# 16
+CON_AREA_WIDTH_CH=0a	# 10文字分
+CON_AREA_HEIGHT_CH=0a	# 10文字分
+CON_AREA_WIDTH_PX=$(four_digits $(calc16 "${CON_FONT_WIDTH}*${CON_AREA_WIDTH_CH}"))
+CON_AREA_HEIGHT_PX=$(four_digits $(calc16 "${CON_FONT_HEIGHT}*${CON_AREA_HEIGHT_CH}"))
 
 # 指定された文字(ASCII)を指定された座標に出力
 # in  : r1* - ASCIIコード
