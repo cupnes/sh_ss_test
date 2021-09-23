@@ -54,25 +54,15 @@ vars() {
 	cat font.lut
 	# 4バイト境界
 
-	# 出力する文字列
-	var_output_str1=$(calc16_8 "$var_font_dat+2F80")
-	echo -e "var_output_str1=$var_output_str1" >>$map_file
-	echo -en ' !"#$%&\x27()*+,-./\x00'	# 17(0x11)バイト
-	var_output_str2=$(calc16_8 "$var_output_str1+11")
-	echo -e "var_output_str2=$var_output_str2" >>$map_file
-	echo -en '0123456789:;<=>?\x00'	# 17バイト
-	var_output_str3=$(calc16_8 "$var_output_str2+11")
-	echo -e "var_output_str3=$var_output_str3" >>$map_file
-	echo -en '@ABCDEFGHIJKLMNO\x00'	# 17バイト
-	var_output_str4=$(calc16_8 "$var_output_str3+11")
-	echo -e "var_output_str4=$var_output_str4" >>$map_file
-	echo -en 'PQRSTUVWXYZ[\x5c]^_\x00'	# 17バイト
-	var_output_str5=$(calc16_8 "$var_output_str4+11")
-	echo -e "var_output_str5=$var_output_str5" >>$map_file
-	echo -en '\x60abcdefghijklmno\x00'	# 17バイト
-	var_output_str6=$(calc16_8 "$var_output_str5+11")
-	echo -e "var_output_str6=$var_output_str6" >>$map_file
-	echo -en 'pqrstuvwxyz{|}~\x00'	# 16バイト
+	# con: 現在のカーソル座標
+	var_con_cur_x=$(calc16_8 "$var_font_dat+2F80")
+	echo -e "var_con_cur_x=$var_con_cur_x" >>$map_file
+	echo -en '\x00\x00'
+	## 2バイト境界
+	var_con_cur_y=$(calc16_8 "$var_con_cur_x+2")
+	echo -e "var_con_cur_y=$var_con_cur_y" >>$map_file
+	echo -en '\x00\x00'
+	## 4バイト境界
 }
 
 vars
