@@ -6,6 +6,7 @@ set -ue
 . include/common.sh
 . include/memmap.sh
 . include/vdp1.sh
+. include/con.sh
 
 vars() {
 	map_file=src/vars_map.sh
@@ -57,11 +58,13 @@ vars() {
 	# con: 現在のカーソル座標
 	var_con_cur_x=$(calc16_8 "$var_font_dat+2F80")
 	echo -e "var_con_cur_x=$var_con_cur_x" >>$map_file
-	echo -en '\x00\x00'
+	echo -en "\x$(echo $CON_CUR_INIT_X | cut -c1-2)"
+	echo -en "\x$(echo $CON_CUR_INIT_X | cut -c3-4)"
 	## 2バイト境界
 	var_con_cur_y=$(calc16_8 "$var_con_cur_x+2")
 	echo -e "var_con_cur_y=$var_con_cur_y" >>$map_file
-	echo -en '\x00\x00'
+	echo -en "\x$(echo $CON_CUR_INIT_Y | cut -c1-2)"
+	echo -en "\x$(echo $CON_CUR_INIT_Y | cut -c3-4)"
 	## 4バイト境界
 }
 

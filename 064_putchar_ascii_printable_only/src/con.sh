@@ -6,6 +6,7 @@ SRC_CON_SH=true
 . include/sh2.sh
 . include/ss.sh
 . include/common.sh
+. include/con.sh
 . src/vars_map.sh
 
 ASCII_PRINTABLE_1ST_CHR=20	# スペース
@@ -356,6 +357,47 @@ f_putreg_xy() {
 	sh2_copy_to_reg_from_ptr_long r0 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	sh2_copy_to_pr_from_reg r0
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# コンソールの初期化
+# work: r0 - 作業用
+#     : r1 - 作業用
+#     : r2 - 作業用
+f_con_init() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+
+	# カーソル座標をリセット
+	## X
+	copy_to_reg_from_val_long r1 $(extend_digit $CON_CUR_INIT_X 8)
+	copy_to_reg_from_val_long r2 $var_con_cur_x
+	sh2_copy_to_ptr_from_reg_word r2 r1
+	## Y
+	copy_to_reg_from_val_long r1 $(extend_digit $CON_CUR_INIT_Y 8)
+	copy_to_reg_from_val_long r2 $var_con_cur_y
+	sh2_copy_to_ptr_from_reg_word r2 r1
+
+	# 退避したレジスタを復帰しreturn
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }

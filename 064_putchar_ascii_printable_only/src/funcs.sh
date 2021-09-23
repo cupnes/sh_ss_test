@@ -621,6 +621,13 @@ funcs() {
 	echo -e "a_putreg_xy=$a_putreg_xy" >>$map_file
 	f_putreg_xy >src/f_putreg_xy.o
 	cat src/f_putreg_xy.o
+
+	# コンソールの初期化
+	fsz=$(to16 $(stat -c '%s' src/f_putreg_xy.o))
+	a_con_init=$(calc16_8 "${a_putreg_xy}+${fsz}")
+	echo -e "a_con_init=$a_con_init" >>$map_file
+	f_con_init >src/f_con_init.o
+	cat src/f_con_init.o
 }
 
 funcs
