@@ -557,3 +557,75 @@ f_forward_cursor() {
 	sh2_return_after_next_inst
 	sh2_nop
 }
+
+# 1文字出力しカーソル座標を1文字分進める
+# in  : r1 - ASCIIコード
+# work: r0 - 作業用
+#     : r2 - 作業用
+#     : r3 - 作業用
+#     : r4 - 作業用
+f_putchar() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r3
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r3
+	## r4
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r4
+	## pr
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# 現在のカーソル座標へ1文字出力
+	## 現在のカーソルX座標をr2へ設定
+	copy_to_reg_from_val_long r2 $var_con_cur_x
+	sh2_copy_to_reg_from_ptr_word r2 r2
+	sh2_extend_unsigned_to_reg_from_reg_word r2 r2
+	## 現在のカーソルY座標をr3へ設定
+	copy_to_reg_from_val_long r3 $var_con_cur_y
+	sh2_copy_to_reg_from_ptr_word r3 r3
+	sh2_extend_unsigned_to_reg_from_reg_word r3 r3
+	## 1文字出力
+	copy_to_reg_from_val_long r4 $a_putchar_xy
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_nop
+
+	# カーソルを1文字分進める
+	copy_to_reg_from_val_long r1 $a_forward_cursor
+	sh2_abs_call_to_reg_after_next_inst r1
+	sh2_nop
+
+	# 退避したレジスタを復帰しreturn
+	## pr
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+	## r4
+	sh2_copy_to_reg_from_ptr_long r4 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r3
+	sh2_copy_to_reg_from_ptr_long r3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
+	sh2_return_after_next_inst
+	sh2_nop
+}

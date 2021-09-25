@@ -106,10 +106,6 @@ main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
 
-	# r13 = r2 - 4
-	sh2_add_to_reg_from_val_byte r2 $(two_comp_d 4)
-	sh2_copy_to_reg_from_reg r13 r2
-
 	# VRAM初期設定
 	setup_vram_command_table
 	setup_vram_color_lookup_table
@@ -120,17 +116,11 @@ main() {
 	# 関数のアドレスをr12へ設定
 	copy_to_reg_from_val_long r12 $a_putreg_xy
 
-	# 出力1：任意の4バイトの値
+	# 出力：任意の4バイトの値
 	copy_to_reg_from_val_long r1 beefcafe
 	sh2_set_reg r2 $OUTPUT_X1
 	sh2_abs_call_to_reg_after_next_inst r12
 	sh2_set_reg r3 $OUTPUT_Y1
-
-	# 出力2：エントリポイントアドレス
-	sh2_copy_to_reg_from_reg r1 r13
-	sh2_set_reg r2 $OUTPUT_X2
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r3 $OUTPUT_Y2
 
 	# 描画終了コマンドを配置
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_addr
@@ -148,17 +138,12 @@ make_bin() {
 	local area_sz
 	local pad_sz
 
-	# エントリポイントのアドレスを取得し
-	# メインプログラム領域へジャンプ
+	# メインプログラム領域へジャンプ(32バイト)
 	(
-		sh2_rel_call_to_reg_after_next_inst 000
-		sh2_nop
-		sh2_copy_to_reg_from_pr r2
 		copy_to_reg_from_val_long r1 $MAIN_BASE
 		sh2_abs_jump_to_reg_after_next_inst r1
 		sh2_nop
-		# jmp_main.oのサイズを4の倍数にするためのパディング
-		## 無しでOK(これでjmp_main.oは36バイト)
+		sh2_nop	# jmp_main.oのサイズを4の倍数にするためのパディング
 	) >src/jmp_main.o
 	cat src/jmp_main.o
 

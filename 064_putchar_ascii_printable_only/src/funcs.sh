@@ -669,6 +669,13 @@ funcs() {
 	echo -e "a_forward_cursor=$a_forward_cursor" >>$map_file
 	f_forward_cursor >src/f_forward_cursor.o
 	cat src/f_forward_cursor.o
+
+	# 1文字出力しカーソル座標を1文字分進める
+	fsz=$(to16 $(stat -c '%s' src/f_forward_cursor.o))
+	a_putchar=$(calc16_8 "${a_forward_cursor}+${fsz}")
+	echo -e "a_putchar=$a_putchar" >>$map_file
+	f_putchar >src/f_putchar.o
+	cat src/f_putchar.o
 }
 
 funcs
