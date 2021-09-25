@@ -140,14 +140,18 @@ f_memcpy() {
 }
 
 # 指定された属性値の定形スプライト描画コマンドを指定されたアドレスへ配置する
-# in  : r1* - 配置先アドレス
-#     : r2  - X座標
-#     : r3  - Y座標
-#     : r4  - キャラクタアドレス/8(下位2ビットは0)
-# work: r0* - 作業用
-# ※ *が付いているレジスタはこの関数で書き換えられる
-# ※ r1は最後に書き込みを行った次のアドレスが指定された状態で帰る
+# in  : r1 - 配置先アドレス
+#     : r2 - X座標
+#     : r3 - Y座標
+#     : r4 - キャラクタアドレス/8(下位2ビットは0)
+# out : r1 - 最後に書き込みを行った次のアドレス
+# work: r0 - 作業用
 f_put_vdp1_command_normal_sprite_draw_to_addr() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
 	# CMDCTRL
 	# 0b0000 0000 0000 0000
 	# - JP(b14-b12) = 0b000
@@ -238,7 +242,11 @@ f_put_vdp1_command_normal_sprite_draw_to_addr() {
 	# r1 += 4
 	sh2_add_to_reg_from_val_byte r1 04
 
-	# return
+	# 退避したレジスタを復帰しreturn
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }
