@@ -8,6 +8,7 @@ set -ue
 . include/ss.sh
 . include/vdp1.sh
 . include/memmap.sh
+. include/charcode.sh
 . src/vars_map.sh
 . src/funcs_map.sh
 . src/vdp.sh
@@ -83,24 +84,13 @@ setup_vram_color_lookup_table() {
 }
 
 # メイン関数
-# in  : r2*  - エントリポイントのアドレス+4
 # work: r0*  - copy_to_reg_from_val_long,setup_vram_command_table,
-#              setup_vram_color_lookup_table,f_putreg_xy(),この中の作業用
+#              setup_vram_color_lookup_table,この中の作業用
 #     : r1*  - setup_vram_command_table,setup_vram_color_lookup_table,
-#              f_putreg_xy(),この中の作業用
-#     : r2*  - setup_vram_command_table,f_putreg_xy(),この中の作業用
-#     : r3*  - vdp_init,この中の作業用
-#     : r4*  - vdp_init,f_putreg_xy()の作業用
-#     : r5*  - f_putreg_xy()の作業用
-#     : r6*  - f_putreg_xy()の作業用
-#     : r7*  - f_putreg_xy()の作業用
-#     : r8*  - f_putreg_xy()の作業用
-#     : r9*  - f_putreg_xy()の作業用
-#     : r10* - f_putreg_xy()の作業用
-#     : r11* - f_putreg_xy()の作業用
-#     : r12* - この中の作業用
-#     : r13* - この中の作業用
-#     : macl*- f_putreg_xy()の作業用
+#              この中の作業用
+#     : r2*  - setup_vram_command_table,この中の作業用
+#     : r3*  - vdp_initの作業用
+#     : r4*  - vdp_initの作業用
 # ※ *が付いているレジスタはこの関数で書き換えられる
 main() {
 	# スタックポインタ(r15)の初期化
@@ -113,14 +103,20 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# 関数のアドレスをr12へ設定
-	copy_to_reg_from_val_long r12 $a_putreg_xy
+	# 関数のアドレスをr2へ設定
+	copy_to_reg_from_val_long r2 $a_putchar
 
-	# 出力：任意の4バイトの値
-	copy_to_reg_from_val_long r1 beefcafe
-	sh2_set_reg r2 $OUTPUT_X1
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r3 $OUTPUT_Y1
+	# 1文字出力：'A'
+	sh2_abs_call_to_reg_after_next_inst r2
+	sh2_set_reg r1 $CHARCODE_A
+
+	# 1文字出力：'B'
+	sh2_abs_call_to_reg_after_next_inst r2
+	sh2_set_reg r1 $CHARCODE_B
+
+	# 1文字出力：'C'
+	sh2_abs_call_to_reg_after_next_inst r2
+	sh2_set_reg r1 $CHARCODE_C
 
 	# 描画終了コマンドを配置
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_addr
