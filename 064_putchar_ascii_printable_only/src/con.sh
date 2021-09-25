@@ -22,19 +22,41 @@ HEX_DISP_A=41
 # ここで0x61('a')を指定すれば16進表記は小文字になる
 
 # 指定された文字(ASCII)を指定された座標に出力
-# in  : r1* - ASCIIコード
-#     : r2* - X座標
-#     : r3  - Y座標
-# out : r1  - VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレス
-# work: r0* - 作業用
-#     : r4* - 作業用
-#     : r5* - 作業用
-#     : r6* - 作業用
-#     : r7* - 作業用
-#     : macl* (mulu.wを行う)
-# ※ *が付いているレジスタはこの関数内で変更される
+# in  : r1 - ASCIIコード
+#     : r2 - X座標
+#     : r3 - Y座標
+# out : r1 - VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレス
+# work: r0 - 作業用
+#     : r4 - 作業用
+#     : r5 - 作業用
+#     : r6 - 作業用
+#     : r7 - 作業用
+#     : macl (mulu.wを行う)
 f_putchar_xy() {
-	# PRをスタックへ退避
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r4
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r4
+	## r5
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r5
+	## r6
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r6
+	## r7
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r7
+	## macl
+	sh2_copy_to_reg_from_macl r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## pr
 	sh2_copy_to_reg_from_pr r0
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r0
@@ -128,10 +150,34 @@ f_putchar_xy() {
 	copy_to_reg_from_val_long r2 $var_next_vdpcom_addr
 	sh2_copy_to_ptr_from_reg_long r2 r1
 
-	# PRをスタックから復帰しreturn
+	# 退避したレジスタを復帰しreturn
+	## pr
 	sh2_copy_to_reg_from_ptr_long r0 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	sh2_copy_to_pr_from_reg r0
+	## macl
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_macl_from_reg r0
+	## r7
+	sh2_copy_to_reg_from_ptr_long r7 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r6
+	sh2_copy_to_reg_from_ptr_long r6 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r5
+	sh2_copy_to_reg_from_ptr_long r5 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r4
+	sh2_copy_to_reg_from_ptr_long r4 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }

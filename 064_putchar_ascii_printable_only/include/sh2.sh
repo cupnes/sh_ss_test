@@ -455,6 +455,13 @@ sh2_return_after_next_inst() {
 	echo -e 'rts\t;2' >>$ASM_LIST_FILE
 }
 
+sh2_copy_to_macl_from_reg() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x1a"	# lds $reg,macl
+	echo -e "lds $reg,macl\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_copy_to_pr_from_reg() {
 	local reg=$1
 	local regnum=$(to_regnum $reg)
