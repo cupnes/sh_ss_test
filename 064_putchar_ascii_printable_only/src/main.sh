@@ -45,7 +45,7 @@ setup_vram_command_table() {
 	put_file_to_addr src/local_coordinates.o $com_adr
 
 	# r1へ次にコマンドを配置するVRAMアドレスを設定
-	copy_to_reg_from_val_long r1 $VRAM_DRAW_CMD_BASE
+	copy_to_reg_from_val_long r1 $VRAM_CT_CON_BASE
 
 	# r1のアドレス先へ描画終了コマンドを配置
 	sh2_set_reg r0 80

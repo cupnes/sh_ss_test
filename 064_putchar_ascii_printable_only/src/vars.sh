@@ -44,10 +44,10 @@ vars() {
 	# VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレス
 	var_next_vdpcom_addr=$(calc16_8 "$var_next_cp_addr+4")
 	echo -e "var_next_vdpcom_addr=$var_next_vdpcom_addr" >>$map_file
-	echo -en "\x$(echo $VRAM_DRAW_CMD_BASE | cut -c1-2)"
-	echo -en "\x$(echo $VRAM_DRAW_CMD_BASE | cut -c3-4)"
-	echo -en "\x$(echo $VRAM_DRAW_CMD_BASE | cut -c5-6)"
-	echo -en "\x$(echo $VRAM_DRAW_CMD_BASE | cut -c7-8)"
+	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c1-2)"
+	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c3-4)"
+	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c5-6)"
+	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c7-8)"
 	# 4バイト境界
 
 	# フォントデータ
