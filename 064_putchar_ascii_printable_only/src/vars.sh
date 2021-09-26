@@ -33,27 +33,57 @@ vars() {
 
 	# VDP1 RAMのキャラクタパターンテーブル(CPT)で
 	# 次にキャラクタパターンを配置するアドレス
-	var_next_cp_addr=$(calc16_8 "$var_button_pressed_counter+2")
-	echo -e "var_next_cp_addr=$var_next_cp_addr" >>$map_file
-	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c1-2)"
-	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c3-4)"
-	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c5-6)"
-	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c7-8)"
+	# var_next_cp_addr=$(calc16_8 "$var_button_pressed_counter+2")
+	# echo -e "var_next_cp_addr=$var_next_cp_addr" >>$map_file
+	# echo -en "\x$(echo $VRAM_CPT_BASE | cut -c1-2)"
+	# echo -en "\x$(echo $VRAM_CPT_BASE | cut -c3-4)"
+	# echo -en "\x$(echo $VRAM_CPT_BASE | cut -c5-6)"
+	# echo -en "\x$(echo $VRAM_CPT_BASE | cut -c7-8)"
+	# コンソール用
+	var_next_cp_con_addr=$(calc16_8 "$var_button_pressed_counter+2")
+	echo -e "var_next_cp_con_addr=$var_next_cp_con_addr" >>$map_file
+	echo -en "\x$(echo $VRAM_CPT_CON_BASE | cut -c1-2)"
+	echo -en "\x$(echo $VRAM_CPT_CON_BASE | cut -c3-4)"
+	echo -en "\x$(echo $VRAM_CPT_CON_BASE | cut -c5-6)"
+	echo -en "\x$(echo $VRAM_CPT_CON_BASE | cut -c7-8)"
+	# 4バイト境界
+	# その他
+	var_next_cp_other_addr=$(calc16_8 "$var_next_cp_con_addr+4")
+	echo -e "var_next_cp_other_addr=$var_next_cp_other_addr" >>$map_file
+	echo -en "\x$(echo $VRAM_CPT_OTHER_BASE | cut -c1-2)"
+	echo -en "\x$(echo $VRAM_CPT_OTHER_BASE | cut -c3-4)"
+	echo -en "\x$(echo $VRAM_CPT_OTHER_BASE | cut -c5-6)"
+	echo -en "\x$(echo $VRAM_CPT_OTHER_BASE | cut -c7-8)"
 	# 4バイト境界
 
 	# VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレス
-	var_next_vdpcom_addr=$(calc16_8 "$var_next_cp_addr+4")
-	echo -e "var_next_vdpcom_addr=$var_next_vdpcom_addr" >>$map_file
+	# var_next_vdpcom_addr=$(calc16_8 "$var_next_cp_addr+4")
+	# echo -e "var_next_vdpcom_addr=$var_next_vdpcom_addr" >>$map_file
+	# echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c1-2)"
+	# echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c3-4)"
+	# echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c5-6)"
+	# echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c7-8)"
+	# コンソール用
+	var_next_vdpcom_con_addr=$(calc16_8 "$var_next_cp_other_addr+4")
+	echo -e "var_next_vdpcom_con_addr=$var_next_vdpcom_con_addr" >>$map_file
 	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c1-2)"
 	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c3-4)"
 	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c5-6)"
 	echo -en "\x$(echo $VRAM_CT_CON_BASE | cut -c7-8)"
 	# 4バイト境界
+	# その他
+	var_next_vdpcom_other_addr=$(calc16_8 "$var_next_vdpcom_con_addr+4")
+	echo -e "var_next_vdpcom_other_addr=$var_next_vdpcom_other_addr" >>$map_file
+	echo -en "\x$(echo $VRAM_CT_OTHER_BASE | cut -c1-2)"
+	echo -en "\x$(echo $VRAM_CT_OTHER_BASE | cut -c3-4)"
+	echo -en "\x$(echo $VRAM_CT_OTHER_BASE | cut -c5-6)"
+	echo -en "\x$(echo $VRAM_CT_OTHER_BASE | cut -c7-8)"
+	# 4バイト境界
 
 	# フォントデータ
 	## カラールックアップテーブルを参照するフォントデータ
 	## (128バイト * 95文字 = 12160(0x2F80)バイト)
-	var_font_dat=$(calc16_8 "$var_next_vdpcom_addr+4")
+	var_font_dat=$(calc16_8 "$var_next_vdpcom_other_addr+4")
 	echo -e "var_font_dat=$var_font_dat" >>$map_file
 	cat font.lut
 	# 4バイト境界
