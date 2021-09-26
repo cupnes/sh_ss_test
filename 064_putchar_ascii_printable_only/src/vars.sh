@@ -35,7 +35,10 @@ vars() {
 	# 次にキャラクタパターンを配置するアドレス
 	var_next_cp_addr=$(calc16_8 "$var_button_pressed_counter+2")
 	echo -e "var_next_cp_addr=$var_next_cp_addr" >>$map_file
-	echo -en '\x05\xc0\x0c\x80'
+	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c1-2)"
+	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c3-4)"
+	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c5-6)"
+	echo -en "\x$(echo $VRAM_CPT_BASE | cut -c7-8)"
 	# 4バイト境界
 
 	# VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレス

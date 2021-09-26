@@ -3,9 +3,24 @@ if [ "${INCLUDE_VDP1_SH+is_defined}" ]; then
 fi
 INCLUDE_VDP1_SH=true
 
+. include/common.sh
 . include/ss.sh
 
+# VDP1 RAM
+# - サイズ：4 Mbits = 512 KB = 524288 (0x0008 0000) bytes
+# - 領域：0x05C0 0000 - 0x05C7 FFFF
+# - メモリマップ：
+#   | 05C0 0000 -           | コマンドテーブル
+#   |        -> 0000 - 005F | - 毎フレーム設定系
+#   | 05C0 0000 - 05C0 3C7F | キャラクタパターンテーブル                      |
+#   |        -> 0000 - 005F | - システム/ユーザクリッピング座標・相対座標設定 |
+#   |        -> 0060 - 235F | - コンソール領域                                |
+#   |        -> 2360 - 3C7F | - 
+#   | 05C0 3C80 -           | カラールックアップテーブル                      |
+
 VRAM_DRAW_CMD_BASE=05C00060
+VRAM_CMD_SIZE_HEX=$(calc16_4 "${SS_VDP1_COMMAND_SIZE}*64")	# 0x0c80
+VRAM_CPT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+${VRAM_CMD_SIZE_HEX}")	# 0x05c00c80
 VRAM_CLT_BASE=05C03C80
 
 # 描画コマンドのCMDCOLR設定用
