@@ -159,7 +159,7 @@ main() {
 	sh2_set_reg r1 $CHARCODE_Z
 
 	# 描画終了コマンドを配置
-	copy_to_reg_from_val_long r1 $var_next_vdpcom_addr
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r1 r1
 	sh2_set_reg r0 80
 	sh2_shift_left_logical_8 r0

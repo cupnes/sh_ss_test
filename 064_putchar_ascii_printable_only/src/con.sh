@@ -136,7 +136,7 @@ f_putchar_xy() {
 	### 除算結果(r1)をr4へ設定
 	sh2_copy_to_reg_from_reg r4 r1
 	## VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_next_vdpcom_addr
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r1 r1
 	## 画面上で文字を出力するX座標をr2へ設定
 	sh2_copy_to_reg_from_reg r2 r5
@@ -147,7 +147,7 @@ f_putchar_xy() {
 	sh2_copy_to_reg_from_reg r3 r6
 
 	# 次にコマンドを配置するアドレス変数を更新
-	copy_to_reg_from_val_long r2 $var_next_vdpcom_addr
+	copy_to_reg_from_val_long r2 $var_next_vdpcom_other_addr
 	sh2_copy_to_ptr_from_reg_long r2 r1
 
 	# 退避したレジスタを復帰しreturn
@@ -193,7 +193,7 @@ f_putchar_xy() {
 #     : r6 - 作業用
 #     : r7 - 作業用
 #     : macl (mulu.wを行う)
-f_putchar_xy() {
+f_putchar_xy_con() {
 	# 変更が発生するレジスタを退避
 	## r0
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
@@ -267,7 +267,7 @@ f_putchar_xy() {
 	# 出力する1文字のキャラクタパターンを
 	# キャラクタパターンテーブル(CPT)へロード
 	## ロード先のCPTアドレスをr1とr7へ設定
-	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
+	copy_to_reg_from_val_long r1 $var_next_cp_con_addr
 	sh2_copy_to_reg_from_ptr_long r1 r1
 	sh2_copy_to_reg_from_reg r7 r1
 	## キャラクタパターンのサイズ(1文字のフォントサイズ)をr3へ設定
@@ -279,7 +279,7 @@ f_putchar_xy() {
 	sh2_nop
 
 	# 次にキャラクタパターンを配置するアドレス変数を更新
-	copy_to_reg_from_val_long r2 $var_next_cp_other_addr
+	copy_to_reg_from_val_long r2 $var_next_cp_con_addr
 	sh2_copy_to_ptr_from_reg_long r2 r1
 
 	# 定形スプライト描画コマンドを配置
@@ -297,7 +297,7 @@ f_putchar_xy() {
 	### 除算結果(r1)をr4へ設定
 	sh2_copy_to_reg_from_reg r4 r1
 	## VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレスをr1へ設定
-	copy_to_reg_from_val_long r1 $var_next_vdpcom_addr
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_con_addr
 	sh2_copy_to_reg_from_ptr_long r1 r1
 	## 画面上で文字を出力するX座標をr2へ設定
 	sh2_copy_to_reg_from_reg r2 r5
@@ -308,7 +308,7 @@ f_putchar_xy() {
 	sh2_copy_to_reg_from_reg r3 r6
 
 	# 次にコマンドを配置するアドレス変数を更新
-	copy_to_reg_from_val_long r2 $var_next_vdpcom_addr
+	copy_to_reg_from_val_long r2 $var_next_vdpcom_con_addr
 	sh2_copy_to_ptr_from_reg_long r2 r1
 
 	# 退避したレジスタを復帰しreturn
