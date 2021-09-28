@@ -393,6 +393,13 @@ sh2_shift_left_logical_16() {
 	echo -e "shll16 $reg\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_shift_right_logical_16() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x29"	# shlr16 $reg
+	echo -e "shlr16 $reg\t;1" >>$ASM_LIST_FILE
+}
+
 # Tビットを参照する条件付き分岐命令
 # - T=0 のとき、分岐先アドレスに分岐
 # - T=1 のとき、次の命令を実行

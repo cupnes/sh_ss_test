@@ -144,6 +144,8 @@ f_memcpy() {
 #     : r2 - X座標
 #     : r3 - Y座標
 #     : r4 - キャラクタアドレス/8(下位2ビットは0)
+#     : r5 - ビット31-16：CMDLINK
+#            ビット02-00：ジャンプ形式(JP)
 # out : r1 - 最後に書き込みを行った次のアドレス
 # work: r0 - 作業用
 f_put_vdp1_command_normal_sprite_draw_to_addr() {
@@ -153,17 +155,23 @@ f_put_vdp1_command_normal_sprite_draw_to_addr() {
 	sh2_copy_to_ptr_from_reg_long r15 r0
 
 	# CMDCTRL
-	# 0b0000 0000 0000 0000
-	# - JP(b14-b12) = 0b000
+	# 0b0(r5 & 0x00000003) 0000 0000 0000
+	# - JP(b14-b12) = r5 & 0x00000003
 	# - Dir(b5-b4) = 0b00
-	# 0x0000 -> [r1]
-	sh2_set_reg r0 00
+	# (r5 & 0x00000003) << 12 -> [r1]
+	sh2_copy_to_reg_from_reg r0 r5
+	sh2_and_to_r0_from_val_byte 03
+	sh2_shift_left_logical_8 r0
+	sh2_shift_left_logical_2 r0
+	sh2_shift_left_logical_2 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
 
 	# CMDLINK
-	# 0x0000 -> [r1]
+	# r5 >> 16 -> [r1]
+	sh2_copy_to_reg_from_reg r0 r5
+	sh2_shift_right_logical_16 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
@@ -635,16 +643,23 @@ funcs() {
 	f_update_character_coordinates >src/f_update_character_coordinates.o
 	cat src/f_update_character_coordinates.o
 
-	# 指定された文字(ASCII)を指定された座標に出力
+	# 指定された文字(ASCII)を指定された座標に出力(コンソール以外用)
 	fsz=$(to16 $(stat -c '%s' src/f_update_character_coordinates.o))
 	a_putchar_xy=$(calc16_8 "${a_update_character_coordinates}+${fsz}")
 	echo -e "a_putchar_xy=$a_putchar_xy" >>$map_file
 	f_putchar_xy >src/f_putchar_xy.o
 	cat src/f_putchar_xy.o
 
-	# 指定された文字列を指定された座標に出力
+	# 指定された文字(ASCII)を指定された座標に出力(コンソール用)
 	fsz=$(to16 $(stat -c '%s' src/f_putchar_xy.o))
-	a_putstr_xy=$(calc16_8 "${a_putchar_xy}+${fsz}")
+	a_putchar_xy_con=$(calc16_8 "${a_putchar_xy}+${fsz}")
+	echo -e "a_putchar_xy_con=$a_putchar_xy_con" >>$map_file
+	f_putchar_xy_con >src/f_putchar_xy_con.o
+	cat src/f_putchar_xy_con.o
+
+	# 指定された文字列を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_putchar_xy_con.o))
+	a_putstr_xy=$(calc16_8 "${a_putchar_xy_con}+${fsz}")
 	echo -e "a_putstr_xy=$a_putstr_xy" >>$map_file
 	f_putstr_xy >src/f_putstr_xy.o
 	cat src/f_putstr_xy.o

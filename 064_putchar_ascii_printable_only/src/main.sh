@@ -101,62 +101,18 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# 関数のアドレスをr2へ設定
-	copy_to_reg_from_val_long r2 $a_putchar
-
-	# 'A'-'Z'を1文字ずつ出力
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_A
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_B
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_C
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_D
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_E
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_F
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_G
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_H
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_I
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_J
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_K
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_L
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_M
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_N
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_O
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_P
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_Q
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_R
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_S
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_T
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_U
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_V
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_W
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_X
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_Y
-	sh2_abs_call_to_reg_after_next_inst r2
-	sh2_set_reg r1 $CHARCODE_Z
+	# [debug] f_put_vdp1_command_normal_sprite_draw_to_addr() の動作確認
+	copy_to_reg_from_val_long r1 $VRAM_CT_CON_BASE
+	sh2_set_reg r2 12
+	sh2_set_reg r3 34
+	copy_to_reg_from_val_long r4 $(calc16_8 "(${VRAM_CPT_OTHER_BASE}-${SS_VDP1_VRAM_ADDR})/8")
+	## JP = 0b001 (0x01)
+	## CMDLINK = VRAM_CT_OTHER_BASE
+	local cmdlink=$(calc16_4 "(${VRAM_CT_OTHER_BASE}-${SS_VDP1_VRAM_ADDR})/8")
+	copy_to_reg_from_val_long r5 ${cmdlink}0001
+	copy_to_reg_from_val_long r6 $a_put_vdp1_command_normal_sprite_draw_to_addr
+	sh2_abs_call_to_reg_after_next_inst r6
+	sh2_nop
 
 	# 描画終了コマンドを配置
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
