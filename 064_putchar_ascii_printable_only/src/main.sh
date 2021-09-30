@@ -44,10 +44,31 @@ setup_vram_command_table() {
 	vdp1_command_local_coordinates >src/local_coordinates.o
 	put_file_to_addr src/local_coordinates.o $com_adr
 
-	# r1へ次にコマンドを配置するVRAMアドレスを設定
+	# con用のVDPCOMの1件目にskip assignを設定
+	## con用のVDPCOMの1件目のアドレスをr1へ設定
 	copy_to_reg_from_val_long r1 $VRAM_CT_CON_BASE
+	## CMDCTRLのJP(ビット14-12)へ設定する値をr0へ設定
+	sh2_set_reg r0 $(two_digits $VDP1_JP_SKIP_ASSIGN)
+	## r0を12ビット左シフト
+	sh2_shift_left_logical_8 r0
+	sh2_shift_left_logical_2 r0
+	sh2_shift_left_logical_2 r0
+	## r0をr1の指す先へ設定
+	sh2_copy_to_ptr_from_reg_word r1 r0
+	## アドレス(r1)を2バイト進める
+	sh2_add_to_reg_from_val_byte r1 02
+	## CMDLINKへ設定する値をr0へ設定
+	sh2_set_reg r0 $(echo $VRAM_CT_OTHER_BASE_CMDLINK | cut -c1-2)
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $VRAM_CT_OTHER_BASE_CMDLINK | cut -c3-4)
+	sh2_extend_unsigned_to_reg_from_reg_word r0 r0
+	## r0をr1の指す先へ設定
+	sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# r1のアドレス先へ描画終了コマンドを配置
+	# other用のVDPCOMの1件目に描画終了コマンドを配置
+	## other用のVDPCOMの1件目のアドレスをr1へ設定
+	copy_to_reg_from_val_long r1 $VRAM_CT_OTHER_BASE
+	## r1のアドレス先へ描画終了コマンドを配置
 	sh2_set_reg r0 80
 	sh2_shift_left_logical_8 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
@@ -101,22 +122,20 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# [debug] f_put_vdp1_command_normal_sprite_draw_to_addr() の動作確認
-	copy_to_reg_from_val_long r1 $VRAM_CT_CON_BASE
-	sh2_set_reg r2 12
-	sh2_set_reg r3 34
-	copy_to_reg_from_val_long r4 $(calc16_8 "(${VRAM_CPT_OTHER_BASE}-${SS_VDP1_VRAM_ADDR})/8")
-	## JP = 0b001 (0x01)
-	## CMDLINK = VRAM_CT_OTHER_BASE
-	local cmdlink=$(calc16_4 "(${VRAM_CT_OTHER_BASE}-${SS_VDP1_VRAM_ADDR})/8")
-	copy_to_reg_from_val_long r5 ${cmdlink}0001
-	copy_to_reg_from_val_long r6 $a_put_vdp1_command_normal_sprite_draw_to_addr
-	sh2_abs_call_to_reg_after_next_inst r6
-	sh2_nop
+	# [debug] f_putchar_xy()の動作確認
+	## 関数のアドレスをr4へ設定
+	copy_to_reg_from_val_long r4 $a_putchar_xy
+	## 1文字目
+	sh2_set_reg r1 $CHARCODE_A
+	sh2_set_reg r2 10
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_set_reg r3 10
+	## 2文字目
+	sh2_set_reg r1 $CHARCODE_B
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_add_to_reg_from_val_byte r2 10
 
 	# 描画終了コマンドを配置
-	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
-	sh2_copy_to_reg_from_ptr_long r1 r1
 	sh2_set_reg r0 80
 	sh2_shift_left_logical_8 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0

@@ -123,9 +123,11 @@ f_putchar_xy() {
 
 	# 定形スプライト描画コマンドを配置
 	## VDP1 RAMのCPT上のキャラクタアドレス(r7)/8をr4へ設定
-	## ※ VDP1 RAM上でのアドレス指定なので、正確には0x05c00000を
+	## ※ VDP1 RAM上のオフセット指定なので、正確には0x05c00000を
 	##    引く必要がある
-	##    ただ、下位2バイトしか使わないのでそのような作業は省いている
+	##    しかし、0x05c00000は8で割って(3ビット右シフトして)も
+	##    下位2バイトに値がはみ出してくる事は無いので、
+	##    そのような減算は省いている
 	### r2へ除算関数のアドレスを設定
 	copy_to_reg_from_val_long r2 $a_div_reg_by_reg_long_sign
 	### r1へ被除数(r7)を設定
@@ -140,11 +142,13 @@ f_putchar_xy() {
 	sh2_copy_to_reg_from_ptr_long r1 r1
 	## 画面上で文字を出力するX座標をr2へ設定
 	sh2_copy_to_reg_from_reg r2 r5
-	## 定形スプライト配置関数のアドレスをr5へ設定
-	copy_to_reg_from_val_long r5 $a_put_vdp1_command_normal_sprite_draw_to_addr
-	## Y座標をr3へ設定し関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r5
+	## 画面上で文字を出力するY座標をr3へ設定
 	sh2_copy_to_reg_from_reg r3 r6
+	## 定形スプライト配置関数のアドレスをr6へ設定
+	copy_to_reg_from_val_long r6 $a_put_vdp1_command_normal_sprite_draw_to_addr
+	## ジャンプ形式をr5へ設定し、関数呼び出し
+	sh2_abs_call_to_reg_after_next_inst r6
+	sh2_set_reg r5 $(two_digits $VDP1_JP_JUMP_NEXT)
 
 	# 次にコマンドを配置するアドレス変数を更新
 	copy_to_reg_from_val_long r2 $var_next_vdpcom_other_addr
