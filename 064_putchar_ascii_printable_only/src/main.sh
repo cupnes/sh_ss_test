@@ -132,6 +132,11 @@ main() {
 	## r3へY座標設定し、関数呼び出し
 	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_set_reg r3 10
+	## r1へ文字コード設定
+	sh2_set_reg r1 $CHARCODE_B
+	## r2へX座標設定し関数呼び出し
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_add_to_reg_from_val_byte r2 $CON_FONT_WIDTH
 
 	# 無限ループ
 	infinite_loop

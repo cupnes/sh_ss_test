@@ -259,9 +259,9 @@ f_putchar_xy_con() {
 		# 結果がゼロのときTビットをセット
 		# (CEFビットは描画終了状態でセットされるビット)
 		sh2_test_r0_and_val_byte $SS_VDP1_EDSR_BIT_CEF
-	) >src/f_putchar_xy.1.o
-	cat src/f_putchar_xy.1.o
-	local sz_1=$(stat -c '%s' src/f_putchar_xy.1.o)
+	) >src/f_putchar_xy_con.1.o
+	cat src/f_putchar_xy_con.1.o
+	local sz_1=$(stat -c '%s' src/f_putchar_xy_con.1.o)
 	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_1) / 2)))
 	sh2_nop
 	## 論理積結果がゼロのとき、
@@ -303,6 +303,36 @@ f_putchar_xy_con() {
 	## VDP1 RAMのコマンドテーブルで次にコマンドを配置するアドレスをr1へ設定
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_con_addr
 	sh2_copy_to_reg_from_ptr_long r1 r1
+	## 次にコマンドを配置するアドレス(r1) != VRAM_CT_CON_BASE
+	## なら直前のVDPCOMのジャンプ形式をjump nextへ更新
+	### 次にコマンドを配置するアドレス(r1) == VRAM_CT_CON_BASE ?
+	copy_to_reg_from_val_long r2 $VRAM_CT_CON_BASE
+	sh2_compare_reg_eq_reg r1 r2
+	(
+		# 次にコマンドを配置するアドレス(r1) != VRAM_CT_CON_BASE の場合
+
+		# r1をr3へ退避
+		sh2_copy_to_reg_from_reg r3 r1
+
+		# r1 -= SS_VDP1_COMMAND_SIZE
+		sh2_set_reg r0 $SS_VDP1_COMMAND_SIZE
+		sh2_sub_to_reg_from_reg r1 r0
+
+		# r2にジャンプ形式(JP)=jump nextを設定
+		sh2_set_reg r2 $(two_digits $VDP1_JP_JUMP_NEXT)
+
+		# 関数呼び出し
+		copy_to_reg_from_val_long r7 $a_update_vdp1_command_jump_mode
+		sh2_abs_call_to_reg_after_next_inst r7
+		sh2_nop
+
+		# r3からr1を復帰
+		sh2_copy_to_reg_from_reg r1 r3
+	) >src/f_putchar_xy_con.2.o
+	### trueなら処理をスキップする
+	local sz_2=$(stat -c '%s' src/f_putchar_xy_con.2.o)
+	sh2_rel_jump_if_true $(two_digits_d $(((sz_2 - 2) / 2)))
+	cat src/f_putchar_xy_con.2.o
 	## 画面上で文字を出力するX座標をr2へ設定
 	sh2_copy_to_reg_from_reg r2 r5
 	## 画面上で文字を出力するY座標をr3へ設定

@@ -630,9 +630,16 @@ funcs() {
 	f_put_vdp1_command_scaled_sprite_draw_to_addr >src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
 	cat src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
 
-	# ゲームパッドの入力状態更新
+	# 指定されたアドレスのVDPCOMを指定されたジャンプ形式とCMDLINKへ変更する
 	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o))
-	a_update_gamepad_input_status=$(calc16_8 "${a_put_vdp1_command_scaled_sprite_draw_to_addr}+${fsz}")
+	a_update_vdp1_command_jump_mode=$(calc16_8 "${a_put_vdp1_command_scaled_sprite_draw_to_addr}+${fsz}")
+	echo -e "a_update_vdp1_command_jump_mode=$a_update_vdp1_command_jump_mode" >>$map_file
+	f_update_vdp1_command_jump_mode >src/f_update_vdp1_command_jump_mode.o
+	cat src/f_update_vdp1_command_jump_mode.o
+
+	# ゲームパッドの入力状態更新
+	fsz=$(to16 $(stat -c '%s' src/f_update_vdp1_command_jump_mode.o))
+	a_update_gamepad_input_status=$(calc16_8 "${a_update_vdp1_command_jump_mode}+${fsz}")
 	echo -e "a_update_gamepad_input_status=$a_update_gamepad_input_status" >>$map_file
 	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
 	cat src/f_update_gamepad_input_status.o
@@ -692,13 +699,6 @@ funcs() {
 	echo -e "a_putchar=$a_putchar" >>$map_file
 	f_putchar >src/f_putchar.o
 	cat src/f_putchar.o
-
-	# 指定されたアドレスのVDPCOMを指定されたジャンプ形式とCMDLINKへ変更する
-	fsz=$(to16 $(stat -c '%s' src/f_putchar.o))
-	a_update_vdp1_command_jump_mode=$(calc16_8 "${a_putchar}+${fsz}")
-	echo -e "a_update_vdp1_command_jump_mode=$a_update_vdp1_command_jump_mode" >>$map_file
-	f_update_vdp1_command_jump_mode >src/f_update_vdp1_command_jump_mode.o
-	cat src/f_update_vdp1_command_jump_mode.o
 }
 
 funcs
