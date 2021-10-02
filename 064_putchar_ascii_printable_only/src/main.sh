@@ -122,23 +122,21 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# [debug] f_putchar_xy()の動作確認
+	# [debug] f_update_vdp1_command_jump_modeの動作確認
 	## 関数のアドレスをr4へ設定
-	copy_to_reg_from_val_long r4 $a_putchar_xy
-	## 1文字目
-	sh2_set_reg r1 $CHARCODE_A
-	sh2_set_reg r2 10
+	copy_to_reg_from_val_long r4 $a_update_vdp1_command_jump_mode
+	## other領域冒頭のVDPCOMを変更してみる
+	### r1へother領域冒頭のVDPCOMのアドレスを設定
+	copy_to_reg_from_val_long r1 $VRAM_CT_OTHER_BASE
+	### JP=jump assign(5),CMDLINK=0x1234をr2へ設定
+	copy_to_reg_from_val_long r2 12340005
+	### 関数呼び出し
 	sh2_abs_call_to_reg_after_next_inst r4
-	sh2_set_reg r3 10
-	## 2文字目
-	sh2_set_reg r1 $CHARCODE_B
+	sh2_nop
+	## other領域冒頭のVDPCOMの変更をもとに戻してみる
+	### 0をr2へ設定し関数呼び出し
 	sh2_abs_call_to_reg_after_next_inst r4
-	sh2_add_to_reg_from_val_byte r2 10
-
-	# 描画終了コマンドを配置
-	sh2_set_reg r0 80
-	sh2_shift_left_logical_8 r0
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	sh2_set_reg r2 00
 
 	# 無限ループ
 	infinite_loop

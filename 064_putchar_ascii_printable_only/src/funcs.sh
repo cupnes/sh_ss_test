@@ -11,6 +11,7 @@ set -ue
 . include/vdp1.sh
 . src/vars_map.sh
 . src/con.sh
+. src/vdp.sh
 
 # 符号付き32ビット除算
 # in  : r1 - 被除数
@@ -691,6 +692,13 @@ funcs() {
 	echo -e "a_putchar=$a_putchar" >>$map_file
 	f_putchar >src/f_putchar.o
 	cat src/f_putchar.o
+
+	# 指定されたアドレスのVDPCOMを指定されたジャンプ形式とCMDLINKへ変更する
+	fsz=$(to16 $(stat -c '%s' src/f_putchar.o))
+	a_update_vdp1_command_jump_mode=$(calc16_8 "${a_putchar}+${fsz}")
+	echo -e "a_update_vdp1_command_jump_mode=$a_update_vdp1_command_jump_mode" >>$map_file
+	f_update_vdp1_command_jump_mode >src/f_update_vdp1_command_jump_mode.o
+	cat src/f_update_vdp1_command_jump_mode.o
 }
 
 funcs
