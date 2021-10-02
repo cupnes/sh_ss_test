@@ -305,11 +305,21 @@ f_putchar_xy_con() {
 	sh2_copy_to_reg_from_ptr_long r1 r1
 	## 画面上で文字を出力するX座標をr2へ設定
 	sh2_copy_to_reg_from_reg r2 r5
-	## 定形スプライト配置関数のアドレスをr5へ設定
-	copy_to_reg_from_val_long r5 $a_put_vdp1_command_normal_sprite_draw_to_addr
-	## Y座標をr3へ設定し関数呼び出し
-	sh2_abs_call_to_reg_after_next_inst r5
+	## 画面上で文字を出力するY座標をr3へ設定
 	sh2_copy_to_reg_from_reg r3 r6
+	## 定形スプライト配置関数のアドレスをr6へ設定
+	copy_to_reg_from_val_long r6 $a_put_vdp1_command_normal_sprite_draw_to_addr
+	## ジャンプ形式(JP)とCMDLINKをr5へ設定し関数呼び出し
+	## JP=01 (jump assign)
+	## CMDLINK=other領域のCT先頭アドレス
+	sh2_set_reg r0 $(echo $VRAM_CT_OTHER_BASE_CMDLINK | cut -c1-2)
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $VRAM_CT_OTHER_BASE_CMDLINK | cut -c3-4)
+	sh2_shift_left_logical_16 r0
+	sh2_or_to_r0_from_val_byte $(two_digits $VDP1_JP_JUMP_ASSIGN)
+	sh2_abs_call_to_reg_after_next_inst r6
+	sh2_copy_to_reg_from_reg r5 r0
 
 	# 次にコマンドを配置するアドレス変数を更新
 	copy_to_reg_from_val_long r2 $var_next_vdpcom_con_addr
