@@ -763,6 +763,24 @@ f_forward_cursor() {
 	sh2_nop
 }
 
+# con領域のCPとVDPCOMをクリアする
+f_clear_con_cp_vdpcom() {
+	# 変更が発生するレジスタを退避
+
+	# CPのクリア
+	# var_next_cp_con_addrをVRAM_CPT_CON_BASEで初期化
+	
+
+	# VDPCOMのクリア
+	# con領域のVDPCOMの1つ目を「ジャンプ形式=skip assign・CMDLINK=other領域先頭」へ変更
+	# var_next_vdpcom_con_addrをVRAM_CT_CON_BASEで初期化
+
+	# 退避したレジスタを復帰しreturn
+	## return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # 1文字出力しカーソル座標を1文字分進める
 # in  : r1 - ASCIIコード
 # work: r0 - 作業用
