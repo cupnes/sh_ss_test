@@ -764,12 +764,14 @@ f_forward_cursor() {
 }
 
 # con領域のCPとVDPCOMをクリアする
+# work: r0 - 作業用
+#     : r1 - 作業用
 f_clear_con_cp_vdpcom() {
 	# 変更が発生するレジスタを退避
 
 	# CPのクリア
 	# var_next_cp_con_addrをVRAM_CPT_CON_BASEで初期化
-	
+	copy_to_reg_from_val_long r1 $var_next_cp_con_addr
 
 	# VDPCOMのクリア
 	# con領域のVDPCOMの1つ目を「ジャンプ形式=skip assign・CMDLINK=other領域先頭」へ変更
