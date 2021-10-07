@@ -766,18 +766,73 @@ f_forward_cursor() {
 # con領域のCPとVDPCOMをクリアする
 # work: r0 - 作業用
 #     : r1 - 作業用
+#     : r2 - 作業用
+#     : r3 - 作業用
 f_clear_con_cp_vdpcom() {
 	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r3
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r3
+	## pr
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
 
 	# CPのクリア
-	# var_next_cp_con_addrをVRAM_CPT_CON_BASEで初期化
+	## var_next_cp_con_addrをVRAM_CPT_CON_BASEで初期化
 	copy_to_reg_from_val_long r1 $var_next_cp_con_addr
+	copy_to_reg_from_val_long r2 $VRAM_CPT_CON_BASE
+	sh2_copy_to_ptr_from_reg_long r1 r2
 
 	# VDPCOMのクリア
-	# con領域のVDPCOMの1つ目を「ジャンプ形式=skip assign・CMDLINK=other領域先頭」へ変更
-	# var_next_vdpcom_con_addrをVRAM_CT_CON_BASEで初期化
+	## con領域のVDPCOMの1つ目を
+	## 「ジャンプ形式=skip assign・CMDLINK=other領域先頭」へ変更
+	### r1にcon領域VDPCOM先頭アドレスを設定
+	copy_to_reg_from_val_long r1 $VRAM_CT_CON_BASE
+	### r2にCMDLINK(ビット31-16)=other領域先頭
+	### ・ジャンプ形式(ビット2-0)=skip assignを設定
+	sh2_set_reg r0 $(echo $VRAM_CT_OTHER_BASE_CMDLINK | cut -c1-2)
+	sh2_shift_left_logical_8 r0
+	sh2_set_reg r0 $(echo $VRAM_CT_OTHER_BASE_CMDLINK | cut -c3-4)
+	sh2_shift_left_logical_16 r0
+	sh2_or_to_r0_from_val_byte $(two_digits $VDP1_JP_SKIP_ASSIGN)
+	sh2_copy_to_reg_from_reg r2 r0
+	### 関数呼び出し
+	copy_to_reg_from_val_long r3 $a_update_vdp1_command_jump_mode
+	sh2_abs_call_to_reg_after_next_inst r3
+	sh2_nop
+
+	## var_next_vdpcom_con_addrをVRAM_CT_CON_BASEで初期化
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_con_addr
+	copy_to_reg_from_val_long r2 $VRAM_CT_CON_BASE
+	sh2_copy_to_ptr_from_reg_long r1 r2
 
 	# 退避したレジスタを復帰しreturn
+	## pr
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+	## r3
+	sh2_copy_to_reg_from_ptr_long r3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
 	## return
 	sh2_return_after_next_inst
 	sh2_nop

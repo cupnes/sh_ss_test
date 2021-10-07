@@ -644,9 +644,16 @@ funcs() {
 	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
 	cat src/f_update_gamepad_input_status.o
 
-	# 入力に応じてキャラクタの座標更新
+	# con領域のCPとVDPCOMをクリアする
 	fsz=$(to16 $(stat -c '%s' src/f_update_gamepad_input_status.o))
-	a_update_character_coordinates=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
+	a_clear_con_cp_vdpcom=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
+	echo -e "a_clear_con_cp_vdpcom=$a_clear_con_cp_vdpcom" >>$map_file
+	f_clear_con_cp_vdpcom >src/f_clear_con_cp_vdpcom.o
+	cat src/f_clear_con_cp_vdpcom.o
+
+	# 入力に応じてキャラクタの座標更新
+	fsz=$(to16 $(stat -c '%s' src/f_clear_con_cp_vdpcom.o))
+	a_update_character_coordinates=$(calc16_8 "${a_clear_con_cp_vdpcom}+${fsz}")
 	echo -e "a_update_character_coordinates=$a_update_character_coordinates" >>$map_file
 	f_update_character_coordinates >src/f_update_character_coordinates.o
 	cat src/f_update_character_coordinates.o
