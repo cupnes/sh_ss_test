@@ -122,21 +122,18 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# [debug] f_putchar_xy_con()の動作確認
+	# [debug] f_clear_con_cp_vdpcom()の動作確認
 	## 関数のアドレスをr4へ設定
-	copy_to_reg_from_val_long r4 $a_putchar_xy_con
-	## r1へ文字コード設定
+	copy_to_reg_from_val_long r4 $a_putchar
+	## r1へ文字コード設定し関数呼び出し
+	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_set_reg r1 $CHARCODE_A
-	## r2へX座標設定
-	sh2_set_reg r2 10
-	## r3へY座標設定し、関数呼び出し
+	## r1へ文字コード設定し関数呼び出し
 	sh2_abs_call_to_reg_after_next_inst r4
-	sh2_set_reg r3 10
-	## r1へ文字コード設定
 	sh2_set_reg r1 $CHARCODE_B
-	## r2へX座標設定し関数呼び出し
+	## r1へ文字コード設定し関数呼び出し
 	sh2_abs_call_to_reg_after_next_inst r4
-	sh2_add_to_reg_from_val_byte r2 $CON_FONT_WIDTH
+	sh2_set_reg r1 $CHARCODE_C
 
 	# 無限ループ
 	infinite_loop
