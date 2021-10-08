@@ -885,7 +885,7 @@ f_putchar() {
 	sh2_copy_to_reg_from_ptr_word r3 r3
 	sh2_extend_unsigned_to_reg_from_reg_word r3 r3
 	## 1文字出力
-	copy_to_reg_from_val_long r4 $a_putchar_xy
+	copy_to_reg_from_val_long r4 $a_putchar_xy_con
 	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_nop
 
