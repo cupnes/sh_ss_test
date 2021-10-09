@@ -122,7 +122,19 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# [debug] f_clear_con_cp_vdpcom()の動作確認
+	# [debug] 事前にother領域へ画像を配置
+	## 関数のアドレスをr4へ設定
+	copy_to_reg_from_val_long r4 $a_putchar_xy
+	## r1へ文字コードを設定
+	sh2_set_reg r1 $CHARCODE_0
+	## r3へY座標を設定
+	sh2_set_reg r3 a0
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	## r2へX座標を設定し関数呼び出し
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_set_reg r2 10
+
+	# [debug] f_clear_con_cp_vdpcom()を内部で反映したf_putchar()の動作確認
 	## 関数のアドレスをr4へ設定
 	copy_to_reg_from_val_long r4 $a_putchar
 	## r1へ文字コード設定し関数呼び出し
@@ -134,6 +146,18 @@ main() {
 	## r1へ文字コード設定し関数呼び出し
 	sh2_abs_call_to_reg_after_next_inst r4
 	sh2_set_reg r1 $CHARCODE_C
+
+	# [debug] 事後にother領域へ画像を追加
+	## 関数のアドレスをr4へ設定
+	copy_to_reg_from_val_long r4 $a_putchar_xy
+	## r1へ文字コードを設定
+	sh2_set_reg r1 $CHARCODE_1
+	## r3へY座標を設定
+	sh2_set_reg r3 a0
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	## r2へX座標を設定し関数呼び出し
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_set_reg r2 20
 
 	# 無限ループ
 	infinite_loop

@@ -225,6 +225,11 @@ f_putchar_xy() {
 	sh2_abs_call_to_reg_after_next_inst r6
 	sh2_set_reg r5 $(two_digits $VDP1_JP_JUMP_NEXT)
 
+	# 次にコマンドを配置する場所に描画終了コマンドを配置
+	sh2_set_reg r0 80
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r1 r0
+
 	# 次にコマンドを配置するアドレス変数を更新
 	copy_to_reg_from_val_long r2 $var_next_vdpcom_other_addr
 	sh2_copy_to_ptr_from_reg_long r2 r1
