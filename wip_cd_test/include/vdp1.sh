@@ -3,15 +3,44 @@ if [ "${INCLUDE_VDP1_SH+is_defined}" ]; then
 fi
 INCLUDE_VDP1_SH=true
 
+. include/common.sh
 . include/ss.sh
 
-VRAM_DRAW_CMD_BASE=05C00060
-VRAM_CLT_BASE=05C03C80
+VDP1_JP_JUMP_NEXT=0
+VDP1_JP_JUMP_ASSIGN=1
+VDP1_JP_SKIP_ASSIGN=5
 
+# VDP1 RAM
+# - サイズ：4 Mbits = 512 KB = 524288 (0x0008 0000) bytes
+# - 領域：0x05C0 0000 - 0x05C7 FFFF
+# - メモリマップ：
+#   | 05C0 0000 - 05C0 7FFF ( 32 KB) | コマンドテーブル
+#   |                 -> 0000 - 005F | - 毎フレーム設定系
+#   |                 -> 0060 - 235F | - コンソール用(32 bytes * 280 = 8960 (0x2300) bytes)
+#   |                 -> 2360 - 7FFF | - その他
+#   | 05C0 8000 - 05C7 EFFF (476 KB) | キャラクタパターンテーブル
+#   |             -> 0 8000 - 1 0BFF | - コンソール領域
+#   |             -> 1 0C00 - 7 EFFF | - その他
+#   | 05C7 F000 - 05C7 FFFF (  4 KB) | カラールックアップテーブル&グーローシェーディングテーブル
+
+VRAM_CT_BASE=$SS_VDP1_VRAM_ADDR
+VRAM_CT_CON_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+00060")
+VRAM_CT_OTHER_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+02360")
+# 描画コマンドのCMDLINK設定用
+# VDP1 RAM先頭(0x05C00000)からのオフセットを8で割った2バイトの値
+VRAM_CT_OTHER_BASE_CMDLINK=$(calc16_4 "(${VRAM_CT_OTHER_BASE}-${SS_VDP1_VRAM_ADDR})/8")
+VRAM_CPT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+08000")
+VRAM_CPT_CON_BASE=$VRAM_CPT_BASE
+VRAM_CPT_OTHER_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+10C00")
+VRAM_CLT_BASE=$(calc16_8 "${SS_VDP1_VRAM_ADDR}+7F000")
 # 描画コマンドのCMDCOLR設定用
 # VDP1 RAM先頭(0x05C00000)からのオフセットを8で割った2バイトの値
-VRAM_CLT_BASE_CMDCOLR=0790
+VRAM_CLT_BASE_CMDCOLR=$(calc16_4 "(${VRAM_CLT_BASE}-${SS_VDP1_VRAM_ADDR})/8")
 
+# コマンドテーブルの各コマンドのオフセット
+VRAM_CT_OFS_CMDXA=0c
+
+# システムクリッピング座標設定コマンドを標準出力へ出力する
 vdp1_command_system_clipping_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1001
@@ -49,6 +78,7 @@ vdp1_command_system_clipping_coordinates() {
 	echo -en '\x00\x00'
 }
 
+# ユーザクリッピング座標設定コマンドを標準出力へ出力する
 vdp1_command_user_clipping_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1000
@@ -86,6 +116,7 @@ vdp1_command_user_clipping_coordinates() {
 	echo -en '\x00\x00'
 }
 
+# 相対座標設定コマンドを標準出力へ出力する
 vdp1_command_local_coordinates() {
 	# CMDCTRL
 	# 0b0000 0000 0000 1010

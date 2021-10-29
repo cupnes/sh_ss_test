@@ -22,7 +22,7 @@ src/funcs.o src/funcs_map.sh: src/funcs.sh src/vars_map.sh src/con.sh
 src/vars.o src/vars_map.sh: src/vars.sh font.lut
 	src/vars.sh >src/vars.o
 
-font.lut: lut
+font.lut: ../font_lut
 	cat $</* >$@
 
 run_yabause: $(NAME).iso

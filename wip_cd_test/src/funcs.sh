@@ -11,14 +11,15 @@ set -ue
 . include/vdp1.sh
 . src/vars_map.sh
 . src/con.sh
+. src/vdp.sh
+. src/pad.sh
 
 # 符号付き32ビット除算
-# in  : r1  - 被除数
-#     : r0* - 除数
-# out : r1  - 計算結果の商
-# work: r2* - 作業用
-#       r3* - 作業用
-# ※ *が付いているレジスタはこの関数の冒頭/末尾でスタックへの退避/復帰を行う
+# in  : r1 - 被除数
+#     : r0 - 除数
+# out : r1 - 計算結果の商
+# work: r2 - 作業用
+#       r3 - 作業用
 f_div_reg_by_reg_long_sign() {
 	div_reg_by_reg_long_sign r1 r0 r2 r3
 
@@ -75,13 +76,27 @@ f_conv_to_ascii_from_hex() {
 }
 
 # 指定されたアドレスからアドレスへ、指定されたサイズ分コピー
-# in  : r1  - コピー先アドレス
-#       r2  - コピー元アドレス
-#       r3  - コピーするバイト数
-# work: r0  - 作業用
-#       r4  - 作業用
-# ※ in,work全てのレジスタがこの関数内で何らかの書き換えが行われる
+# in  : r1 - コピー先アドレス
+#       r2 - コピー元アドレス
+#       r3 - コピーするバイト数
+# out : r1 - コピー先アドレス + コピーするバイト数
+# work: r0 - 作業用
+#       r4 - 作業用
 f_memcpy() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r3
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r3
+	## r4
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r4
+
 	# r2のアドレスからr1のアドレスへr3バイト分のデータをロード
 	## r3 > 0 ?
 	sh2_xor_to_reg_from_reg r0 r0	# 2
@@ -108,32 +123,57 @@ f_memcpy() {
 	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((2 + 2 + sz_1 + 2 + 2 + 2 + 2) / 2)))	# 2
 	sh2_nop	# 2
 
-	# return
+	# 退避したレジスタを復帰しreturn
+	## r4
+	sh2_copy_to_reg_from_ptr_long r4 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r3
+	sh2_copy_to_reg_from_ptr_long r3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }
 
 # 指定された属性値の定形スプライト描画コマンドを指定されたアドレスへ配置する
-# in  : r1* - 配置先アドレス
-#     : r2  - X座標
-#     : r3  - Y座標
-#     : r4  - キャラクタアドレス/8(下位2ビットは0)
-# work: r0* - 作業用
-# ※ *が付いているレジスタはこの関数で書き換えられる
-# ※ r1は最後に書き込みを行った次のアドレスが指定された状態で帰る
+# in  : r1 - 配置先アドレス
+#     : r2 - X座標
+#     : r3 - Y座標
+#     : r4 - キャラクタアドレス/8(下位2ビットは0)
+#     : r5 - ビット31-16：CMDLINK
+#            ビット02-00：ジャンプ形式(JP)
+# out : r1 - 最後に書き込みを行った次のアドレス
+# work: r0 - 作業用
 f_put_vdp1_command_normal_sprite_draw_to_addr() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
 	# CMDCTRL
-	# 0b0000 0000 0000 0000
-	# - JP(b14-b12) = 0b000
+	# 0b0(r5 & 0x00000003) 0000 0000 0000
+	# - JP(b14-b12) = r5 & 0x00000003
 	# - Dir(b5-b4) = 0b00
-	# 0x0000 -> [r1]
-	sh2_set_reg r0 00
+	# (r5 & 0x00000003) << 12 -> [r1]
+	sh2_copy_to_reg_from_reg r0 r5
+	sh2_and_to_r0_from_val_byte 03
+	sh2_shift_left_logical_8 r0
+	sh2_shift_left_logical_2 r0
+	sh2_shift_left_logical_2 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
 
 	# CMDLINK
-	# 0x0000 -> [r1]
+	# r5 >> 16 -> [r1]
+	sh2_copy_to_reg_from_reg r0 r5
+	sh2_shift_right_logical_16 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	# r1 += 2
 	sh2_add_to_reg_from_val_byte r1 02
@@ -212,7 +252,11 @@ f_put_vdp1_command_normal_sprite_draw_to_addr() {
 	# r1 += 4
 	sh2_add_to_reg_from_val_byte r1 04
 
-	# return
+	# 退避したレジスタを復帰しreturn
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }
@@ -347,204 +391,6 @@ f_put_vdp1_command_scaled_sprite_draw_to_addr() {
 	sh2_nop
 }
 
-# ゲームパッドの入力状態更新
-# work: r0* - 作業用
-#       r1* - 作業用
-#       r2* - 作業用
-# ※ *が付いているレジスタは、この関数内で何らかの書き換えが行われる
-f_update_gamepad_input_status() {
-	# SFへ1をセット
-	## SFのアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_SF_ADDR
-	## r0へ0x01をセット
-	sh2_set_reg r0 01
-	## r1の指す先(SF)へr0の値(0x01)を設定
-	sh2_copy_to_ptr_from_reg_byte r1 r0
-
-	# IREG2へ0xf0をセット
-	## IREG2のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_IREG2_ADDR
-	## r0へ0xf0をセット
-	sh2_set_reg r0 f0
-	## r1の指す先(IREG2)へr0の値(0xf0)を設定
-	sh2_copy_to_ptr_from_reg_byte r1 r0
-
-	# IREG1へ0x08をセット
-	## IREG1のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_IREG1_ADDR
-	## r0へ0x08をセット
-	sh2_set_reg r0 08
-	## r1の指す先(IREG1)へr0の値(0x08)を設定
-	sh2_copy_to_ptr_from_reg_byte r1 r0
-
-	# IREG0へ0x00をセット
-	## IREG0のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_IREG0_ADDR
-	## r0へ0x00をセット
-	sh2_xor_to_reg_from_reg r0 r0
-	## r1の指す先(IREG0)へr0の値(0x00)を設定
-	sh2_copy_to_ptr_from_reg_byte r1 r0
-
-	# COMREGへINTBACKをセット
-	## COMREGのアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_COMREG_ADDR
-	## r0へINTBACKをセット
-	sh2_set_reg r0 $SS_SMPC_COMREG_INTBACK
-	## r1の指す先(COMREG)へr0の値(INTBACK)を設定
-	sh2_copy_to_ptr_from_reg_byte r1 r0
-
-	# SFが0になるのを待つ
-	## SFのアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_SF_ADDR
-	## r0へr1の指す先(SF)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r0 r1
-	## bit0が1の間、ここで待つ
-	sh2_test_r0_and_val_byte 01
-	sh2_rel_jump_if_false $(two_comp_d 4)
-	sh2_nop
-
-	# OREG2(1st Data)を変数へロード
-	## OREG2のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_OREG2_ADDR
-	## r2へr1の指す先(OREG2)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r2 r1
-	## 変数のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $var_pad_current_state_1
-	## r1の指す先(変数)へr2の値を格納
-	sh2_copy_to_ptr_from_reg_byte r1 r2
-
-	# OREG3(2nd Data)を変数へロード
-	## OREG3のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $SS_SMPC_OREG3_ADDR
-	## r2へr1の指す先(OREG3)の値をロード
-	sh2_copy_to_reg_from_ptr_byte r2 r1
-	## 変数のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $var_pad_current_state_2
-	## r1の指す先(変数)へr2の値を格納
-	sh2_copy_to_ptr_from_reg_byte r1 r2
-
-	# return
-	sh2_return_after_next_inst
-	sh2_nop
-}
-
-# 入力に応じてキャラクタの座標更新
-# work: r0* - 作業用
-#       r1* - 作業用
-#       r2* - 作業用
-# ※ *が付いているレジスタは、この関数内で何らかの書き換えが行われる
-# TODO 今は$BUTTON_PRESSED_TH周期に1度更新する実装になっているが
-#      変数名の通り、ボタンの連続押下回数で判断するようにする
-BUTTON_PRESSED_TH=01
-f_update_character_coordinates() {
-	# ボタン入力の反応を鈍らせる
-	## 変数をr0へロード
-	copy_to_reg_from_val_long r1 $var_button_pressed_counter
-	sh2_copy_to_reg_from_ptr_word r0 r1
-	sh2_extend_unsigned_to_reg_from_reg_word r0 r0
-	## 変数の値が周期と等しいか?
-	sh2_set_reg r2 $BUTTON_PRESSED_TH
-	sh2_shift_left_logical_8 r2
-	sh2_compare_reg_eq_reg r0 r2
-	(
-		# var_button_pressed_counter != BUTTON_PRESSED_TH の場合
-
-		# 変数をインクリメント
-		sh2_add_to_reg_from_val_byte r0 01
-		sh2_copy_to_ptr_from_reg_word r1 r0
-
-		# return
-		sh2_return_after_next_inst
-		sh2_nop
-	) >src/f_update_character_coordinates.1.o
-	local sz_1=$(stat -c '%s' src/f_update_character_coordinates.1.o)
-	sh2_rel_jump_if_true $(two_digits_d $((sz_1 / 2)))
-	sh2_nop
-	cat src/f_update_character_coordinates.1.o
-	## var_button_pressed_counter == BUTTON_PRESSED_TH の場合
-	### 変数をゼロクリア
-	sh2_xor_to_reg_from_reg r0 r0
-	sh2_copy_to_ptr_from_reg_word r1 r0
-
-	# 現在の押下状態1をr1へロード
-	## 変数のアドレスをr1へロード
-	copy_to_reg_from_val_long r1 $var_pad_current_state_1
-	## アドレスが指す先の値をr1へロード
-	sh2_copy_to_reg_from_ptr_byte r1 r1
-
-	# ↓の押下確認
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_DOWN
-	## 押下されていないとき、論理積の結果がゼロでなく、
-	## Tビットがクリアされる(false)
-	## その場合、座標更新処理を飛ばす
-	(
-		# ↓が押下されている場合
-
-		# 何もしない
-		sh2_nop
-	) >src/f_update_character_coordinates.2.o
-	local sz_2=$(stat -c '%s' src/f_update_character_coordinates.2.o)
-	sh2_rel_jump_if_false $(two_digits_d $((sz_2 / 2)))
-	sh2_nop
-	cat src/f_update_character_coordinates.2.o
-
-	# ↑の押下確認
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_UP
-	## 押下されていないとき、論理積の結果がゼロでなく、
-	## Tビットがクリアされる(false)
-	## その場合、座標更新処理を飛ばす
-	(
-		# ↑が押下されている場合
-
-		# 何もしない
-		sh2_nop
-	) >src/f_update_character_coordinates.3.o
-	local sz_3=$(stat -c '%s' src/f_update_character_coordinates.3.o)
-	sh2_rel_jump_if_false $(two_digits_d $((sz_3 / 2)))
-	sh2_nop
-	cat src/f_update_character_coordinates.3.o
-
-	# ←の押下確認
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_LEFT
-	## 押下されていないとき、論理積の結果がゼロでなく、
-	## Tビットがクリアされる(false)
-	## その場合、座標更新処理を飛ばす
-	(
-		# ←が押下されている場合
-
-		# 何もしない
-		sh2_nop
-	) >src/f_update_character_coordinates.4.o
-	local sz_4=$(stat -c '%s' src/f_update_character_coordinates.4.o)
-	sh2_rel_jump_if_false $(two_digits_d $((sz_4 / 2)))
-	sh2_nop
-	cat src/f_update_character_coordinates.4.o
-
-	# →の押下確認
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_test_r0_and_val_byte $SS_SMPC_PAD_STATE_BIT_RIGHT
-	## 押下されていないとき、論理積の結果がゼロでなく、
-	## Tビットがクリアされる(false)
-	## その場合、座標更新処理を飛ばす
-	(
-		# →が押下されている場合
-
-		# 何もしない
-		sh2_nop
-	) >src/f_update_character_coordinates.5.o
-	local sz_5=$(stat -c '%s' src/f_update_character_coordinates.5.o)
-	sh2_rel_jump_if_false $(two_digits_d $((sz_5 / 2)))
-	sh2_nop
-	cat src/f_update_character_coordinates.5.o
-
-	# return
-	sh2_return_after_next_inst
-	sh2_nop
-}
-
 funcs() {
 	local fsz
 
@@ -587,30 +433,44 @@ funcs() {
 	f_put_vdp1_command_scaled_sprite_draw_to_addr >src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
 	cat src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o
 
-	# ゲームパッドの入力状態更新
+	# 指定されたアドレスのVDPCOMを指定されたジャンプ形式とCMDLINKへ変更する
 	fsz=$(to16 $(stat -c '%s' src/f_put_vdp1_command_scaled_sprite_draw_to_addr.o))
-	a_update_gamepad_input_status=$(calc16_8 "${a_put_vdp1_command_scaled_sprite_draw_to_addr}+${fsz}")
+	a_update_vdp1_command_jump_mode=$(calc16_8 "${a_put_vdp1_command_scaled_sprite_draw_to_addr}+${fsz}")
+	echo -e "a_update_vdp1_command_jump_mode=$a_update_vdp1_command_jump_mode" >>$map_file
+	f_update_vdp1_command_jump_mode >src/f_update_vdp1_command_jump_mode.o
+	cat src/f_update_vdp1_command_jump_mode.o
+
+	# ゲームパッドの入力状態更新
+	fsz=$(to16 $(stat -c '%s' src/f_update_vdp1_command_jump_mode.o))
+	a_update_gamepad_input_status=$(calc16_8 "${a_update_vdp1_command_jump_mode}+${fsz}")
 	echo -e "a_update_gamepad_input_status=$a_update_gamepad_input_status" >>$map_file
 	f_update_gamepad_input_status >src/f_update_gamepad_input_status.o
 	cat src/f_update_gamepad_input_status.o
 
-	# 入力に応じてキャラクタの座標更新
+	# con領域のCPとVDPCOMをクリアする
 	fsz=$(to16 $(stat -c '%s' src/f_update_gamepad_input_status.o))
-	a_update_character_coordinates=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
-	echo -e "a_update_character_coordinates=$a_update_character_coordinates" >>$map_file
-	f_update_character_coordinates >src/f_update_character_coordinates.o
-	cat src/f_update_character_coordinates.o
+	a_clear_con_cp_vdpcom=$(calc16_8 "${a_update_gamepad_input_status}+${fsz}")
+	echo -e "a_clear_con_cp_vdpcom=$a_clear_con_cp_vdpcom" >>$map_file
+	f_clear_con_cp_vdpcom >src/f_clear_con_cp_vdpcom.o
+	cat src/f_clear_con_cp_vdpcom.o
 
-	# 指定された文字(ASCII)を指定された座標に出力
-	fsz=$(to16 $(stat -c '%s' src/f_update_character_coordinates.o))
-	a_putchar_xy=$(calc16_8 "${a_update_character_coordinates}+${fsz}")
+	# 指定された文字(ASCII)を指定された座標に出力(コンソール以外用)
+	fsz=$(to16 $(stat -c '%s' src/f_clear_con_cp_vdpcom.o))
+	a_putchar_xy=$(calc16_8 "${a_clear_con_cp_vdpcom}+${fsz}")
 	echo -e "a_putchar_xy=$a_putchar_xy" >>$map_file
 	f_putchar_xy >src/f_putchar_xy.o
 	cat src/f_putchar_xy.o
 
-	# 指定された文字列を指定された座標に出力
+	# 指定された文字(ASCII)を指定された座標に出力(コンソール用)
 	fsz=$(to16 $(stat -c '%s' src/f_putchar_xy.o))
-	a_putstr_xy=$(calc16_8 "${a_putchar_xy}+${fsz}")
+	a_putchar_xy_con_printable=$(calc16_8 "${a_putchar_xy}+${fsz}")
+	echo -e "a_putchar_xy_con_printable=$a_putchar_xy_con_printable" >>$map_file
+	f_putchar_xy_con_printable >src/f_putchar_xy_con_printable.o
+	cat src/f_putchar_xy_con_printable.o
+
+	# 指定された文字列を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_putchar_xy_con_printable.o))
+	a_putstr_xy=$(calc16_8 "${a_putchar_xy_con_printable}+${fsz}")
 	echo -e "a_putstr_xy=$a_putstr_xy" >>$map_file
 	f_putstr_xy >src/f_putstr_xy.o
 	cat src/f_putstr_xy.o
@@ -621,6 +481,48 @@ funcs() {
 	echo -e "a_putreg_xy=$a_putreg_xy" >>$map_file
 	f_putreg_xy >src/f_putreg_xy.o
 	cat src/f_putreg_xy.o
+
+	# コンソールの初期化
+	fsz=$(to16 $(stat -c '%s' src/f_putreg_xy.o))
+	a_con_init=$(calc16_8 "${a_putreg_xy}+${fsz}")
+	echo -e "a_con_init=$a_con_init" >>$map_file
+	f_con_init >src/f_con_init.o
+	cat src/f_con_init.o
+
+	# カーソルを1文字分進める
+	fsz=$(to16 $(stat -c '%s' src/f_con_init.o))
+	a_forward_cursor=$(calc16_8 "${a_con_init}+${fsz}")
+	echo -e "a_forward_cursor=$a_forward_cursor" >>$map_file
+	f_forward_cursor >src/f_forward_cursor.o
+	cat src/f_forward_cursor.o
+
+	# カーソルの改行処理
+	fsz=$(to16 $(stat -c '%s' src/f_forward_cursor.o))
+	a_line_feed_cursor=$(calc16_8 "${a_forward_cursor}+${fsz}")
+	echo -e "a_line_feed_cursor=$a_line_feed_cursor" >>$map_file
+	f_line_feed_cursor >src/f_line_feed_cursor.o
+	cat src/f_line_feed_cursor.o
+
+	# バックスペース処理
+	fsz=$(to16 $(stat -c '%s' src/f_line_feed_cursor.o))
+	a_backspace_cursor=$(calc16_8 "${a_line_feed_cursor}+${fsz}")
+	echo -e "a_backspace_cursor=$a_backspace_cursor" >>$map_file
+	f_backspace_cursor >src/f_backspace_cursor.o
+	cat src/f_backspace_cursor.o
+
+	# 1文字出力しカーソル座標を1文字分進める
+	fsz=$(to16 $(stat -c '%s' src/f_backspace_cursor.o))
+	a_putchar=$(calc16_8 "${a_backspace_cursor}+${fsz}")
+	echo -e "a_putchar=$a_putchar" >>$map_file
+	f_putchar >src/f_putchar.o
+	cat src/f_putchar.o
+
+	# コントロールパッドから1文字の入力を取得する
+	fsz=$(to16 $(stat -c '%s' src/f_putchar.o))
+	a_getchar_from_pad=$(calc16_8 "${a_putchar}+${fsz}")
+	echo -e "a_getchar_from_pad=$a_getchar_from_pad" >>$map_file
+	f_getchar_from_pad >src/f_getchar_from_pad.o
+	cat src/f_getchar_from_pad.o
 }
 
 funcs

@@ -20,6 +20,20 @@ infinite_loop() {
 	sh2_nop
 }
 
+# 2バイト値をレジスタへ設定
+# ※ 作業用にR0を使用する
+copy_to_reg_from_val_word() {
+	local reg=$1
+	local val=$2
+
+	sh2_set_reg r0 $(echo $val | cut -c1-2)
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $val | cut -c3-4)
+	sh2_copy_to_reg_from_reg $reg r0
+}
+
+# 4バイト値をレジスタへ設定
 # ※ 作業用にR0を使用する
 copy_to_reg_from_val_long() {
 	local reg=$1
@@ -169,6 +183,10 @@ div_reg_by_reg_long_sign() {
 	sh2_add_to_reg_from_val_byte r15 04
 }
 
+# 指定されたファイルを指定されたアドレスへ配置する
+# 第1引数: ファイル
+# 第2引数: アドレス
+# 戻り値(R1): 最終バイトを配置したアドレス+1
 # ※ 作業用にR0,R1,R2を使用する
 put_file_to_addr() {
 	local f=$1
