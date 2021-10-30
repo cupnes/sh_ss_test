@@ -127,13 +127,11 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# f_putreg_xy()の動作確認
-	copy_to_reg_from_val_long r12 $a_putreg_xy
-	copy_to_reg_from_val_long r1 beefcafe
-	sh2_set_reg r2 10
-	sh2_set_reg r3 10
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_nop
+	# f_dump_cr1234_xy()の動作確認
+	copy_to_reg_from_val_long r7 $a_dump_cr1234_xy
+	sh2_set_reg r1 0a
+	sh2_abs_call_to_reg_after_next_inst r7
+	sh2_set_reg r2 0a
 
 	# 無限ループ
 	infinite_loop

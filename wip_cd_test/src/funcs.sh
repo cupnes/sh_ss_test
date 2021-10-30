@@ -13,6 +13,7 @@ set -ue
 . src/con.sh
 . src/vdp.sh
 . src/pad.sh
+. src/cd.sh
 
 # 符号付き32ビット除算
 # in  : r1 - 被除数
@@ -531,6 +532,13 @@ funcs() {
 	echo -e "a_getchar_from_pad=$a_getchar_from_pad" >>$map_file
 	f_getchar_from_pad >src/f_getchar_from_pad.o
 	cat src/f_getchar_from_pad.o
+
+	# CR1〜CR4を指定された座標にダンプする
+	fsz=$(to16 $(stat -c '%s' src/f_getchar_from_pad.o))
+	a_dump_cr1234_xy=$(calc16_8 "${a_getchar_from_pad}+${fsz}")
+	echo -e "a_dump_cr1234_xy=$a_dump_cr1234_xy" >>$map_file
+	f_dump_cr1234_xy >src/f_dump_cr1234_xy.o
+	cat src/f_dump_cr1234_xy.o
 }
 
 funcs
