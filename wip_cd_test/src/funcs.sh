@@ -29,11 +29,15 @@ f_div_reg_by_reg_long_sign() {
 }
 
 # 16進数1桁をASCIIコードへ変換
-# in  : r1* - 16進数の値(下位4ビットしか見ない)
-# out : r1* - ASCIIコード
-# work: r0* - 作業用
-# ※ *が付いているレジスタはこの関数で書き換えられる
+# in  : r1 - 16進数の値(下位4ビットしか見ない)
+# out : r1 - ASCIIコード
+# work: r0 - 作業用
 f_conv_to_ascii_from_hex() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
 	# 下位4ビットを抽出
 	sh2_set_reg r0 0f
 	sh2_and_to_reg_from_reg r1 r0
@@ -70,7 +74,11 @@ f_conv_to_ascii_from_hex() {
 	cat src/f_conv_to_ascii_from_hex.2.o	# r1 < 0x0a の場合
 	cat src/f_conv_to_ascii_from_hex.1.o	# r1 >= 0x0a の場合
 
-	# return
+	# 退避したレジスタを復帰しreturn
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }

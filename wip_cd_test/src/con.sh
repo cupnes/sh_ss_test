@@ -550,23 +550,55 @@ f_putstr_xy() {
 }
 
 # r1の値を指定された座標に出力
-# in  : r1* - 出力する値
-#     : r2* - X座標
-#     : r3  - Y座標
-# work: r0* - 作業用
-#     : r4* - 作業用
-#     : r5* - putchar_xy()作業用
-#     : r6* - putchar_xy()作業用
-#     : r7* - putchar_xy()作業用
-#     : r8* - 作業用(a_conv_to_ascii_from_hex)
-#     : r9* - 作業用(a_putchar_xy)
-#     : r10*- 作業用(出力する値(r1))
-#     : r11*- 作業用(X座標(r2))
-#     : macl* (putchar_xy()でmulu.wを行う)
-# ※ *が付いているレジスタはこの関数内で変更される
+# in  : r1 - 出力する値
+#     : r2 - X座標
+#     : r3 - Y座標
+# work: r0 - 作業用
+#     : r4 - 作業用
+#     : r5 - putchar_xy()作業用
+#     : r6 - putchar_xy()作業用
+#     : r7 - putchar_xy()作業用
+#     : r8 - 作業用(a_conv_to_ascii_from_hex)
+#     : r9 - 作業用(a_putchar_xy)
+#     : r10- 作業用(出力する値(r1))
+#     : r11- 作業用(X座標(r2))
 # ※ 折返し無し
 f_putreg_xy() {
-	# PRをスタックへ退避
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r4
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r4
+	## r5
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r5
+	## r6
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r6
+	## r7
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r7
+	## r8
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r8
+	## r9
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r9
+	## r10
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r10
+	## r11
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r11
+	## pr
 	sh2_copy_to_reg_from_pr r0
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r0
@@ -692,10 +724,45 @@ f_putreg_xy() {
 	sh2_abs_call_to_reg_after_next_inst r9
 	sh2_copy_to_reg_from_reg r2 r11
 
-	# PRをスタックから復帰しreturn
+	# 退避したレジスタを復帰しreturn
+	## pr
 	sh2_copy_to_reg_from_ptr_long r0 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	sh2_copy_to_pr_from_reg r0
+	## r11
+	sh2_copy_to_reg_from_ptr_long r11 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r10
+	sh2_copy_to_reg_from_ptr_long r10 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r9
+	sh2_copy_to_reg_from_ptr_long r9 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r8
+	sh2_copy_to_reg_from_ptr_long r8 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r7
+	sh2_copy_to_reg_from_ptr_long r7 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r6
+	sh2_copy_to_reg_from_ptr_long r6 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r5
+	sh2_copy_to_reg_from_ptr_long r5 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r4
+	sh2_copy_to_reg_from_ptr_long r4 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
 	sh2_return_after_next_inst
 	sh2_nop
 }
