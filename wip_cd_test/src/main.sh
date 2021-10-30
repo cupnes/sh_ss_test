@@ -120,9 +120,6 @@ main() {
 	# スタックポインタ(r15)の初期化
 	copy_to_reg_from_val_long r15 $INIT_SP
 
-	# # [debug]
-	# cd_exec_command r1 r2 r3 r4 r5
-
 	# VRAM初期設定
 	setup_vram_command_table
 	setup_vram_color_lookup_table
@@ -130,46 +127,11 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# # [debug] other領域に適当に文字を置いておく
-	# copy_to_reg_from_val_long r12 $a_putchar_xy
-	# sh2_set_reg r1 $CHARCODE_0
-	# sh2_set_reg r3 c8
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	# sh2_abs_call_to_reg_after_next_inst r12
-	# sh2_set_reg r2 10
-
-	# [debug] f_getchar_from_pad()の動作確認
-	## 使用する関数のアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r10 $a_putchar
-	copy_to_reg_from_val_long r11 $a_getchar_from_pad
+	# CDコマンドの動作確認
+	cd_exec_command r1 r2 r3 r4 r5
 
 	# 無限ループ
-	sh2_set_reg r0 $CHARCODE_NULL
-	(
-		(
-			# コントロールパッドから文字入力を取得
-			sh2_abs_call_to_reg_after_next_inst r11
-			sh2_nop
-
-			# 戻り値(r1)がCHARCODE_NULL(r0)なら入力取得を繰り返す
-			sh2_compare_reg_eq_reg r1 r0
-		) >src/main.1.o
-		cat src/main.1.o
-		# r1 == r0 (T==1) なら繰り返す
-		local sz_1=$(stat -c '%s' src/main.1.o)
-		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_1) / 2)))
-
-		# コントロールパッドから何らかの文字入力を取得した
-
-		# 出力
-		sh2_abs_call_to_reg_after_next_inst r10
-		sh2_nop
-	) >src/main.2.o
-	cat src/main.2.o
-	## 無限ループで繰り返す
-	local sz_2=$(stat -c '%s' src/main.2.o)
-	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((sz_2 + 4) / 2)))
-	sh2_nop
+	infinite_loop
 }
 
 make_bin() {
