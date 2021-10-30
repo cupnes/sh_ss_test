@@ -539,6 +539,13 @@ funcs() {
 	echo -e "a_dump_cr1234_xy=$a_dump_cr1234_xy" >>$map_file
 	f_dump_cr1234_xy >src/f_dump_cr1234_xy.o
 	cat src/f_dump_cr1234_xy.o
+
+	# CDコマンドを実行する
+	fsz=$(to16 $(stat -c '%s' src/f_dump_cr1234_xy.o))
+	a_cd_exec_command=$(calc16_8 "${a_dump_cr1234_xy}+${fsz}")
+	echo -e "a_cd_exec_command=$a_cd_exec_command" >>$map_file
+	f_cd_exec_command >src/f_cd_exec_command.o
+	cat src/f_cd_exec_command.o
 }
 
 funcs

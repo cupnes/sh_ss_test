@@ -127,10 +127,18 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# f_dump_cr1234_xy()の動作確認
-	copy_to_reg_from_val_long r7 $a_dump_cr1234_xy
+	# f_cd_exec_command()の動作確認
+	## Get CD Status(0x00)を実行
+	copy_to_reg_from_val_long r5 $a_cd_exec_command
+	sh2_set_reg r1 00
+	sh2_set_reg r2 00
+	sh2_set_reg r3 00
+	sh2_abs_call_to_reg_after_next_inst r5
+	sh2_set_reg r4 00
+	## CR1〜CR4をダンプ
+	copy_to_reg_from_val_long r3 $a_dump_cr1234_xy
 	sh2_set_reg r1 0a
-	sh2_abs_call_to_reg_after_next_inst r7
+	sh2_abs_call_to_reg_after_next_inst r3
 	sh2_set_reg r2 0a
 
 	# 無限ループ
