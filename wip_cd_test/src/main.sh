@@ -127,8 +127,13 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# CDコマンドの動作確認
-	cd_exec_command r1 r2 r3 r4 r5
+	# f_putreg_xy()の動作確認
+	copy_to_reg_from_val_long r12 $a_putreg_xy
+	copy_to_reg_from_val_long r1 beefcafe
+	sh2_set_reg r2 10
+	sh2_set_reg r3 10
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_nop
 
 	# 無限ループ
 	infinite_loop
