@@ -26,7 +26,7 @@ font.lut: ../font_lut
 	cat $</* >$@
 
 beef.dat:
-	/bin/echo -en '\xbe\xef' >$@
+	/bin/echo -en '\x01\x41\xbe\xef' >$@
 
 run_yabause: $(NAME).iso
 	$(EMU_YABAUSE) $<
