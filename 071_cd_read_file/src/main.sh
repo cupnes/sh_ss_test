@@ -133,7 +133,85 @@ main() {
 	copy_to_reg_from_val_long r12 $SS_CT_CS2_DTR_ADDR
 	copy_to_reg_from_val_long r11 $a_putreg_xy
 
-	# セレクタ(フィルタ)をリセット
+	# ファイルアクセスの中止
+	## AbortFile(0x75)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x75) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x7500
+	sh2_set_reg r1 75
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# CDブロックの初期化
+	## InitializeCDSystem(cmd=0x04)
+	## | Reg | [15:8]            | [7:0]            |
+	## |-----+-------------------+------------------|
+	## | CR1 | cmd(0x04)         | initflag         |
+	## | CR2 | standbytime[15:8] | standbytime[7:0] |
+	## | CR3 | -                 | -                |
+	## | CR4 | ecc               | retrycount       |
+
+	## r1(CR1) = 0x0400
+	sh2_set_reg r1 04
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x040f
+	copy_to_reg_from_val_word r4 040f
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# データ転送の終了
+	## EndDataTransfer(cmd=0x06)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x06) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0600
+	sh2_set_reg r1 06
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# すべてのフィルタをリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
 	## |-----+-----------------------------------+------------|
@@ -142,9 +220,90 @@ main() {
 	## | CR3 | rsbufno (only if reset flag is 0) | -          |
 	## | CR4 | -                                 | -          |
 
-	## r1(CR1) = 0x4810
-	## - reset flag = reset filter conditions(0x10)
-	copy_to_reg_from_val_word r1 4810
+	## r1(CR1) = 0x48fc
+	copy_to_reg_from_val_word r1 48fc
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# セクタ長の設定
+	## SetSectorLength(cmd=0x60)
+	## | Reg | [15:8]         | [7:0]          |
+	## |-----+----------------+----------------|
+	## | CR1 | cmd(0x60)      | getsectsize_id |
+	## | CR2 | putsectsize_id | -              |
+	## | CR3 | -              | -              |
+	## | CR4 | -              | -              |
+	## セクタ長は、SS_CD_SECTSIZE_ID_2048=0 へ設定する
+
+	## r1(CR1) = 0x6000
+	sh2_set_reg r1 60
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# パーティション0をリセット
+	## ResetSelector(cmd=0x48)
+	## | Reg | [15:8]                            | [7:0]      |
+	## |-----+-----------------------------------+------------|
+	## | CR1 | cmd(0x48)                         | reset flag |
+	## | CR2 | -                                 | -          |
+	## | CR3 | rsbufno (only if reset flag is 0) | -          |
+	## | CR4 | -                                 | -          |
+
+	## r1(CR1) = 0x4800
+	sh2_set_reg r1 48
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# フィルタ0へ接続
+	## SetCDDeviceConnection(0x30)
+	## | Reg | [15:8]        | [7:0] |
+	## |-----+---------------+-------|
+	## | CR1 | cmd(0x30)     | -     |
+	## | CR2 | -             | -     |
+	## | CR3 | scdcfilternum | -     |
+	## | CR4 | -             | -     |
+
+	## r1(CR1) = 0x3000
+	sh2_set_reg r1 30
+	sh2_shift_left_logical_8 r1
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
 
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
