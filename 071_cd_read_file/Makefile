@@ -9,8 +9,8 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN
-	./iso9660.sh $< >$@
+$(NAME).iso: 0.BIN beef.dat
+	./iso9660.sh $^ >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
 	src/funcs_map.sh src/vdp.sh
@@ -24,6 +24,9 @@ src/vars.o src/vars_map.sh: src/vars.sh font.lut
 
 font.lut: ../font_lut
 	cat $</* >$@
+
+beef.dat:
+	/bin/echo -en '\xbe\xef' >$@
 
 run_yabause: $(NAME).iso
 	$(EMU_YABAUSE) $<
