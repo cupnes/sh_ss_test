@@ -133,6 +133,7 @@ main() {
 	copy_to_reg_from_val_long r12 $SS_CT_CS2_DTR_ADDR
 	copy_to_reg_from_val_long r11 $a_putreg_xy
 	copy_to_reg_from_val_long r10 $SS_CT_CS2_CR4_ADDR
+	copy_to_reg_from_val_long r9 $a_putchar
 
 	# ファイルアクセスの中止
 	## AbortFile(0x75)
@@ -160,6 +161,10 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_0
+
 	# CDブロックの初期化
 	## InitializeCDSystem(cmd=0x04)
 	## | Reg | [15:8]            | [7:0]            |
@@ -185,6 +190,10 @@ main() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_1
 
 	# データ転送の終了
 	## EndDataTransfer(cmd=0x06)
@@ -212,6 +221,10 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_2
+
 	# すべてのフィルタをリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
@@ -236,6 +249,10 @@ main() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_3
 
 	# セクタ長の設定
 	## SetSectorLength(cmd=0x60)
@@ -264,6 +281,10 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_4
+
 	# パーティション0をリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
@@ -290,6 +311,10 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_5
+
 	# フィルタ0へ接続
 	## SetCDDeviceConnection(0x30)
 	## | Reg | [15:8]        | [7:0] |
@@ -309,6 +334,10 @@ main() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_6
 
 	# CD再生
 	## PlayDisc(cmd=0x10)
@@ -336,6 +365,10 @@ main() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_7
 
 	# 1つ以上のセクタが読み出されるまで待つ
 	## 読み取り済みセクタ数の取得
@@ -374,6 +407,10 @@ main() {
 	## T == 1(CR == 0)なら繰り返す
 	sh2_rel_jump_if_true $(two_comp_d $(((sz_1 + 4) / 2)))
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_8	# 実機ではこれが表示されない
+
 	# セクタデータの取り出し&消去
 	## GetThenDeleteSectorData(cmd=0x63)
 	## | Reg | [15:8]                | [7:0]                |
@@ -399,6 +436,10 @@ main() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_9
 
 	# # ChangeDirectoryでrootディレクトリへ移動
 	# ## ChangeDirectory(cmd=0x70)
