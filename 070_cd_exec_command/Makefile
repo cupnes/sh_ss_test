@@ -1,4 +1,4 @@
-NAME=wip_cd_test
+NAME=070_cd_exec_command
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
