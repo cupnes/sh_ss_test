@@ -195,65 +195,6 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r9
 	sh2_set_reg r1 $CHARCODE_1
 
-	# データ転送の終了
-	## EndDataTransfer(cmd=0x06)
-	## | Reg | [15:8]    | [7:0] |
-	## |-----+-----------+-------|
-	## | CR1 | cmd(0x06) | -     |
-	## | CR2 | -         | -     |
-	## | CR3 | -         | -     |
-	## | CR4 | -         | -     |
-
-	## r1(CR1) = 0x0600
-	sh2_set_reg r1 06
-	sh2_shift_left_logical_8 r1
-
-	## r2(CR2) = 0x0000
-	sh2_set_reg r2 00
-
-	## r3(CR3) = 0x0000
-	sh2_set_reg r3 00
-
-	## r4(CR4) = 0x0000
-	sh2_set_reg r4 00
-
-	## CDコマンド実行
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r9
-	sh2_set_reg r1 $CHARCODE_2
-
-	# すべてのフィルタをリセット
-	## ResetSelector(cmd=0x48)
-	## | Reg | [15:8]                            | [7:0]      |
-	## |-----+-----------------------------------+------------|
-	## | CR1 | cmd(0x48)                         | reset flag |
-	## | CR2 | -                                 | -          |
-	## | CR3 | rsbufno (only if reset flag is 0) | -          |
-	## | CR4 | -                                 | -          |
-
-	## r1(CR1) = 0x48fc
-	copy_to_reg_from_val_word r1 48fc
-
-	## r2(CR2) = 0x0000
-	sh2_set_reg r2 00
-
-	## r3(CR3) = 0x0000
-	sh2_set_reg r3 00
-
-	## r4(CR4) = 0x0000
-	sh2_set_reg r4 00
-
-	## CDコマンド実行
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r9
-	sh2_set_reg r1 $CHARCODE_3
-
 	# セクタ長の設定
 	## SetSectorLength(cmd=0x60)
 	## | Reg | [15:8]         | [7:0]          |
@@ -283,7 +224,216 @@ main() {
 
 	# debug
 	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_2
+
+	# データ転送の終了
+	## EndDataTransfer(cmd=0x06)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x06) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0600
+	sh2_set_reg r1 06
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_3
+
+	# TOC情報の取得
+	## GetToc(cmd=0x02)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x02) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0200
+	sh2_set_reg r1 02
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
 	sh2_set_reg r1 $CHARCODE_4
+
+	# データ転送の終了
+	## EndDataTransfer(cmd=0x06)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x06) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0600
+	sh2_set_reg r1 06
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_5
+
+	# すべてのフィルタをリセット
+	## ResetSelector(cmd=0x48)
+	## | Reg | [15:8]                            | [7:0]      |
+	## |-----+-----------------------------------+------------|
+	## | CR1 | cmd(0x48)                         | reset flag |
+	## | CR2 | -                                 | -          |
+	## | CR3 | rsbufno (only if reset flag is 0) | -          |
+	## | CR4 | -                                 | -          |
+
+	## r1(CR1) = 0x48fc
+	copy_to_reg_from_val_word r1 48fc
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0xff00
+	sh2_set_reg r3 ff
+	sh2_shift_left_logical_8 r3
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_6
+
+	# フィルタモードの設定
+	## SetFilterMode(cmd=0x44)
+	## | Reg | [15:8]       | [7:0]       |
+	## |-----+--------------+-------------|
+	## | CR1 | cmd(0x44)    | filter mode |
+	## | CR2 | -            | -           |
+	## | CR3 | sfmfilternum | -           |
+	## | CR4 | -            | -           |
+
+	## r1(CR1) = 0x4401
+	copy_to_reg_from_val_word r1 4401
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_7
+
+	# フィルタサブヘッダ条件の設定
+	## SetFilterSubheaderConditions(cmd=0x42)
+	## | Reg | [15:8]        | [7:0]         |
+	## |-----+---------------+---------------|
+	## | CR1 | cmd(0x42)     | filter chan   |
+	## | CR2 | filter smmask | filter cimask |
+	## | CR3 | sfscfilternum | filter fid    |
+	## | CR4 | filter smval  | filter cival  |
+
+	## r1(CR1) = 0x4200
+	sh2_set_reg r1 42
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_8
+
+	# フィルタの接続先の設定
+	## SetFilterConnection(cmd=0x46)
+	## | Reg | [15:8]                | [7:0]                  |
+	## |-----+-----------------------+------------------------|
+	## | CR1 | cmd(0x46)             | mode flag              |
+	## | CR2 | filter id (true cond) | filter id (false cond) |
+	## | CR3 | sfcfilternum          | -                      |
+	## | CR4 | -                     | -                      |
+
+	## r1(CR1) = 0x4603
+	copy_to_reg_from_val_word r1 4603
+
+	## r2(CR2) = 0x00ff
+	sh2_set_reg r2 ff
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_9
 
 	# パーティション0をリセット
 	## ResetSelector(cmd=0x48)
@@ -313,7 +463,37 @@ main() {
 
 	# debug
 	sh2_abs_call_to_reg_after_next_inst r9
-	sh2_set_reg r1 $CHARCODE_5
+	sh2_set_reg r1 $CHARCODE_A
+
+	# パーティション0をリセット
+	## ResetSelector(cmd=0x48)
+	## | Reg | [15:8]                            | [7:0]      |
+	## |-----+-----------------------------------+------------|
+	## | CR1 | cmd(0x48)                         | reset flag |
+	## | CR2 | -                                 | -          |
+	## | CR3 | rsbufno (only if reset flag is 0) | -          |
+	## | CR4 | -                                 | -          |
+
+	## r1(CR1) = 0x4800
+	sh2_set_reg r1 48
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_B
 
 	# フィルタ0へ接続
 	## SetCDDeviceConnection(0x30)
@@ -328,8 +508,14 @@ main() {
 	sh2_set_reg r1 30
 	sh2_shift_left_logical_8 r1
 
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
 	## r3(CR3) = 0x0000
 	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
 
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
@@ -337,7 +523,7 @@ main() {
 
 	# debug
 	sh2_abs_call_to_reg_after_next_inst r9
-	sh2_set_reg r1 $CHARCODE_6
+	sh2_set_reg r1 $CHARCODE_C
 
 	# CD再生
 	## PlayDisc(cmd=0x10)
@@ -368,7 +554,7 @@ main() {
 
 	# debug
 	sh2_abs_call_to_reg_after_next_inst r9
-	sh2_set_reg r1 $CHARCODE_7
+	sh2_set_reg r1 $CHARCODE_D
 
 	# 1つ以上のセクタが読み出されるまで待つ
 	## 読み取り済みセクタ数の取得
@@ -380,20 +566,24 @@ main() {
 	### | CR3 | gsnbufno  | -     |
 	### | CR4 | -         | -     |
 
-	### r1(CR1) = 0x5100
-	sh2_set_reg r1 51
-	sh2_shift_left_logical_8 r1
-
-	### r2(CR2) = 0x0000
-	sh2_set_reg r2 00
-
-	### r3(CR3) = 0x0000
-	sh2_set_reg r3 00
-
-	### r4(CR4) = 0x0000
-	sh2_set_reg r4 00
-
 	(
+		# debug
+		sh2_abs_call_to_reg_after_next_inst r9
+		sh2_set_reg r1 $CHARCODE_z
+
+		### r1(CR1) = 0x5100
+		sh2_set_reg r1 51
+		sh2_shift_left_logical_8 r1
+
+		### r2(CR2) = 0x0000
+		sh2_set_reg r2 00
+
+		### r3(CR3) = 0x0000
+		sh2_set_reg r3 00
+
+		### r4(CR4) = 0x0000
+		sh2_set_reg r4 00
+
 		# CDコマンド実行
 		sh2_abs_call_to_reg_after_next_inst r14
 		sh2_nop
@@ -409,7 +599,7 @@ main() {
 
 	# debug
 	sh2_abs_call_to_reg_after_next_inst r9
-	sh2_set_reg r1 $CHARCODE_8	# 実機ではこれが表示されない
+	sh2_set_reg r1 $CHARCODE_E
 
 	# セクタデータの取り出し&消去
 	## GetThenDeleteSectorData(cmd=0x63)
@@ -440,6 +630,43 @@ main() {
 	# debug
 	sh2_abs_call_to_reg_after_next_inst r9
 	sh2_set_reg r1 $CHARCODE_9
+
+	# DTRを読んでみる
+	sh2_copy_to_reg_from_ptr_long r1 r12
+	## 画面へ表示
+	sh2_set_reg r2 0a
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r3 0a
+
+	# データ転送の終了
+	## EndDataTransfer(cmd=0x06)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x06) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0600
+	sh2_set_reg r1 06
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_set_reg r1 $CHARCODE_3
 
 	# # ChangeDirectoryでrootディレクトリへ移動
 	# ## ChangeDirectory(cmd=0x70)
@@ -533,13 +760,6 @@ main() {
 	# ## CDコマンド実行
 	# sh2_abs_call_to_reg_after_next_inst r14
 	# sh2_nop
-
-	# DTRを読んでみる
-	sh2_copy_to_reg_from_ptr_long r1 r12
-	## 画面へ表示
-	sh2_set_reg r2 0a
-	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_set_reg r3 0a
 
 	# 無限ループ
 	infinite_loop
