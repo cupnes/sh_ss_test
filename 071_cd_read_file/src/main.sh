@@ -346,21 +346,25 @@ main() {
 	### | CR2 | -         | -     |
 	### | CR3 | gsnbufno  | -     |
 	### | CR4 | -         | -     |
-
-	### r1(CR1) = 0x5100
-	sh2_set_reg r1 51
-	sh2_shift_left_logical_8 r1
-
-	### r2(CR2) = 0x0000
-	sh2_set_reg r2 00
-
-	### r3(CR3) = 0x0000
-	sh2_set_reg r3 00
-
-	### r4(CR4) = 0x0000
-	sh2_set_reg r4 00
-
 	(
+		# ウェイト
+		for i in $(seq 100); do
+			sh2_nop
+		done
+
+		# r1(CR1) = 0x5100
+		sh2_set_reg r1 51
+		sh2_shift_left_logical_8 r1
+
+		# r2(CR2) = 0x0000
+		sh2_set_reg r2 00
+
+		# r3(CR3) = 0x0000
+		sh2_set_reg r3 00
+
+		# r4(CR4) = 0x0000
+		sh2_set_reg r4 00
+
 		# CDコマンド実行
 		sh2_abs_call_to_reg_after_next_inst r14
 		sh2_nop
