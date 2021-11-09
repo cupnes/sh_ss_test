@@ -186,6 +186,85 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# セクタ長の設定
+	## SetSectorLength(cmd=0x60)
+	## | Reg | [15:8]         | [7:0]          |
+	## |-----+----------------+----------------|
+	## | CR1 | cmd(0x60)      | getsectsize_id |
+	## | CR2 | putsectsize_id | -              |
+	## | CR3 | -              | -              |
+	## | CR4 | -              | -              |
+	## セクタ長は、SS_CD_SECTSIZE_ID_2048=0 へ設定する
+
+	## r1(CR1) = 0x6000
+	sh2_set_reg r1 60
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# データ転送の終了
+	## EndDataTransfer(cmd=0x06)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x06) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0600
+	sh2_set_reg r1 06
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# TOC情報の取得
+	## GetToc(cmd=0x02)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x02) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0200
+	sh2_set_reg r1 02
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
 	# データ転送の終了
 	## EndDataTransfer(cmd=0x06)
 	## | Reg | [15:8]    | [7:0] |
@@ -227,6 +306,32 @@ main() {
 	## r2(CR2) = 0x0000
 	sh2_set_reg r2 00
 
+	## r3(CR3) = 0xff00
+	sh2_set_reg r3 ff
+	sh2_shift_left_logical_8 r3
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# フィルタモードの設定
+	## SetFilterMode(cmd=0x44)
+	## | Reg | [15:8]       | [7:0]       |
+	## |-----+--------------+-------------|
+	## | CR1 | cmd(0x44)    | filter mode |
+	## | CR2 | -            | -           |
+	## | CR3 | sfmfilternum | -           |
+	## | CR4 | -            | -           |
+
+	## r1(CR1) = 0x4401
+	copy_to_reg_from_val_word r1 4401
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
 	## r3(CR3) = 0x0000
 	sh2_set_reg r3 00
 
@@ -237,18 +342,69 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# セクタ長の設定
-	## SetSectorLength(cmd=0x60)
-	## | Reg | [15:8]         | [7:0]          |
-	## |-----+----------------+----------------|
-	## | CR1 | cmd(0x60)      | getsectsize_id |
-	## | CR2 | putsectsize_id | -              |
-	## | CR3 | -              | -              |
-	## | CR4 | -              | -              |
-	## セクタ長は、SS_CD_SECTSIZE_ID_2048=0 へ設定する
+	# フィルタサブヘッダ条件の設定
+	## SetFilterSubheaderConditions(cmd=0x42)
+	## | Reg | [15:8]        | [7:0]         |
+	## |-----+---------------+---------------|
+	## | CR1 | cmd(0x42)     | filter chan   |
+	## | CR2 | filter smmask | filter cimask |
+	## | CR3 | sfscfilternum | filter fid    |
+	## | CR4 | filter smval  | filter cival  |
 
-	## r1(CR1) = 0x6000
-	sh2_set_reg r1 60
+	## r1(CR1) = 0x4200
+	sh2_set_reg r1 42
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# フィルタの接続先の設定
+	## SetFilterConnection(cmd=0x46)
+	## | Reg | [15:8]                | [7:0]                  |
+	## |-----+-----------------------+------------------------|
+	## | CR1 | cmd(0x46)             | mode flag              |
+	## | CR2 | filter id (true cond) | filter id (false cond) |
+	## | CR3 | sfcfilternum          | -                      |
+	## | CR4 | -                     | -                      |
+
+	## r1(CR1) = 0x4603
+	copy_to_reg_from_val_word r1 4603
+
+	## r2(CR2) = 0x00ff
+	sh2_set_reg r2 ff
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# パーティション0をリセット
+	## ResetSelector(cmd=0x48)
+	## | Reg | [15:8]                            | [7:0]      |
+	## |-----+-----------------------------------+------------|
+	## | CR1 | cmd(0x48)                         | reset flag |
+	## | CR2 | -                                 | -          |
+	## | CR3 | rsbufno (only if reset flag is 0) | -          |
+	## | CR4 | -                                 | -          |
+
+	## r1(CR1) = 0x4800
+	sh2_set_reg r1 48
 	sh2_shift_left_logical_8 r1
 
 	## r2(CR2) = 0x0000
@@ -303,8 +459,14 @@ main() {
 	sh2_set_reg r1 30
 	sh2_shift_left_logical_8 r1
 
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
 	## r3(CR3) = 0x0000
 	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
 
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
@@ -403,99 +565,6 @@ main() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# # ChangeDirectoryでrootディレクトリへ移動
-	# ## ChangeDirectory(cmd=0x70)
-	# ## | Reg | [15:8]      | [7:0]      |
-	# ## |-----+-------------+------------|
-	# ## | CR1 | cmd(0x70)   | -          |
-	# ## | CR2 | -           | -          |
-	# ## | CR3 | cdfilternum | fid[23:16] |
-	# ## | CR4 | fid[15:8]   | fid[7:0]   |
-
-	# ## r1(CR1) = 0x7000
-	# sh2_set_reg r1 70
-	# sh2_shift_left_logical_8 r1
-
-	# ## r3(CR3) = 0x00ff
-	# ## - cdfilternum = 0x00
-	# ## - fid[23:16] = 0xff
-	# sh2_set_reg r3 ff
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# ## r4(CR4) = 0xffff
-	# sh2_set_reg r4 ff
-
-	# ## CDコマンド実行
-	# sh2_abs_call_to_reg_after_next_inst r14
-	# sh2_nop
-
-	# # FIDに3を指定してReadFile()すれば中身が読める
-	# ## おそらく、2番以降の連番でカレントディレクトリのファイル番号(FID)が振られている
-	# ## おそらく、ファイルの並び順はISO9660ファイルシステム上の並び順
-	# ## なので、ルートディレクトリ直下に =0.BIN= ・ =hello.txt= の順に置かれている時、hello.txtのFIDは3
-
-	# ## ReadFile(cmd=0x74)
-	# ## | Reg | [15:8]      | [7:0]          |
-	# ## |-----+-------------+----------------|
-	# ## | CR1 | cmd(0x74)   | rfoffset[15:8] |
-	# ## | CR2 | -           | rfoffset[7:0]  |
-	# ## | CR3 | rffilternum | rffid[15:8]    |
-	# ## | CR4 | -           | rffid[7:0]     |
-
-	# ## r1(CR1) = 0x7400
-	# sh2_set_reg r1 74
-	# sh2_shift_left_logical_8 r1
-
-	# ## r2(CR2) = 0x0000
-	# sh2_set_reg r2 00
-
-	# ## r3(CR3) = 0x0000
-	# sh2_set_reg r3 00
-
-	# ## r4(CR4) = 0x0003
-	# sh2_set_reg r4 03
-
-	# ## CDコマンド実行
-	# sh2_abs_call_to_reg_after_next_inst r14
-	# sh2_nop
-
-	# ## HIRQのEFLSビットがセットされるまで待つ
-	# (
-	# 	sh2_copy_to_reg_from_ptr_word r0 r13
-	# 	sh2_shift_right_logical_8 r0
-	# 	sh2_test_r0_and_val_byte $(echo $SS_CS2_HIRQ_BIT_EFLS | cut -c1-2)
-	# ) >src/main.1.o
-	# cat src/main.1.o
-	# local sz_1=$(stat -c '%s' src/main.1.o)
-	# ## EFLSビットがセットされていなければ(T=1ならば)、繰り返す
-	# sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_1) / 2)))
-
-	# # セクタを取得
-	# ## GetSectorData(cmd=0x61)
-	# ## | Reg | [15:8]              | [7:0]              |
-	# ## |-----+---------------------+--------------------|
-	# ## | CR1 | cmd(0x61)           | -                  |
-	# ## | CR2 | gsdsectoffset[15:8] | gsdsectoffset[7:0] |
-	# ## | CR3 | gsdbufno            | -                  |
-	# ## | CR4 | gsdsectnum[15:8]    | gsdsectnum[7:0]    |
-
-	# ## r1(CR1) = 0x6100
-	# sh2_set_reg r1 61
-	# sh2_shift_left_logical_8 r1
-
-	# ## r2(CR2) = 0x0000
-	# sh2_set_reg r2 00
-
-	# ## r3(CR3) = 0x0000
-	# sh2_set_reg r3 00
-
-	# ## r4(CR4) = 0x0001
-	# sh2_set_reg r4 01
-
-	# ## CDコマンド実行
-	# sh2_abs_call_to_reg_after_next_inst r14
-	# sh2_nop
 
 	# DTRを読んでみる
 	sh2_copy_to_reg_from_ptr_long r1 r12
