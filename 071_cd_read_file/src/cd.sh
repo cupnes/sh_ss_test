@@ -206,7 +206,7 @@ f_cd_exec_command() {
 	# TODO
 
 	# ウェイト
-	copy_to_reg_from_val_long r1 00000100
+	copy_to_reg_from_val_long r1 00000200
 	sh2_set_reg r2 00
 	(
 		sh2_add_to_reg_from_val_byte r1 $(two_comp_d 1)
