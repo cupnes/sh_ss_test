@@ -205,6 +205,17 @@ f_cd_exec_command() {
 	# 退避したI3〜I0をSRへ復帰する
 	# TODO
 
+	# ウェイト
+	copy_to_reg_from_val_long r1 00000100
+	sh2_set_reg r2 00
+	(
+		sh2_add_to_reg_from_val_byte r1 $(two_comp_d 1)
+		sh2_compare_reg_eq_reg r1 r2
+	) >src/f_cd_exec_command.2.o
+	cat src/f_cd_exec_command.2.o
+	local sz_2=$(stat -c '%s' src/f_cd_exec_command.2.o)
+	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+
 	# 退避したレジスタを復帰しreturn
 	## r6
 	sh2_copy_to_reg_from_ptr_long r6 r15
