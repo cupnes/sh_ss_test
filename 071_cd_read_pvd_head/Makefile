@@ -1,4 +1,4 @@
-NAME=071_cd_read_file
+NAME=071_cd_read_pvd_head
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
