@@ -1,0 +1,19 @@
+* Satiatorで動作しない問題
+** 現象
+- src/main.sh main()の「ファイル情報の取得」でReadDirectoryのCDコマン
+  ド実行で、CR1[15:8]に0xff(REJECTステータス)が設定されてしまう
+- その後の「1つ以上のセクタが読み出されるまで待つ」で何度
+  GetSectorNumberのCDコマンドを実行してもCR4(セクタ数)が常に0で、ルー
+  プを脱出できない
+
+** 該当バージョン
+- menu.bin v66 + satiator.fw v155 or v156 の組み合わせで現象が発生する
+  事を確認済み
+  - satiator.fw v157は2021-11-12現在、バイナリが未公開のため未確認
+- 古いmenu.bin・satiator.fwでは動いていたが、それがどのバージョンか不明
+  - 2021-11-12にmenu.binとsatiator.fwを更新するまで、過去1年くらい更新
+    してなかった気がする
+- menu.bin・satiator.fwのチェンジログ[1][2]を読む限り、CDコマンドの動
+  作に影響するのはsatiator.fwの方(menu.binは無関係)
+  - [1] menu.bin: https://info.satiator.net/menu/CHANGELOG
+  - [2] satiator.fw: https://info.satiator.net/firmware/CHANGELOG
