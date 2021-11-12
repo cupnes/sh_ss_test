@@ -133,6 +133,8 @@ main() {
 	copy_to_reg_from_val_long r12 $SS_CT_CS2_DTR_ADDR
 	copy_to_reg_from_val_long r11 $a_putreg_xy
 	copy_to_reg_from_val_long r10 $SS_CT_CS2_CR4_ADDR
+	copy_to_reg_from_val_long r9 $a_putchar
+	copy_to_reg_from_val_long r8 $a_dump_cr1234_xy
 
 	# ファイルアクセスの中止
 	## AbortFile(0x75)
@@ -336,6 +338,37 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# ファイル情報の取得
+	## ReadDirectory(cmd=0x71)
+	## | Reg | [15:8]      | [7:0]      |
+	## |-----+-------------+------------|
+	## | CR1 | cmd(0x71)   | -          |
+	## | CR2 | -           | -          |
+	## | CR3 | rdfilternum | fid[23:16] |
+	## | CR4 | fid[15:8]   | fid[7:0]   |
+
+	## r1(CR1) = 0x7100
+	sh2_set_reg r1 71
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0003
+	sh2_set_reg r4 03
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# debug
+	sh2_set_reg r1 0a
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_set_reg r2 20
+
 	# FIDに3を指定してReadFile()すれば中身が読める
 	## おそらく、2番以降の連番でカレントディレクトリのファイル番号(FID)が振られている
 	## おそらく、ファイルの並び順はISO9660ファイルシステム上の並び順
@@ -377,6 +410,10 @@ main() {
 	## EFLSビットがセットされていなければ(T=1ならば)、繰り返す
 	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_1) / 2)))
 
+	# # debug
+	# sh2_abs_call_to_reg_after_next_inst r9
+	# sh2_set_reg r1 $CHARCODE_0
+
 	# 1つ以上のセクタが読み出されるまで待つ
 	## 読み取り済みセクタ数の取得
 	### GetSectorNumber(0x51)
@@ -386,21 +423,24 @@ main() {
 	### | CR2 | -         | -     |
 	### | CR3 | gsnbufno  | -     |
 	### | CR4 | -         | -     |
-
-	### r1(CR1) = 0x5100
-	sh2_set_reg r1 51
-	sh2_shift_left_logical_8 r1
-
-	### r2(CR2) = 0x0000
-	sh2_set_reg r2 00
-
-	### r3(CR3) = 0x0000
-	sh2_set_reg r3 00
-
-	### r4(CR4) = 0x0000
-	sh2_set_reg r4 00
-
 	(
+		# # debug
+		# sh2_abs_call_to_reg_after_next_inst r9
+		# sh2_set_reg r1 $CHARCODE_z
+
+		# r1(CR1) = 0x5100
+		sh2_set_reg r1 51
+		sh2_shift_left_logical_8 r1
+
+		# r2(CR2) = 0x0000
+		sh2_set_reg r2 00
+
+		# r3(CR3) = 0x0000
+		sh2_set_reg r3 00
+
+		# r4(CR4) = 0x0000
+		sh2_set_reg r4 00
+
 		# CDコマンド実行
 		sh2_abs_call_to_reg_after_next_inst r14
 		sh2_nop
@@ -413,6 +453,10 @@ main() {
 	local sz_2=$(stat -c '%s' src/main.2.o)
 	## T == 1(CR == 0)なら繰り返す
 	sh2_rel_jump_if_true $(two_comp_d $(((sz_2 + 4) / 2)))
+
+	# # debug
+	# sh2_abs_call_to_reg_after_next_inst r9
+	# sh2_set_reg r1 $CHARCODE_1
 
 	# セクタデータの取り出し&消去
 	## GetThenDeleteSectorData(cmd=0x63)

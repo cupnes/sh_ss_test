@@ -10,7 +10,7 @@ CON_FONT_HEIGHT=10	# 16px
 # コンソール領域
 ## 座標
 CON_AREA_X=0a	# 10
-CON_AREA_Y=0a	# 10
+CON_AREA_Y=1e	# 30
 ## 幅/高さ
 CON_AREA_WIDTH_CH=13	# 19文字分
 CON_AREA_HEIGHT_CH=0a	# 10文字分
