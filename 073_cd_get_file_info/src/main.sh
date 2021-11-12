@@ -404,6 +404,84 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
+	# ファイルアクセスの中止
+	## AbortFile(0x75)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x75) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x7500
+	sh2_set_reg r1 75
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# CDブロックの初期化
+	## InitializeCDSystem(cmd=0x04)
+	## | Reg | [15:8]            | [7:0]            |
+	## |-----+-------------------+------------------|
+	## | CR1 | cmd(0x04)         | initflag         |
+	## | CR2 | standbytime[15:8] | standbytime[7:0] |
+	## | CR3 | -                 | -                |
+	## | CR4 | ecc               | retrycount       |
+
+	## r1(CR1) = 0x0400
+	sh2_set_reg r1 04
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x040f
+	copy_to_reg_from_val_word r4 040f
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# データ転送の終了
+	## EndDataTransfer(cmd=0x06)
+	## | Reg | [15:8]    | [7:0] |
+	## |-----+-----------+-------|
+	## | CR1 | cmd(0x06) | -     |
+	## | CR2 | -         | -     |
+	## | CR3 | -         | -     |
+	## | CR4 | -         | -     |
+
+	## r1(CR1) = 0x0600
+	sh2_set_reg r1 06
+	sh2_shift_left_logical_8 r1
+
+	## r2(CR2) = 0x0000
+	sh2_set_reg r2 00
+
+	## r3(CR3) = 0x0000
+	sh2_set_reg r3 00
+
+	## r4(CR4) = 0x0000
+	sh2_set_reg r4 00
+
+	## CDコマンド実行
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
 	# 無限ループ
 	infinite_loop
 }
