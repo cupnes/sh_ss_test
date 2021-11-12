@@ -17,3 +17,8 @@
   作に影響するのはsatiator.fwの方(menu.binは無関係)
   - [1] menu.bin: https://info.satiator.net/menu/CHANGELOG
   - [2] satiator.fw: https://info.satiator.net/firmware/CHANGELOG
+
+** 備考
+- satiator.fw更新で動かなくなったのはファイルシステム系のCDコマンドの
+  みな様子
+  - 066_getchar_from_padや071_cd_read_pvd_headはこれまで通り動いた
