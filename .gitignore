@@ -7,5 +7,7 @@
 *.iso
 *.cue
 *.log
+*.img
+*.ppm
 map.sh
 *_map.sh
