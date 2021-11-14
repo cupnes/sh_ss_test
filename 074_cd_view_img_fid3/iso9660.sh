@@ -11,11 +11,11 @@ usage() {
 	echo "$0 - Outputs an ISO image containing the specified file(s) to the standard output." >&2
 	echo >&2
 	echo 'Usage:' >&2
-	echo -e "\t$0 BIN_FILE [SUB_FILE]" >&2
+	echo -e "\t$0 FILE [FILE ...]" >&2
 	echo -e "\t$0 -h" >&2
 }
 
-if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+if [ $# -eq 0 ]; then
 	usage
 	exit 1
 fi
@@ -23,40 +23,52 @@ if [ "$1" = '-h' ]; then
 	usage
 	exit 0
 fi
-BIN_FILE="$1"
-SUB_FILE=''
-if [ $# -eq 2 ]; then
-	SUB_FILE="$2"
+FILE_LIST="$@"
+
+# 中間ファイルの接頭辞
+TMP_PREF="${0}.tmp"
+
+# 1つ目のファイルを置く論理ブロックアドレスを事前に知るために、
+# ルート直下のディレクトリレコードの領域のセクタ数を算出する
+## 第1・2ディレクトリレコード = 各 34 バイト(計 68 バイト)
+TOTAL_DIRREC_BYTES_ROOT=68
+## 第3以降のディレクトリレコード = 各 33 + LEN_FI + ((LEN_FI + 1) % 2) バイト
+## (LEN_FI = ファイル識別子の長さ = ファイル名の長さ + 2 [バイト])
+## ※ ディレクトリレコードはセクタをまたがない(パディングが入る)
+for f in $FILE_LIST; do
+	fn=$(basename $f)
+	len_fn=$(echo -n $fn | wc -c)
+	len_fi=$((len_fn + 2))
+	len_pad=$(((len_fi + 1) % 2))
+	len_dr=$((33 + len_fi + len_pad))
+	if [ $((TOTAL_DIRREC_BYTES_ROOT / SECTOR_BYTES)) -ne $(((TOTAL_DIRREC_BYTES_ROOT + len_dr) / SECTOR_BYTES)) ]; then
+		# 今回のデータレコード配置によりセクタ番目が変わる
+
+		# FIXME 現状では、ディレクトリレコード領域が1セクタを超えるケースでは正しく動作しない
+		#       (isoinfo -l -i などでファイルリストを表示させると見えるが、
+		#       マウントすると2セクタ目以降のディレクトリレコードが見えない)
+		echo "Error: The directory record area has exceeded one sector at \"$f\"." >&2
+		exit 1
+
+		# またぐのか？
+		mod=$((TOTAL_DIRREC_BYTES_ROOT % SECTOR_BYTES))
+		if [ $mod -ne 0 ]; then
+			# またぐ(ので、そうならないようにパディングを入れる)
+			TOTAL_DIRREC_BYTES_ROOT=$((TOTAL_DIRREC_BYTES_ROOT + (SECTOR_BYTES - mod)))
+		fi
+	fi
+	TOTAL_DIRREC_BYTES_ROOT=$((TOTAL_DIRREC_BYTES_ROOT + len_dr))
+done
+## セクタサイズの倍数にするためのパディング
+mod=$((TOTAL_DIRREC_BYTES_ROOT % SECTOR_BYTES))
+if [ $mod -ne 0 ]; then
+	TOTAL_DIRREC_BYTES_ROOT=$((TOTAL_DIRREC_BYTES_ROOT + (SECTOR_BYTES - mod)))
 fi
+## ルート直下のディレクトリレコードの領域のセクタ数
+TOTAL_DIRREC_SECTORS_ROOT=$((TOTAL_DIRREC_BYTES_ROOT / SECTOR_BYTES))
 
-# BIN_FILEのバイト数
-BIN_FILE_SIZE=$(stat -c '%s' $BIN_FILE)
-## 8桁の16進数
-BIN_FILE_SIZE_HEX="$(extend_digit $(to16 $BIN_FILE_SIZE) 8)"
-## セクタ数
-BIN_FILE_NUM_SECTORS=$(((BIN_FILE_SIZE + SECTOR_BYTES - 1) / SECTOR_BYTES))
-# BIN_FILEを配置するセクタ番号
-BIN_FILE_START_SECTOR_NUM=21
-BIN_FILE_START_SECTOR_NUM_HEX="$(extend_digit $(to16 $BIN_FILE_START_SECTOR_NUM) 8)"
-
-# SUB_FILEのバイト数
-if [ -n "$SUB_FILE" ]; then
-	SUB_FILE_SIZE=$(stat -c '%s' $SUB_FILE)
-else
-	SUB_FILE_SIZE=0
-fi
-## 8桁の16進数
-SUB_FILE_SIZE_HEX="$(extend_digit $(to16 $SUB_FILE_SIZE) 8)"
-## セクタ数
-SUB_FILE_NUM_SECTORS=$(((SUB_FILE_SIZE + SECTOR_BYTES - 1) / SECTOR_BYTES))
-# SUB_FILEを配置するセクタ番号
-SUB_FILE_START_SECTOR_NUM=$((BIN_FILE_START_SECTOR_NUM + BIN_FILE_NUM_SECTORS))
-SUB_FILE_START_SECTOR_NUM_HEX="$(extend_digit $(to16 $SUB_FILE_START_SECTOR_NUM) 8)"
-
-# ISOファイルサイズをセクタ数で指定する(Both Endian)
-ISO_FILE_NUM_SECTORS=$((21 + BIN_FILE_NUM_SECTORS + SUB_FILE_NUM_SECTORS))
-## 8桁の16進数
-ISO_FILE_NUM_SECTORS_HEX="$(extend_digit $(to16 $ISO_FILE_NUM_SECTORS) 8)"
+# 1つ目のファイルの論理ブロックアドレス(LBA)
+LBA_1ST_FILE=$((20 + TOTAL_DIRREC_SECTORS_ROOT))
 
 # Initial Program(IP)
 # (ISO9660 Reserved Field)
@@ -65,18 +77,18 @@ gen_ip() {
 		wget https://github.com/johannes-fetz/joengine/raw/master/Compiler/COMMON/IP.BIN
 	fi
 
-	dd if=IP.BIN bs=1 count=64
+	dd if=IP.BIN bs=1 count=64 status=none
 	echo -n "J               "
-	dd if=IP.BIN bs=1 ibs=1 skip=$((64 + 16))
+	dd if=IP.BIN bs=1 ibs=1 skip=$((64 + 16)) status=none
 
 	local ip_bin_sz=$(stat -c '%s' IP.BIN)
 	local padding_sz=$(((SECTOR_BYTES * 16) - ip_bin_sz))
-	dd if=/dev/zero bs=1 count=$padding_sz
+	dd if=/dev/zero bs=1 count=$padding_sz status=none
 }
 
 # All Zero Sector
 gen_blank_sector() {
-	dd if=/dev/zero bs=1 count=$SECTOR_BYTES
+	dd if=/dev/zero bs=1 count=$SECTOR_BYTES status=none
 }
 
 # Primary Volume Descriptor(PVD)
@@ -94,13 +106,35 @@ gen_pvd() {
 	# 40(0x28) - 71(0x47) Volume Identifier
 	echo -n 'SATURNAPP                       '
 	# 72(0x48) - 79(0x4f) Unused Field
-	dd if=/dev/zero bs=1 count=8
+	dd if=/dev/zero bs=1 count=8 status=none
 	# 80(0x50) - 87(0x57) Volume Space Size
-	# ISOファイルサイズをセクタ数で指定する
-	echo_4bytes "$ISO_FILE_NUM_SECTORS_HEX"
-	echo_4bytes_be "$ISO_FILE_NUM_SECTORS_HEX"
+	## IP(16セクタ)・PVD(1セクタ)・VDT(1セクタ)・タイプL/Mパステーブル(各1セクタ)で計20セクタ
+	local iso_sectors=20
+	## ルート直下のディレクトリレコードによるセクタ数を加算
+	local total_dirrec_bytes_root=$(stat -c '%s' ${TMP_PREF}.dir_root.o)
+	if [ $((total_dirrec_bytes_root % SECTOR_BYTES)) -ne 0 ]; then
+		# この時点で、$total_dirrec_bytes_root が $SECTOR_BYTES の倍数になっていないのはおかしい
+		echo "Error: \$total_dirrec_bytes_root(=$total_dirrec_bytes_root) is not a multiple of the sector size." >&2
+		exit 1
+	fi
+	iso_sectors=$((iso_sectors + (total_dirrec_bytes_root / SECTOR_BYTES)))
+	## 格納するファイルによるセクタ数を加算
+	local total_file_size=0
+	for f in $FILE_LIST; do
+		total_file_size=$((total_file_size + $(stat -c '%s' ${TMP_PREF}.${f}.o)))
+	done
+	iso_sectors=$((iso_sectors + (total_file_size / SECTOR_BYTES)))
+	if [ $((total_file_size % SECTOR_BYTES)) -ne 0 ]; then
+		# この時点で、$total_file_size が $SECTOR_BYTES の倍数になっていないのはおかしい
+		echo "Error: \$total_file_size(=$total_file_size) is not a multiple of the sector size." >&2
+		exit 1
+	fi
+	## 8桁の16進数へ変換し出力
+	local iso_sectors_hex=$(extend_digit $(to16 $iso_sectors) 8)
+	echo_4bytes $iso_sectors_hex
+	echo_4bytes_be $iso_sectors_hex
 	# 88(0x58) - 119(0x77) Escape Sequences
-	dd if=/dev/zero bs=1 count=$((119 - 88 + 1))
+	dd if=/dev/zero bs=1 count=$((119 - 88 + 1)) status=none
 	# 120(0x78) - 123(0x7b) Volume Set Size
 	echo -en '\x01\x00\x00\x01'
 	# 124(0x7c) - 127(0x7f) Volume Sequence Number
@@ -131,8 +165,9 @@ gen_pvd() {
 	## 20(0x14) セクタ目
 	echo -en '\x14\x00\x00\x00\x00\x00\x00\x14'
 	## Data length (size of extent) in both-endian format (size 8)
-	## 0x800 = 2048 bytes
-	echo -en '\x00\x08\x00\x00\x00\x00\x08\x00'
+	local total_dirrec_bytes_root_hex=$(extend_digit $(to16 $total_dirrec_bytes_root) 8)
+	echo_4bytes $total_dirrec_bytes_root_hex
+	echo_4bytes_be $total_dirrec_bytes_root_hex
 	## Recording date and time (size 7)
 	### Number of years since 1900.
 	echo -en '\x79'
@@ -204,7 +239,7 @@ gen_pvd() {
 		echo -n ' '
 	done
 	# 1395(0x573) - 2047(0x7ff) Reserved
-	dd if=/dev/zero bs=1 count=653
+	dd if=/dev/zero bs=1 count=653 status=none
 }
 
 # Volume Descriptor Set Terminator(VDT)
@@ -216,7 +251,7 @@ gen_vdt() {
 	# 6(0x06) Version
 	echo -en '\x01'
 	# 7(0x07) - 2047(0x7ff) Unused
-	dd if=/dev/zero bs=1 count=$((2047 - 7 + 1))
+	dd if=/dev/zero bs=1 count=$((2047 - 7 + 1)) status=none
 }
 
 # Type-L Path Table
@@ -241,7 +276,7 @@ gen_lpath_tbl() {
 
 	# セクタサイズにするためのパディング
 	local sz=$(stat -c '%s' lpath_tbl.o)
-	dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - sz))
+	dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - sz)) status=none
 }
 
 # Type-M Path Table
@@ -266,10 +301,11 @@ gen_mpath_tbl() {
 
 	# セクタサイズにするためのパディング
 	local sz=$(stat -c '%s' mpath_tbl.o)
-	dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - sz))
+	dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - sz)) status=none
 }
 
 gen_dir_root() {
+	local mod
 	(
 		# Length of Directory Record(LEN_DR) (size 1)
 		# 0x22 = 34
@@ -341,61 +377,36 @@ gen_dir_root() {
 		# Padding Field(レコードサイズを偶数にするためのパディング)
 		# System Use (size LEN_DRの残り)
 
+		local len_dir_root=68
+		local len_dr_pad
+		local lba_f=$LBA_1ST_FILE
+		local lba_f_hex
+		local sz_f
+		local sz_f_hex
+		local fn
+		local len_fn
+		local len_fi
 		local fi
-		local sz
-		local need_pad
+		local len_dr
+		local sectors_f
+		for f in $FILE_LIST; do
+			lba_f_hex=$(extend_digit $(to16 $lba_f) 8)
+			sz_f=$(stat -c '%s' $f)
+			sz_f_hex=$(extend_digit $(to16 $sz_f) 8)
+			fn=$(basename $f)
+			len_fn=$(echo -n $fn | wc -c)
+			len_fi=$((len_fn + 2))
+			fi="${fn};1"
 
-		(
-			# Extended Attribute Record Length (size 1)
-			echo -en '\x00'
-			# Location of Extent (size 8)
-			echo_4bytes "$BIN_FILE_START_SECTOR_NUM_HEX"
-			echo_4bytes_be "$BIN_FILE_START_SECTOR_NUM_HEX"
-			# Data Length (size 8)
-			echo_4bytes "$BIN_FILE_SIZE_HEX"
-			echo_4bytes_be "$BIN_FILE_SIZE_HEX"
-			# Recording Date and Time (size 7)
-			echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
-			# File Flags (size 1)
-			echo -en '\x00'
-			# File Unit Size (size 1)
-			echo -en '\x00'
-			# Interleave Gap Size (size 1)
-			echo -en '\x00'
-			# Volume Sequence Number (size 4)
-			echo -en '\x01\x00\x00\x01'
-			# Length of File Identifier(LEN_FI) (size 1)
-			fi="${BIN_FILE};1"
-			echo -en "\x$(two_digits $(to16 $(echo -n "$fi" | wc -c)))"
-			# File Identifier (size LEN_FI)
-			echo -n "$fi"
-		) >dirrec_${BIN_FILE}.o
-		sz=$(($(stat -c '%s' dirrec_${BIN_FILE}.o) + 1))
-		need_pad="false"
-		if [ $((sz % 2)) -eq 1 ]; then
-			need_pad="true"
-			sz=$((sz + 1))
-		fi
-		# Length of Directory Record(LEN_DR) (size 1)
-		echo -en "\x$(two_digits $(to16 $sz))"
-		# ファイルへダンプしたレコード本体
-		cat dirrec_${BIN_FILE}.o
-		# Padding Field(レコードサイズを偶数にするためのパディング)
-		if [ "$need_pad" = "true" ]; then
-			echo -en '\x00'
-		fi
-		# System Use (size LEN_DRの残り)
-
-		if [ -n "$SUB_FILE" ]; then
 			(
 				# Extended Attribute Record Length (size 1)
 				echo -en '\x00'
 				# Location of Extent (size 8)
-				echo_4bytes "$SUB_FILE_START_SECTOR_NUM_HEX"
-				echo_4bytes_be "$SUB_FILE_START_SECTOR_NUM_HEX"
+				echo_4bytes $lba_f_hex
+				echo_4bytes_be $lba_f_hex
 				# Data Length (size 8)
-				echo_4bytes "$SUB_FILE_SIZE_HEX"
-				echo_4bytes_be "$SUB_FILE_SIZE_HEX"
+				echo_4bytes $sz_f_hex
+				echo_4bytes_be $sz_f_hex
 				# Recording Date and Time (size 7)
 				echo -en '\x79\x01\x17\x06\x0f\x0f\x24'
 				# File Flags (size 1)
@@ -407,33 +418,52 @@ gen_dir_root() {
 				# Volume Sequence Number (size 4)
 				echo -en '\x01\x00\x00\x01'
 				# Length of File Identifier(LEN_FI) (size 1)
-				fi="${SUB_FILE};1"
-				echo -en "\x$(two_digits $(to16 $(echo -n "$fi" | wc -c)))"
+				echo -en "\x$(two_digits $(to16 $len_fi))"
 				# File Identifier (size LEN_FI)
-				echo -n "$fi"
-			) >dirrec_${SUB_FILE}.o
-			sz=$(($(stat -c '%s' dirrec_${SUB_FILE}.o) + 1))
-			need_pad="false"
-			if [ $((sz % 2)) -eq 1 ]; then
-				need_pad="true"
-				sz=$((sz + 1))
+				echo -n $fi
+				# Padding Field (size (LEN_FI + 1) % 2)
+				dd if=/dev/zero bs=1 count=$(((len_fi + 1) % 2)) status=none
+			) >${TMP_PREF}.dirrec_${f}.o
+
+			# データレコードサイズを算出
+			len_dr=$(($(stat -c '%s' ${TMP_PREF}.dirrec_${f}.o) + 1))
+
+			if [ $((len_dir_root / SECTOR_BYTES)) -ne $(((len_dir_root + len_dr) / SECTOR_BYTES)) ]; then
+				# 今回のデータレコード配置によりセクタ番目が変わる
+
+				# またぐのか？
+				mod=$((len_dir_root % SECTOR_BYTES))
+				if [ $mod -ne 0 ]; then
+					# またぐ(ので、そうならないようにパディングを入れる)
+					len_dr_pad=$((SECTOR_BYTES - mod))
+					dd if=/dev/zero bs=1 count=$len_dr_pad status=none
+					len_dir_root=$((len_dir_root + len_dr_pad))
+				fi
 			fi
-			# Length of Directory Record(LEN_DR) (size 1)
-			echo -en "\x$(two_digits $(to16 $sz))"
-			# ファイルへダンプしたレコード本体
-			cat dirrec_${SUB_FILE}.o
-			# Padding Field(レコードサイズを偶数にするためのパディング)
-			if [ "$need_pad" = "true" ]; then
-				echo -en '\x00'
+			# 出力したデータレコードサイズを更新
+			len_dir_root=$((len_dir_root + len_dr))
+
+			# データレコードを出力
+			## Length of Directory Record(LEN_DR) (size 1)
+			echo -en "\x$(two_digits $(to16 $len_dr))"
+			## ファイルへダンプしたレコード本体
+			cat ${TMP_PREF}.dirrec_${f}.o
+
+			sectors_f=$((sz_f / SECTOR_BYTES))
+			if [ $((sz_f % SECTOR_BYTES)) -ne 0 ]; then
+				sectors_f=$((sectors_f + 1))
 			fi
-			# System Use (size LEN_DRの残り)
-		fi
-	) >dir_root.o
-	cat dir_root.o
+			lba_f=$((lba_f + sectors_f))
+		done
+	) >${TMP_PREF}.gen_dir_root.1.o
+	cat ${TMP_PREF}.gen_dir_root.1.o
 
 	# セクタサイズにするためのパディング
-	local sz=$(stat -c '%s' dir_root.o)
-	dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - sz))
+	local sz=$(stat -c '%s' ${TMP_PREF}.gen_dir_root.1.o)
+	mod=$((sz % SECTOR_BYTES))
+	if [ $mod -ne 0 ]; then
+		dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - mod)) status=none
+	fi
 }
 
 gen_file() {
@@ -443,27 +473,39 @@ gen_file() {
 	cat $f
 
 	# セクタサイズにするためのパディング
-	dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - (sz % SECTOR_BYTES)))
+	local mod=$((sz % SECTOR_BYTES))
+	if [ $mod -ne 0 ]; then
+		dd if=/dev/zero bs=1 count=$((SECTOR_BYTES - mod)) status=none
+	fi
 }
 
 main() {
+	# pre-generation
+	for f in $FILE_LIST; do
+		gen_file $f >${TMP_PREF}.${f}.o
+	done
+	gen_dir_root >${TMP_PREF}.dir_root.o
+	gen_mpath_tbl >${TMP_PREF}.mpath_tbl.o
+	gen_lpath_tbl >${TMP_PREF}.lpath_tbl.o
+	gen_vdt >${TMP_PREF}.vdt.o
+	gen_pvd >${TMP_PREF}.pvd.o
+	gen_ip >${TMP_PREF}.ip.o
+
 	# sector 0(0x0) - 15(0xf)
-	gen_ip
+	cat ${TMP_PREF}.ip.o
 	# sector 16(0x10)
-	gen_pvd
+	cat ${TMP_PREF}.pvd.o
 	# sector 17(0x11)
-	gen_vdt
+	cat ${TMP_PREF}.vdt.o
 	# sector 18(0x12)
-	gen_lpath_tbl
+	cat ${TMP_PREF}.lpath_tbl.o
 	# sector 19(0x13)
-	gen_mpath_tbl
-	# sector 20(0x14)
-	gen_dir_root
-	# sector 21(0x15)-
-	gen_file $BIN_FILE
-	if [ -n "$SUB_FILE" ]; then
-		gen_file $SUB_FILE
-	fi
+	cat ${TMP_PREF}.mpath_tbl.o
+	# sector 20(0x14)-
+	cat ${TMP_PREF}.dir_root.o
+	for f in $FILE_LIST; do
+		cat ${TMP_PREF}.${f}.o
+	done
 }
 
 main
