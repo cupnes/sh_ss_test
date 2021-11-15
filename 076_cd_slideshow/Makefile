@@ -9,7 +9,7 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN sample1.img sample2.img
+$(NAME).iso: 0.BIN sample1.img sample2.img sample3.img sample4.img sample5.img
 	./iso9660.sh $^ >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
