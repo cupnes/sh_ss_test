@@ -161,6 +161,7 @@ sh2_compare_reg_ge_reg_signed() {
 	echo -e "cmp/ge $regB,$regA\t;1" >>$ASM_LIST_FILE
 }
 
+# 有符号で regA > regB のとき 1→T
 sh2_compare_reg_gt_reg_signed() {
 	local regA=$1
 	local regB=$2

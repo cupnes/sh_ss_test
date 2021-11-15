@@ -85,6 +85,13 @@ vars() {
 	echo -e "var_con_cur_y=$var_con_cur_y" >>$map_file
 	echo -en "\x00\x$CON_AREA_Y"
 	## 4バイト境界
+
+	# cd: f_load_img_from_cd_and_view()の一時的な画像配置領域
+	## (143360(0x23000)バイト)
+	var_tmp_img_area=$(calc16_8 "$var_con_cur_y+2")
+	echo -e "var_tmp_img_area=$var_tmp_img_area" >>$map_file
+	dd if=/dev/zero bs=1 count=143360 status=none
+	## 4バイト境界
 }
 
 vars

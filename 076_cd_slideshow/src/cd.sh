@@ -322,13 +322,10 @@ f_load_img_from_cd_and_view() {
 
 	# 使用する関数・変数のアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_cd_exec_command
-	copy_to_reg_from_val_long r13 $SS_CT_CS2_HIRQ_ADDR
+	copy_to_reg_from_val_long r13 $a_putchar
 	copy_to_reg_from_val_long r12 $SS_CT_CS2_DTR_ADDR
-	copy_to_reg_from_val_long r11 $a_putreg_xy
 	copy_to_reg_from_val_long r10 $SS_CT_CS2_CR4_ADDR
-	copy_to_reg_from_val_long r9 $a_dump_cr1234_xy
-	copy_to_reg_from_val_long r8 $var_next_cp_other_addr
-	copy_to_reg_from_val_long r7 $SS_VDP1_EDSR_ADDR
+	copy_to_reg_from_val_long r9 $var_tmp_img_area
 
 	# FADをr6へコピー
 	sh2_copy_to_reg_from_reg r6 r1
@@ -359,6 +356,10 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_0
+
 	# CDブロックの初期化
 	## InitializeCDSystem(cmd=0x04)
 	## | Reg | [15:8]            | [7:0]            |
@@ -384,6 +385,10 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_1
 
 	# データ転送の終了
 	## EndDataTransfer(cmd=0x06)
@@ -411,6 +416,10 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_2
+
 	# すべてのフィルタをリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
@@ -435,6 +444,10 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_3
 
 	# セクタ長の設定
 	## SetSectorLength(cmd=0x60)
@@ -463,6 +476,10 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_4
+
 	# パーティション0をリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
@@ -489,6 +506,10 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_5
+
 	# フィルタ0へ接続
 	## SetCDDeviceConnection(0x30)
 	## | Reg | [15:8]        | [7:0] |
@@ -508,6 +529,10 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_6
 
 	# CD再生
 	## PlayDisc(cmd=0x10)
@@ -538,74 +563,133 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# 70(0x46)セクタの読み取りが完了するまで待つ
-	## 読み取り済みセクタ数の取得
-	### GetSectorNumber(0x51)
-	### | Reg | [15:8]    | [7:0] |
-	### |-----+-----------+-------|
-	### | CR1 | cmd(0x51) | -     |
-	### | CR2 | -         | -     |
-	### | CR3 | gsnbufno  | -     |
-	### | CR4 | -         | -     |
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_7
 
-	### r1(CR1) = 0x5100
-	sh2_set_reg r1 51
-	sh2_shift_left_logical_8 r1
+	# 完了したセクタから順に70(0x46)セクタ分を
+	# 一時的な配置領域(var_dmp_img_area)へ配置
 
-	### r2(CR2) = 0x0000
-	sh2_set_reg r2 00
+	## 取得済セクタ数(0)をr11へ設定
+	sh2_set_reg r11 00
 
-	### r3(CR3) = 0x0000
-	sh2_set_reg r3 00
-
-	### r4(CR4) = 0x0000
-	sh2_set_reg r4 00
+	## 画像の一時配置領域の先頭アドレスをr8へコピー
+	sh2_copy_to_reg_from_reg r8 r9
 
 	(
-		# CDコマンド実行
+		(
+			# 読み取り済みセクタ数の取得
+			## GetSectorNumber(0x51)
+			## | Reg | [15:8]    | [7:0] |
+			## |-----+-----------+-------|
+			## | CR1 | cmd(0x51) | -     |
+			## | CR2 | -         | -     |
+			## | CR3 | gsnbufno  | -     |
+			## | CR4 | -         | -     |
+
+			## r1(CR1) = 0x5100
+			sh2_set_reg r1 51
+			sh2_shift_left_logical_8 r1
+
+			## r2(CR2) = 0x0000
+			sh2_set_reg r2 00
+
+			## r3(CR3) = 0x0000
+			sh2_set_reg r3 00
+
+			## r4(CR4) = 0x0000
+			sh2_set_reg r4 00
+
+			## CDコマンド実行
+			sh2_abs_call_to_reg_after_next_inst r14
+			sh2_nop
+
+			# CR4 > 0 ?
+			sh2_set_reg r0 00
+			sh2_copy_to_reg_from_ptr_word r4 r10
+			sh2_compare_reg_gt_reg_signed r4 r0
+		) >src/f_load_img_from_cd_and_view.1.o
+		cat src/f_load_img_from_cd_and_view.1.o
+		local sz_1=$(stat -c '%s' src/f_load_img_from_cd_and_view.1.o)
+		## T == 0(CR4 <= 0)なら繰り返す
+		sh2_rel_jump_if_false $(two_comp_d $(((sz_1 + 4) / 2)))
+
+		# セクタデータの取り出し&消去
+		## GetThenDeleteSectorData(cmd=0x63)
+		## | Reg | [15:8]                | [7:0]                |
+		## |-----+-----------------------+----------------------|
+		## | CR1 | cmd(0x63)             | -                    |
+		## | CR2 | gtdsdsectoffset[15:8] | gtdsdsectoffset[7:0] |
+		## | CR3 | gtdsdbufno            | -                    |
+		## | CR4 | gtdsdsectnum[15:8]    | gtdsdsectnum[7:0]    |
+		## gtdsdsectoffset = ロードした先頭位置からのオフセット
+		## gtdsdbufno = ロードしたバッファ(セレクタ)番号
+		## gtdsdsectnum = 取り出すセクタ数
+
+		## r1(CR1) = 0x6300
+		sh2_set_reg r1 63
+		sh2_shift_left_logical_8 r1
+
+		## r2(CR2) → 取得済みセクタ数を設定
+		sh2_copy_to_reg_from_reg r2 r11
+
+		## r3(CR3) = 0x0000
+		sh2_set_reg r3 00
+
+		## r4(CR4) → GetSectorNumberで取得したセクタ数をそのまま使う
+
+		## CDコマンド実行
 		sh2_abs_call_to_reg_after_next_inst r14
 		sh2_nop
 
-		# CR4 == 0x46 ?
-		sh2_copy_to_reg_from_ptr_word r0 r10
-		sh2_compare_r0_eq_val 46
-	) >src/main.1.o
-	cat src/main.1.o
-	local sz_1=$(stat -c '%s' src/main.1.o)
-	## T == 0(CR != 0x46)なら繰り返す
-	sh2_rel_jump_if_false $(two_comp_d $(((sz_1 + 4) / 2)))
+		# 取得済みセクタ数を更新
+		sh2_add_to_reg_from_reg r11 r4
 
-	# セクタデータの取り出し&消去
-	## GetThenDeleteSectorData(cmd=0x63)
-	## | Reg | [15:8]                | [7:0]                |
-	## |-----+-----------------------+----------------------|
-	## | CR1 | cmd(0x63)             | -                    |
-	## | CR2 | gtdsdsectoffset[15:8] | gtdsdsectoffset[7:0] |
-	## | CR3 | gtdsdbufno            | -                    |
-	## | CR4 | gtdsdsectnum[15:8]    | gtdsdsectnum[7:0]    |
-	## gtdsdsectoffset = ロードした先頭位置からのオフセット
-	## gtdsdbufno = ロードしたバッファ(セレクタ)番号
-	## gtdsdsectnum = 取り出すセクタ数
+		# 読み取り済みのセクタ数(r4)分をDTRから
+		# 一時配置用領域(var_tmp_img_area)へコピー
 
-	## r1(CR1) = 0x6300
-	sh2_set_reg r1 63
-	sh2_shift_left_logical_8 r1
+		## セクタ数(r4)を4バイトリードの回数へ変換する
+		## (/ 2048 4.0)512.0 = 0b10 0000 0000 なので、9ビット左シフト
+		sh2_shift_left_logical_8 r4
+		sh2_shift_left_logical r4
 
-	## r2(CR2) = 0x0000
-	sh2_set_reg r2 00
+		## r4の回数分、DTRから4バイトリードして、一時配置領域へコピー
+		(
+			# 4バイト読み出してr0へ格納
+			sh2_copy_to_reg_from_ptr_long r0 r12
 
-	## r3(CR3) = 0x0000
-	sh2_set_reg r3 00
+			# 読み出した4バイトを一時配置領域へコピー
+			sh2_copy_to_ptr_from_reg_long r8 r0
 
-	## r4(CR4) = 0x0046
-	sh2_set_reg r4 46
+			# 一時配置領域のアドレス += 4
+			sh2_add_to_reg_from_val_byte r8 04
 
-	## CDコマンド実行
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
+			# カウンタ--
+			sh2_add_to_reg_from_val_byte r4 $(two_comp_d 1)
 
-	# DTRから70セクタ分をVDP1 RAMのその他用のCPT領域へコピー
-	## 70セクタ = 70 * 2048 = 143360 バイト
+			# カウンタ == 0 ?
+			sh2_set_reg r0 00
+			sh2_compare_reg_eq_reg r4 r0
+		) >src/f_load_img_from_cd_and_view.2.o
+		cat src/f_load_img_from_cd_and_view.2.o
+		local sz_2=$(stat -c '%s' src/f_load_img_from_cd_and_view.2.o)
+		## カウンタ != 0(T == 0)なら繰り返す
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+
+		# 70(0x46) > 取得済みセクタ数 ?
+		sh2_set_reg r0 46
+		sh2_compare_reg_gt_reg_signed r0 r11
+	) >src/f_load_img_from_cd_and_view.3.o
+	cat src/f_load_img_from_cd_and_view.3.o
+	local sz_3=$(stat -c '%s' src/f_load_img_from_cd_and_view.3.o)
+	## 70 > 取得済みセクタ数(T == 1)なら繰り返す
+	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_8
+
+	# 一時配置領域から143360バイトをVDP1 RAMのその他用のCPT領域へコピー
 	## 143360 / 4 = 35840 より、
 	## 4バイト単位の読み出し35840(0x8c00)回
 
@@ -615,30 +699,37 @@ f_load_img_from_cd_and_view() {
 	sh2_extend_unsigned_to_reg_from_reg_word r1 r1
 
 	## r2 = 配置するCPTの先頭アドレス
-	sh2_copy_to_reg_from_ptr_long r2 r8
+	copy_to_reg_from_val_long r2 $var_next_cp_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r2
+
+	## r14 = EDSRのアドレス
+	copy_to_reg_from_val_long r14 $SS_VDP1_EDSR_ADDR
 
 	(
-		# r7の指す先(EDSRの内容)をr0へ取得
-		sh2_copy_to_reg_from_ptr_word r0 r7
+		# r14の指す先(EDSRの内容)をr0へ取得
+		sh2_copy_to_reg_from_ptr_word r0 r14
 		# r0とCEFビット(0x02)との論理積をとり、
 		# 結果がゼロのときTビットをセット
 		# (CEFビットは描画終了状態でセットされるビット)
 		sh2_test_r0_and_val_byte $SS_VDP1_EDSR_BIT_CEF
-	) >src/main.2.o
-	local sz_2=$(stat -c '%s' src/main.2.o)
+	) >src/f_load_img_from_cd_and_view.4.o
+	local sz_4=$(stat -c '%s' src/f_load_img_from_cd_and_view.4.o)
 	(
 		# 描画終了を待つ
-		cat src/main.2.o
-		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_2) / 2)))
+		cat src/f_load_img_from_cd_and_view.4.o
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_4) / 2)))
 		## 論理積結果がゼロのとき、
 		## 即ちTビットがセットされたとき、
 		## 待つ処理を繰り返す
 
-		# 4バイト読み出してr3へ格納
-		sh2_copy_to_reg_from_ptr_long r3 r12
+		# 一時配置領域から4バイト読み出してr0へ格納
+		sh2_copy_to_reg_from_ptr_long r0 r9
 
 		# 読み出した4バイトをCPTへ配置
-		sh2_copy_to_ptr_from_reg_long r2 r3
+		sh2_copy_to_ptr_from_reg_long r2 r0
+
+		# 一時配置領域のアドレス += 4
+		sh2_add_to_reg_from_val_byte r9 04
 
 		# CPTのアドレス += 4
 		sh2_add_to_reg_from_val_byte r2 04
@@ -649,16 +740,20 @@ f_load_img_from_cd_and_view() {
 		# カウンタ == 0 ?
 		sh2_set_reg r0 00
 		sh2_compare_reg_eq_reg r1 r0
-	) >src/main.3.o
-	cat src/main.3.o
-	local sz_3=$(stat -c '%s' src/main.3.o)
+	) >src/f_load_img_from_cd_and_view.5.o
+	cat src/f_load_img_from_cd_and_view.5.o
+	local sz_5=$(stat -c '%s' src/f_load_img_from_cd_and_view.5.o)
 	## カウンタ != 0(T == 0)なら繰り返す
-	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
+	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_5) / 2)))
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_9
 
 	# 配置したCPTを表示するVDPCOMをVDP RAMへ配置
 	## 描画終了を待つ
-	cat src/main.2.o
-	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_2) / 2)))
+	cat src/f_load_img_from_cd_and_view.4.o
+	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_4) / 2)))
 	## VDPCOMを配置
 	copy_to_reg_from_val_long r14 $a_put_vdp1_command_normal_sprite_draw_rgb_to_addr
 	copy_to_reg_from_val_long r1 $VRAM_CT_OTHER_BASE
@@ -671,6 +766,10 @@ f_load_img_from_cd_and_view() {
 	sh2_set_reg r0 80
 	sh2_shift_left_logical_8 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
+
+	# debug
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_set_reg r1 $CHARCODE_A
 
 	# 退避したレジスタを復帰しreturn
 	## pr
