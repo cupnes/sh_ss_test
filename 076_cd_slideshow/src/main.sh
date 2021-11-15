@@ -127,9 +127,14 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# FAD=0x02e8(744)の画像(fid=4)を表示する
+	# FAD指定で画像を表示する
+	## fid=3 -> FAD=0x02a2(674)
+	## fid=4 -> FAD=0x02e8(744)
+	## fid=5 -> FAD=0x032e(814)
+	## fid=6 -> FAD=0x0374(884)
+	## fid=7 -> FAD=0x03ba(954)
 	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
-	copy_to_reg_from_val_word r1 02e8
+	copy_to_reg_from_val_word r1 02a2
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
