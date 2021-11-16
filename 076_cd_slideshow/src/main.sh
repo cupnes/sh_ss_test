@@ -139,17 +139,13 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# busy_loop
+	busy_loop
 
 	copy_to_reg_from_val_word r1 02e8
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# busy_loop
-
-	# ↑のbusy_loopを解除しても
-	# ↓の画像が表示されない
-	# getSectorNumberを繰り返し続けている
+	busy_loop
 
 	copy_to_reg_from_val_word r1 032e
 	sh2_abs_call_to_reg_after_next_inst r14
