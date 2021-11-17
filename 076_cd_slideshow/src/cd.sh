@@ -322,7 +322,6 @@ f_load_img_from_cd_and_view() {
 
 	# 使用する関数・変数のアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_cd_exec_command
-	copy_to_reg_from_val_long r13 $a_putchar
 	copy_to_reg_from_val_long r12 $SS_CT_CS2_DTR_ADDR
 	copy_to_reg_from_val_long r10 $SS_CT_CS2_CR4_ADDR
 	copy_to_reg_from_val_long r9 $var_tmp_img_area
@@ -356,10 +355,6 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_0
-
 	# CDブロックの初期化
 	## InitializeCDSystem(cmd=0x04)
 	## | Reg | [15:8]            | [7:0]            |
@@ -385,10 +380,6 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_1
 
 	# データ転送の終了
 	## EndDataTransfer(cmd=0x06)
@@ -416,10 +407,6 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_2
-
 	# すべてのフィルタをリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
@@ -444,10 +431,6 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_3
 
 	# セクタ長の設定
 	## SetSectorLength(cmd=0x60)
@@ -476,10 +459,6 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_4
-
 	# パーティション0をリセット
 	## ResetSelector(cmd=0x48)
 	## | Reg | [15:8]                            | [7:0]      |
@@ -506,10 +485,6 @@ f_load_img_from_cd_and_view() {
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_5
-
 	# フィルタ0へ接続
 	## SetCDDeviceConnection(0x30)
 	## | Reg | [15:8]        | [7:0] |
@@ -529,10 +504,6 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_6
 
 	# CD再生
 	## PlayDisc(cmd=0x10)
@@ -562,10 +533,6 @@ f_load_img_from_cd_and_view() {
 	## CDコマンド実行
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_7
 
 	# 完了したセクタから順に70(0x46)セクタ分を
 	# 一時的な配置領域(var_dmp_img_area)へ配置
@@ -631,7 +598,6 @@ f_load_img_from_cd_and_view() {
 		sh2_shift_left_logical_8 r1
 
 		## r2(CR2) = 0x0000
-		# sh2_copy_to_reg_from_reg r2 r11
 		sh2_set_reg r2 00
 
 		## r3(CR3) = 0x0000
@@ -712,10 +678,6 @@ f_load_img_from_cd_and_view() {
 	## 70 > 取得済みセクタ数(T == 1)なら繰り返す
 	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_8
-
 	# 一時配置領域から143360バイトをVDP1 RAMのその他用のCPT領域へコピー
 	## 143360 / 4 = 35840 より、
 	## 4バイト単位の読み出し35840(0x8c00)回
@@ -773,10 +735,6 @@ f_load_img_from_cd_and_view() {
 	## カウンタ != 0(T == 0)なら繰り返す
 	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_5) / 2)))
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_9
-
 	# 配置したCPTを表示するVDPCOMをVDP RAMへ配置
 	## 描画終了を待つ
 	cat src/f_load_img_from_cd_and_view.4.o
@@ -793,10 +751,6 @@ f_load_img_from_cd_and_view() {
 	sh2_set_reg r0 80
 	sh2_shift_left_logical_8 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_A
 
 	# 退避したレジスタを復帰しreturn
 	## pr
