@@ -630,8 +630,9 @@ f_load_img_from_cd_and_view() {
 		sh2_set_reg r1 63
 		sh2_shift_left_logical_8 r1
 
-		## r2(CR2) → 取得済みセクタ数を設定
-		sh2_copy_to_reg_from_reg r2 r11
+		## r2(CR2) = 0x0000
+		# sh2_copy_to_reg_from_reg r2 r11
+		sh2_set_reg r2 00
 
 		## r3(CR3) = 0x0000
 		sh2_set_reg r3 00
@@ -675,6 +676,32 @@ f_load_img_from_cd_and_view() {
 		local sz_2=$(stat -c '%s' src/f_load_img_from_cd_and_view.2.o)
 		## カウンタ != 0(T == 0)なら繰り返す
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+
+		# データ転送の終了
+		## EndDataTransfer(cmd=0x06)
+		## | Reg | [15:8]    | [7:0] |
+		## |-----+-----------+-------|
+		## | CR1 | cmd(0x06) | -     |
+		## | CR2 | -         | -     |
+		## | CR3 | -         | -     |
+		## | CR4 | -         | -     |
+
+		## r1(CR1) = 0x0600
+		sh2_set_reg r1 06
+		sh2_shift_left_logical_8 r1
+
+		## r2(CR2) = 0x0000
+		sh2_set_reg r2 00
+
+		## r3(CR3) = 0x0000
+		sh2_set_reg r3 00
+
+		## r4(CR4) = 0x0000
+		sh2_set_reg r4 00
+
+		## CDコマンド実行
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_nop
 
 		# 70(0x46) > 取得済みセクタ数 ?
 		sh2_set_reg r0 46
