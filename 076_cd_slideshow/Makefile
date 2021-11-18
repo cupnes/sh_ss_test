@@ -3,6 +3,7 @@ TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
 EMU_MEDNAFEN=mednafen -psx.dbg_level 0 -video.fs 0 -cheats 1
+IMAGES_PATH=images
 
 all: $(TARGETS)
 
@@ -26,7 +27,7 @@ font.lut: ../font_lut
 	cat $</* >$@
 
 converted_images:
-	./prepare_images.sh
+	./prepare_images.sh $(IMAGES_PATH)
 
 run_yabause: $(NAME).iso
 	$(EMU_YABAUSE) $<
@@ -37,8 +38,9 @@ run_mednafen: $(NAME).cue
 run: run_yabause
 
 clean:
-	rm -f *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.img *.ppm	\
-	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~
+	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.img *.ppm	\
+	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~		\
+	converted_images convert_tmp
 
 clean_all: clean
 	rm -f IP.BIN
