@@ -3,6 +3,7 @@
 # set -uex
 set -ue
 
+. include/common.sh
 . include/sh2.sh
 . include/lib.sh
 . include/ss.sh
@@ -14,14 +15,18 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-INIT_SP=06004000
-PROGRAM_ENTRY_ADDR=06004000
-
-# 出力する座標
-OUTPUT_X1=10
-OUTPUT_Y1=10
-OUTPUT_X2=10
-OUTPUT_Y2=20
+# このアプリで使用するシェル変数設定
+## スライドショーの画像枚数(10進数で指定)
+NUM_IMGS_DEC=5
+## 最初の画像のFAD(4桁の16進数で指定)
+FAD_FIRST_IMG=02a2
+## 画像間のオフセット[セクタ]
+### 10進数で指定
+SECTORS_IMG_OFS_DEC=70
+### 2桁の16進数で指定
+SECTORS_IMG_OFS=$(extend_digit $(to16 $SECTORS_IMG_OFS_DEC) 2)
+## 最後の画像のFAD(4桁の16進数で指定)
+FAD_LAST_IMG=$(calc16_4 "${FAD_FIRST_IMG}+$(to16 $((SECTORS_IMG_OFS_DEC * (NUM_IMGS_DEC - 1))))")
 
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
@@ -103,14 +108,6 @@ setup_vram_color_lookup_table() {
 }
 
 # メイン関数
-# work: r0*  - copy_to_reg_from_val_long,setup_vram_command_table,
-#              setup_vram_color_lookup_table,この中の作業用
-#     : r1*  - setup_vram_command_table,setup_vram_color_lookup_table,
-#              この中の作業用
-#     : r2*  - setup_vram_command_table,この中の作業用
-#     : r3*  - vdp_initの作業用
-#     : r4*  - vdp_initの作業用
-# ※ *が付いているレジスタはこの関数で書き換えられる
 main() {
 	# NMI以外の全ての割り込みをマスクする
 	sh2_copy_to_reg_from_sr r0
@@ -127,44 +124,109 @@ main() {
 	# VDP1/2の初期化
 	vdp_init
 
-	# FAD指定で画像を表示する
-	## fid=3 -> FAD=0x02a2(674)
-	## fid=4 -> FAD=0x02e8(744)
-	## fid=5 -> FAD=0x032e(814)
-	## fid=6 -> FAD=0x0374(884)
-	## fid=7 -> FAD=0x03ba(954)
+	# FAD指定で画像を表示する関数を使ってスライドショーする
+	## 使用する関数のアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
+	copy_to_reg_from_val_long r13 $a_getchar_from_pad
 
-	copy_to_reg_from_val_word r1 02a2
-	sh2_abs_call_to_reg_after_next_inst r14
+	## 表示する画像のFADをr12へ設定
+	copy_to_reg_from_val_word r12 $FAD_FIRST_IMG
+
+	## 無限ループでスライドショー
+	(
+		# 表示画像更新
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_copy_to_reg_from_reg r1 r12
+
+		# ボタン押下に応じた処理
+		(
+			# コントロールパッドからの入力をバインドされた文字で取得
+			sh2_abs_call_to_reg_after_next_inst r13
+			sh2_nop
+
+			# 画像更新フラグ(r11)を0で初期化
+			sh2_set_reg r11 00
+
+			# 取得した文字(r1)に応じた処理
+			## '1'(→のみ)か?
+			sh2_copy_to_reg_from_reg r0 r1
+			sh2_compare_r0_eq_val $CHARCODE_1
+			(
+				# '1'(→のみ)の場合
+
+				# 今の画像は最後の画像か?
+				copy_to_reg_from_val_word r2 $FAD_LAST_IMG
+				sh2_compare_reg_eq_reg r12 r2
+				(
+					# 最後の画像でない場合
+
+					# 表示する画像のFAD(r12)へ
+					# 画像間のオフセット(SECTORS_IMG_OFS)を
+					# 加算
+					sh2_set_reg r2 $SECTORS_IMG_OFS
+					sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+					sh2_add_to_reg_from_reg r12 r2
+
+					# 画像更新フラグ(r11)を立てる
+					sh2_set_reg r11 01
+				) >src/main.5.o
+				## 最後の画像である(T == 1)ならこの処理を飛ばす
+				local sz_5=$(stat -c '%s' src/main.5.o)
+				sh2_rel_jump_if_true $(two_digits_d $(((sz_5 - 2) / 2)))
+				cat src/main.5.o
+			) >src/main.3.o
+			### '1'(→のみ)でない(T == 0)ならこの処理を飛ばす
+			local sz_3=$(stat -c '%s' src/main.3.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+			cat src/main.3.o
+
+			## '3'(←のみ)か?
+			sh2_copy_to_reg_from_reg r0 r1
+			sh2_compare_r0_eq_val $CHARCODE_3
+			(
+				# '3'(←のみ)の場合
+
+				# 今の画像は最初の画像か?
+				copy_to_reg_from_val_word r2 $FAD_FIRST_IMG
+				sh2_compare_reg_eq_reg r12 r2
+				(
+					# 最初の画像でない場合
+
+					# 表示する画像のFAD(r12)から
+					# 画像間のオフセット(SECTORS_IMG_OFS)を
+					# 減算
+					sh2_set_reg r2 $SECTORS_IMG_OFS
+					sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+					sh2_sub_to_reg_from_reg r12 r2
+
+					# 画像更新フラグ(r11)を立てる
+					sh2_set_reg r11 01
+				) >src/main.6.o
+				## 最初の画像である(T == 1)ならこの処理を飛ばす
+				local sz_6=$(stat -c '%s' src/main.6.o)
+				sh2_rel_jump_if_true $(two_digits_d $(((sz_6 - 2) / 2)))
+				cat src/main.6.o
+			) >src/main.4.o
+			### '3'(←のみ)でない(T == 0)ならこの処理を飛ばす
+			local sz_4=$(stat -c '%s' src/main.4.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_4 - 2) / 2)))
+			cat src/main.4.o
+
+			# 画像更新フラグが立っているか?
+			sh2_copy_to_reg_from_reg r0 r11
+			sh2_compare_r0_eq_val 00
+		) >src/main.2.o
+		# 画像更新フラグが立っていない(T == 1)なら
+		# 「ボタン押下に応じた処理」を繰り返す
+		cat src/main.2.o
+		local sz_2=$(stat -c '%s' src/main.2.o)
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_2) / 2)))
+	) >src/main.1.o
+	### 無限ループ
+	cat src/main.1.o
+	local sz_1=$(stat -c '%s' src/main.1.o)
+	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((4 + sz_1) / 2)))
 	sh2_nop
-
-	# busy_loop
-
-	copy_to_reg_from_val_word r1 02e8
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
-
-	# busy_loop
-
-	copy_to_reg_from_val_word r1 032e
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
-
-	# busy_loop
-
-	copy_to_reg_from_val_word r1 0374
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
-
-	# busy_loop
-
-	copy_to_reg_from_val_word r1 03ba
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_nop
-
-	# 無限ループ
-	infinite_loop
 }
 
 make_bin() {
