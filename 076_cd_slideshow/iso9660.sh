@@ -120,8 +120,10 @@ gen_pvd() {
 	iso_sectors=$((iso_sectors + (total_dirrec_bytes_root / SECTOR_BYTES)))
 	## 格納するファイルによるセクタ数を加算
 	local total_file_size=0
+	local tmp_name
 	for f in $FILE_LIST; do
-		total_file_size=$((total_file_size + $(stat -c '%s' ${TMP_PREF}.${f}.o)))
+		tmp_name=$(echo $f | sed 's%/%__%g')
+		total_file_size=$((total_file_size + $(stat -c '%s' ${TMP_PREF}.${tmp_name}.o)))
 	done
 	iso_sectors=$((iso_sectors + (total_file_size / SECTOR_BYTES)))
 	if [ $((total_file_size % SECTOR_BYTES)) -ne 0 ]; then
@@ -389,6 +391,7 @@ gen_dir_root() {
 		local fi
 		local len_dr
 		local sectors_f
+		local tmp_name
 		for f in $FILE_LIST; do
 			lba_f_hex=$(extend_digit $(to16 $lba_f) 8)
 			sz_f=$(stat -c '%s' $f)
@@ -397,6 +400,7 @@ gen_dir_root() {
 			len_fn=$(echo -n $fn | wc -c)
 			len_fi=$((len_fn + 2))
 			fi="${fn};1"
+			tmp_name=$(echo $f | sed 's%/%__%g')
 
 			(
 				# Extended Attribute Record Length (size 1)
@@ -423,10 +427,10 @@ gen_dir_root() {
 				echo -n $fi
 				# Padding Field (size (LEN_FI + 1) % 2)
 				dd if=/dev/zero bs=1 count=$(((len_fi + 1) % 2)) status=none
-			) >${TMP_PREF}.dirrec_${f}.o
+			) >${TMP_PREF}.dirrec_${tmp_name}.o
 
 			# データレコードサイズを算出
-			len_dr=$(($(stat -c '%s' ${TMP_PREF}.dirrec_${f}.o) + 1))
+			len_dr=$(($(stat -c '%s' ${TMP_PREF}.dirrec_${tmp_name}.o) + 1))
 
 			if [ $((len_dir_root / SECTOR_BYTES)) -ne $(((len_dir_root + len_dr) / SECTOR_BYTES)) ]; then
 				# 今回のデータレコード配置によりセクタ番目が変わる
@@ -447,7 +451,7 @@ gen_dir_root() {
 			## Length of Directory Record(LEN_DR) (size 1)
 			echo -en "\x$(two_digits $(to16 $len_dr))"
 			## ファイルへダンプしたレコード本体
-			cat ${TMP_PREF}.dirrec_${f}.o
+			cat ${TMP_PREF}.dirrec_${tmp_name}.o
 
 			sectors_f=$((sz_f / SECTOR_BYTES))
 			if [ $((sz_f % SECTOR_BYTES)) -ne 0 ]; then
@@ -481,8 +485,10 @@ gen_file() {
 
 main() {
 	# pre-generation
+	local tmp_name
 	for f in $FILE_LIST; do
-		gen_file $f >${TMP_PREF}.${f}.o
+		tmp_name=$(echo $f | sed 's%/%__%g')
+		gen_file $f >${TMP_PREF}.${tmp_name}.o
 	done
 	gen_dir_root >${TMP_PREF}.dir_root.o
 	gen_mpath_tbl >${TMP_PREF}.mpath_tbl.o
@@ -504,7 +510,8 @@ main() {
 	# sector 20(0x14)-
 	cat ${TMP_PREF}.dir_root.o
 	for f in $FILE_LIST; do
-		cat ${TMP_PREF}.${f}.o
+		tmp_name=$(echo $f | sed 's%/%__%g')
+		cat ${TMP_PREF}.${tmp_name}.o
 	done
 }
 
