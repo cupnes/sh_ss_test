@@ -17,3 +17,5 @@ for orig_img in $IMAGE_LIST; do
 	cat convert_tmp/${name}.dat | ${CONV_IMG} >converted_images/${name}.img
 	n=$((n + 1))
 done
+
+sed -i "s/NUM_IMGS_DEC=.*/NUM_IMGS_DEC=$n/" src/main.sh

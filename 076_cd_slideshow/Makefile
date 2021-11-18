@@ -10,8 +10,8 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN converted_images
-	./iso9660.sh $< converted_images/* >$@
+$(NAME).iso: converted_images 0.BIN
+	./iso9660.sh 0.BIN converted_images/* >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
 	src/funcs_map.sh src/vdp.sh

@@ -7,7 +7,8 @@ SRC_PAD_SH=true
 . include/ss.sh
 . include/lib.sh
 
-BUTTON_PRESSED_TH=0120
+# BUTTON_PRESSED_TH=0120
+BUTTON_PRESSED_TH=0020
 
 # ゲームパッド入力状態変数の更新
 # 今の所、押下カウンタはボタンを区別しない
