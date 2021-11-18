@@ -9,8 +9,8 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN sample1.img sample2.img sample3.img sample4.img sample5.img
-	./iso9660.sh $^ >$@
+$(NAME).iso: 0.BIN converted_images
+	./iso9660.sh $< converted_images/* >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
 	src/funcs_map.sh src/vdp.sh
@@ -25,14 +25,8 @@ src/vars.o src/vars_map.sh: src/vars.sh font.lut
 font.lut: ../font_lut
 	cat $</* >$@
 
-%.img: %.dat
-	cat $< | $(TOOLS_PATH)/conv_img >$@
-
-%.dat: %.ppm
-	tail -n +4 $< >$@
-
-%.ppm: %.png
-	convert $< -resize 320x224! -depth 5 $@
+converted_images:
+	./prepare_images.sh
 
 run_yabause: $(NAME).iso
 	$(EMU_YABAUSE) $<
