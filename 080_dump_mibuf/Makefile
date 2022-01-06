@@ -1,4 +1,4 @@
-NAME=080_comm_port_midi_test
+NAME=080_dump_mibuf
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
