@@ -142,9 +142,6 @@ main() {
 	sh2_set_reg r2 10	# X = 16
 	sh2_set_reg r3 10	# Y = 16
 
-	# [debug]
-	sh2_set_reg r6 01
-
 	# 無限ループ
 	(
 		# MIEMP == 0 になるのを待つ
@@ -161,29 +158,24 @@ main() {
 
 		# MIBUFから1バイト読み出す
 		sh2_copy_to_reg_from_ptr_byte r1 r14
-
-		# [debug]
-		sh2_copy_to_reg_from_reg r1 r6
-		sh2_add_to_reg_from_val_byte r6 01
-
 		sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 
-		# 読み出した1バイトが0だったら出力せずスキップ
-		sh2_set_reg r0 00
-		sh2_compare_reg_eq_reg r1 r0
-		(
-			# 出力
-			sh2_abs_call_to_reg_after_next_inst r13
-			sh2_nop
+		# # 読み出した1バイトが0だったら出力せずスキップ
+		# sh2_set_reg r0 00
+		# sh2_compare_reg_eq_reg r1 r0
+		# (
+		# 出力
+		sh2_abs_call_to_reg_after_next_inst r13
+		sh2_nop
 
-			# var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
-			sh2_copy_to_ptr_from_reg_long r11 r10
-			sh2_copy_to_ptr_from_reg_long r9 r8
-		) >src/main.4.o
-		local sz_4=$(stat -c '%s' src/main.4.o)
-		## T == 1だったらスキップ
-		sh2_rel_jump_if_true $(two_digits_d $(((sz_4 - 2) / 2)))
-		cat src/main.4.o
+		# var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
+		sh2_copy_to_ptr_from_reg_long r11 r10
+		sh2_copy_to_ptr_from_reg_long r9 r8
+		# ) >src/main.4.o
+		# local sz_4=$(stat -c '%s' src/main.4.o)
+		# ## T == 1だったらスキップ
+		# sh2_rel_jump_if_true $(two_digits_d $(((sz_4 - 2) / 2)))
+		# cat src/main.4.o
 
 		# # 遅延を入れる
 		# sh2_set_reg r0 00
