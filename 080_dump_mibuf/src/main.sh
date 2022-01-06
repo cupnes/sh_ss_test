@@ -127,6 +127,7 @@ main() {
 	# 使用するアドレスをレジスタへ設定しておく
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MIBUF_ADDR
 	copy_to_reg_from_val_long r13 $a_putreg_xy
+	copy_to_reg_from_val_long r7 $SS_CT_SND_MIOSTAT_ADDR
 
 	# 遅延カウント
 	copy_to_reg_from_val_long r12 00010000
@@ -143,6 +144,18 @@ main() {
 
 	# 無限ループ
 	(
+		# MIEMP == 0 になるのを待つ
+		(
+			# MIOSTATを取得
+			sh2_copy_to_reg_from_ptr_byte r0 r7
+			# MIEMPビットがセットされているか?
+			sh2_test_r0_and_val_byte $SS_SND_MIOSTAT_BIT_MIEMP
+		) >src/main.3.o
+		cat src/main.3.o
+		local sz_3=$(stat -c '%s' src/main.3.o)
+		## MIEMPビットがセットされていれば(T == 0)、繰り返す
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
+
 		# MIBUFから1バイト読み出す
 		sh2_copy_to_reg_from_ptr_byte r1 r14
 		sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
@@ -155,15 +168,15 @@ main() {
 		sh2_copy_to_ptr_from_reg_long r11 r10
 		sh2_copy_to_ptr_from_reg_long r9 r8
 
-		# 遅延を入れる
-		sh2_set_reg r0 00
-		(
-			sh2_add_to_reg_from_val_byte r0 01
-			sh2_compare_reg_gt_reg_unsigned r0 r12
-		) >src/main.2.o
-		cat src/main.2.o
-		local sz_2=$(stat -c '%s' src/main.2.o)
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+		# # 遅延を入れる
+		# sh2_set_reg r0 00
+		# (
+		# 	sh2_add_to_reg_from_val_byte r0 01
+		# 	sh2_compare_reg_gt_reg_unsigned r0 r12
+		# ) >src/main.2.o
+		# cat src/main.2.o
+		# local sz_2=$(stat -c '%s' src/main.2.o)
+		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
