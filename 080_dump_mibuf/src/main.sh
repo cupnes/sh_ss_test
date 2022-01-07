@@ -126,7 +126,7 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定しておく
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MIBUF_ADDR
-	# copy_to_reg_from_val_long r13 $a_putreg_xy
+	copy_to_reg_from_val_long r4 $a_putreg_xy
 	copy_to_reg_from_val_long r13 $a_putreg_byte
 	copy_to_reg_from_val_long r7 $SS_CT_SND_MIOSTAT_ADDR
 	copy_to_reg_from_val_long r6 $a_putchar
@@ -140,12 +140,12 @@ main() {
 	copy_to_reg_from_val_long r9 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r8 r9
 
-	# # 値を出力する座標設定
-	# sh2_set_reg r2 10	# X = 16
-	# sh2_set_reg r3 10	# Y = 16
+	# 値を出力する座標設定
+	sh2_set_reg r2 00	# X = 0
+	sh2_set_reg r3 00	# Y = 0
 
-	# [debug] カウンタ
-	sh2_set_reg r5 00
+	# # [debug] カウンタ
+	# sh2_set_reg r5 00
 
 	# 無限ループ
 	(
@@ -162,36 +162,36 @@ main() {
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
 
 		# MIBUFから1バイト読み出す
-		# sh2_copy_to_reg_from_ptr_byte r1 r14
-		# [debug] カウンタをインクリメントしr1へ設定
-		sh2_add_to_reg_from_val_byte r5 01
-		sh2_copy_to_reg_from_reg r1 r5
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		# # [debug] カウンタをインクリメントしr1へ設定
+		# sh2_add_to_reg_from_val_byte r5 01
+		# sh2_copy_to_reg_from_reg r1 r5
 		sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 
 		# 読み出した1バイトをコンソール出力
 		sh2_abs_call_to_reg_after_next_inst r13
 		sh2_nop
 
-		# 1文字スペースを空ける
-		sh2_abs_call_to_reg_after_next_inst r6
-		sh2_set_reg r1 $CHARCODE_SPACE
-
 		# # 読み出した1バイトが0だったら出力せずスキップ
 		# sh2_set_reg r0 00
 		# sh2_compare_reg_eq_reg r1 r0
 		# (
-		# 	# 出力
-		# 	sh2_abs_call_to_reg_after_next_inst r13
-		# 	sh2_nop
+		# 出力
+		sh2_abs_call_to_reg_after_next_inst r4
+		sh2_nop
 
-		# 	# var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
-		# 	sh2_copy_to_ptr_from_reg_long r11 r10
-		# 	sh2_copy_to_ptr_from_reg_long r9 r8
+		# var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
+		sh2_copy_to_ptr_from_reg_long r11 r10
+		sh2_copy_to_ptr_from_reg_long r9 r8
 		# ) >src/main.4.o
 		# local sz_4=$(stat -c '%s' src/main.4.o)
 		# ## T == 1だったらスキップ
 		# sh2_rel_jump_if_true $(two_digits_d $(((sz_4 - 2) / 2)))
 		# cat src/main.4.o
+
+		# 1文字スペースを空ける
+		sh2_abs_call_to_reg_after_next_inst r6
+		sh2_set_reg r1 $CHARCODE_SPACE
 
 		# # 遅延を入れる
 		# sh2_set_reg r0 00
