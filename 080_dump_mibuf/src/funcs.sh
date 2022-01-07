@@ -656,9 +656,16 @@ funcs() {
 	f_putchar >src/f_putchar.o
 	cat src/f_putchar.o
 
-	# コントロールパッドから1文字の入力を取得する
+	# r1の下位8ビットをコンソール出力する
 	fsz=$(to16 $(stat -c '%s' src/f_putchar.o))
-	a_getchar_from_pad=$(calc16_8 "${a_putchar}+${fsz}")
+	a_putreg_byte=$(calc16_8 "${a_putchar}+${fsz}")
+	echo -e "a_putreg_byte=$a_putreg_byte" >>$map_file
+	f_putreg_byte >src/f_putreg_byte.o
+	cat src/f_putreg_byte.o
+
+	# コントロールパッドから1文字の入力を取得する
+	fsz=$(to16 $(stat -c '%s' src/f_putreg_byte.o))
+	a_getchar_from_pad=$(calc16_8 "${a_putreg_byte}+${fsz}")
 	echo -e "a_getchar_from_pad=$a_getchar_from_pad" >>$map_file
 	f_getchar_from_pad >src/f_getchar_from_pad.o
 	cat src/f_getchar_from_pad.o

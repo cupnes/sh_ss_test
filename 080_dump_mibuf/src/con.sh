@@ -1405,3 +1405,79 @@ f_putchar() {
 	sh2_return_after_next_inst
 	sh2_nop
 }
+
+# r1の下位8ビットをコンソール出力する
+# in  : r1 - 出力する値
+f_putreg_byte() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r8
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r8
+	## r9
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r9
+	## r10
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r10
+	## pr
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# 作業用変数設定
+	## a_conv_to_ascii_from_hexをr8へ設定
+	copy_to_reg_from_val_long r8 $a_conv_to_ascii_from_hex
+	## a_putcharをr9へ設定
+	copy_to_reg_from_val_long r9 $a_putchar
+
+	# b7-b4
+	## 出力する値(r1)をr10へ退避
+	sh2_copy_to_reg_from_reg r10 r1
+	## 4ビット右ローテートしASCIIコードへ変換
+	sh2_rotate_right r1
+	sh2_rotate_right r1
+	sh2_rotate_right r1
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_rotate_right r1
+	## 1桁出力
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_nop
+
+	# b3-b0
+	## r10をr1へ復帰しASCIIコードへ変換
+	sh2_abs_call_to_reg_after_next_inst r8
+	sh2_copy_to_reg_from_reg r1 r10
+	## 1桁出力
+	sh2_abs_call_to_reg_after_next_inst r9
+	sh2_nop
+
+	# 退避したレジスタを復帰しreturn
+	## pr
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+	## r10
+	sh2_copy_to_reg_from_ptr_long r10 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r9
+	sh2_copy_to_reg_from_ptr_long r9 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r8
+	sh2_copy_to_reg_from_ptr_long r8 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
+	sh2_return_after_next_inst
+	sh2_nop
+}

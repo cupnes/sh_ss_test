@@ -366,6 +366,20 @@ sh2_rotate_left() {
 	echo -e "rotl $reg\t;1" >>$ASM_LIST_FILE
 }
 
+# 引数のレジスタの内容を右方向に1ビットローテート(回転)し、
+# 結果を引数のレジスタに格納
+# ローテートしてオペランドの外に出てしまったビットは、Tビットへ転送
+# 動作イメージ：
+#                             [T]
+#                              ↑
+# (b0から) → [b31] → ... → [b0] → (b31へ)
+sh2_rotate_right() {
+	local reg=$1
+	local regnum=$(to_regnum $reg)
+	echo -en "\x4${regnum}\x05"	# rotr $reg
+	echo -e "rotr $reg\t;1" >>$ASM_LIST_FILE
+}
+
 # 引数のレジスタの内容を左方向にTビットを含めて1ビットローテート(回転)し、
 # 結果を引数のレジスタに格納
 # ローテートしてオペランドの外に出てしまったビットは、Tビットへ転送
