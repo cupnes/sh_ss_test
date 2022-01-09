@@ -165,16 +165,6 @@ main() {
 		## MIEMPビットがセットされていれば(T == 0)、繰り返す
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
 
-		# # 遅延を入れる
-		# sh2_set_reg r0 00
-		# (
-		# 	sh2_add_to_reg_from_val_byte r0 01
-		# 	sh2_compare_reg_gt_reg_unsigned r0 r12
-		# ) >src/main.2.o
-		# cat src/main.2.o
-		# local sz_2=$(stat -c '%s' src/main.2.o)
-		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
-
 		# MIBUFから1バイト読み出す
 		# sh2_copy_to_reg_from_ptr_byte r1 r14
 		# # [debug] カウンタをインクリメントしr1へ設定
@@ -194,6 +184,16 @@ main() {
 		## 1文字スペースを空ける
 		sh2_abs_call_to_reg_after_next_inst r6
 		sh2_set_reg r1 $CHARCODE_SPACE
+
+		# # 遅延を入れる
+		# sh2_set_reg r0 00
+		# (
+		# 	sh2_add_to_reg_from_val_byte r0 01
+		# 	sh2_compare_reg_gt_reg_unsigned r0 r12
+		# ) >src/main.2.o
+		# cat src/main.2.o
+		# local sz_2=$(stat -c '%s' src/main.2.o)
+		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
 
 		# # 読み出した1バイトをコンソール出力
 		# sh2_abs_call_to_reg_after_next_inst r13
