@@ -172,15 +172,23 @@ main() {
 		# sh2_copy_to_reg_from_reg r1 r5
 		# sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 
-		# r1へ取得したMIOSTAT・MIBUFを出力
-		## 一旦r0へコピー
-		sh2_copy_to_reg_from_reg r0 r1
-		## MIOSTAT(ビット15-8)を出力
-		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_shift_right_logical_8 r1
+		# # r1へ取得したMIOSTAT・MIBUFを出力
+		# ## 一旦r0へコピー
+		# sh2_copy_to_reg_from_reg r0 r1
+		# ## MIOSTAT(ビット15-8)を出力
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_shift_right_logical_8 r1
+		# ## MIBUF(ビット7-0)を出力
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_copy_to_reg_from_reg r1 r0
+		# ## 1文字スペースを空ける
+		# sh2_abs_call_to_reg_after_next_inst r6
+		# sh2_set_reg r1 $CHARCODE_SPACE
+
+		# r1へ取得したMIOSTAT・MIBUFからMIBUFのみ出力
 		## MIBUF(ビット7-0)を出力
 		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_copy_to_reg_from_reg r1 r0
+		sh2_nop
 		## 1文字スペースを空ける
 		sh2_abs_call_to_reg_after_next_inst r6
 		sh2_set_reg r1 $CHARCODE_SPACE
