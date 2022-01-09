@@ -132,7 +132,7 @@ main() {
 	copy_to_reg_from_val_long r6 $a_putchar
 
 	# 遅延カウント
-	copy_to_reg_from_val_long r12 00100000
+	copy_to_reg_from_val_long r12 000006c0
 
 	# # var_next_cp_other_addr var_next_vdpcom_other_addr の値を退避
 	# copy_to_reg_from_val_long r11 $var_next_cp_other_addr
@@ -151,8 +151,12 @@ main() {
 	(
 		# MIEMP == 0 になるのを待つ
 		(
-			# MIOSTATを取得
-			sh2_copy_to_reg_from_ptr_byte r0 r7
+			# MIOSTATとMIBUFを取得
+			sh2_copy_to_reg_from_ptr_word r0 r7
+			# 後のためにr1へコピー
+			sh2_copy_to_reg_from_reg r1 r0
+			# MIOSTAT部分をビット7-0へ持ってくる
+			sh2_shift_right_logical_8 r0
 			# MIEMPビットがセットされているか?
 			sh2_test_r0_and_val_byte $SS_SND_MIOSTAT_BIT_MIEMP
 		) >src/main.3.o
@@ -161,47 +165,68 @@ main() {
 		## MIEMPビットがセットされていれば(T == 0)、繰り返す
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
 
-		# 遅延を入れる
-		sh2_set_reg r0 00
-		(
-			sh2_add_to_reg_from_val_byte r0 01
-			sh2_compare_reg_gt_reg_unsigned r0 r12
-		) >src/main.2.o
-		cat src/main.2.o
-		local sz_2=$(stat -c '%s' src/main.2.o)
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+		# # 遅延を入れる
+		# sh2_set_reg r0 00
+		# (
+		# 	sh2_add_to_reg_from_val_byte r0 01
+		# 	sh2_compare_reg_gt_reg_unsigned r0 r12
+		# ) >src/main.2.o
+		# cat src/main.2.o
+		# local sz_2=$(stat -c '%s' src/main.2.o)
+		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
 
 		# MIBUFから1バイト読み出す
-		sh2_copy_to_reg_from_ptr_byte r1 r14
+		# sh2_copy_to_reg_from_ptr_byte r1 r14
 		# # [debug] カウンタをインクリメントしr1へ設定
 		# sh2_add_to_reg_from_val_byte r5 01
 		# sh2_copy_to_reg_from_reg r1 r5
-		sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
+		# sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 
-		# 読み出した1バイトをコンソール出力
+		# r1へ取得したMIOSTAT・MIBUFを出力
+		## 一旦r0へコピー
+		sh2_copy_to_reg_from_reg r0 r1
+		## MIOSTAT(ビット15-8)を出力
 		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_nop
+		sh2_shift_right_logical_8 r1
+		## MIBUF(ビット7-0)を出力
+		sh2_abs_call_to_reg_after_next_inst r13
+		sh2_copy_to_reg_from_reg r1 r0
+		## 1文字スペースを空ける
+		sh2_abs_call_to_reg_after_next_inst r6
+		sh2_set_reg r1 $CHARCODE_SPACE
+
+		# # 読み出した1バイトをコンソール出力
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_nop
+
+		# # 1文字スペースを空ける
+		# sh2_abs_call_to_reg_after_next_inst r6
+		# sh2_set_reg r1 $CHARCODE_SPACE
 
 		# # 読み出した1バイトが0だったら出力せずスキップ
 		# sh2_set_reg r0 00
 		# sh2_compare_reg_eq_reg r1 r0
 		# (
-		# 	# 出力
-		# 	sh2_abs_call_to_reg_after_next_inst r4
+		# 	# # 出力
+		# 	# sh2_abs_call_to_reg_after_next_inst r4
+		# 	# sh2_nop
+
+		# 	# # var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
+		# 	# sh2_copy_to_ptr_from_reg_long r11 r10
+		# 	# sh2_copy_to_ptr_from_reg_long r9 r8
+
+		# 	# 読み出した1バイトをコンソール出力
+		# 	sh2_abs_call_to_reg_after_next_inst r13
 		# 	sh2_nop
 
-		# 	# var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
-		# 	sh2_copy_to_ptr_from_reg_long r11 r10
-		# 	sh2_copy_to_ptr_from_reg_long r9 r8
+		# 	# 1文字スペースを空ける
+		# 	sh2_abs_call_to_reg_after_next_inst r6
+		# 	sh2_set_reg r1 $CHARCODE_SPACE
 		# ) >src/main.4.o
 		# local sz_4=$(stat -c '%s' src/main.4.o)
 		# ## T == 1だったらスキップ
 		# sh2_rel_jump_if_true $(two_digits_d $(((sz_4 - 2) / 2)))
 		# cat src/main.4.o
-
-		# 1文字スペースを空ける
-		sh2_abs_call_to_reg_after_next_inst r6
-		sh2_set_reg r1 $CHARCODE_SPACE
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
