@@ -125,7 +125,20 @@ main() {
 	copy_to_reg_from_val_long r12 $a_putreg_byte
 	copy_to_reg_from_val_long r11 $a_putchar
 
-	# MOFULL == 0 になるのを待つ処理
+	# 繰り返し使用する処理
+	## MIEMP == 0 になるのを待つ処理
+	(
+		# MIOSTATとMIBUFを取得
+		sh2_copy_to_reg_from_ptr_word r0 r14
+		# 後のためにr1へコピー
+		sh2_copy_to_reg_from_reg r1 r0
+		# MIOSTAT部分をビット7-0へ持ってくる
+		sh2_shift_right_logical_8 r0
+		# MIEMPビットがセットされているか?
+		sh2_test_r0_and_val_byte $SS_SND_MIOSTAT_BIT_MIEMP
+	) >src/main.2.o
+	main_sz_2=$(stat -c '%s' src/main.2.o)
+	## MOFULL == 0 になるのを待つ処理
 	(
 		# MIOSTATを取得
 		sh2_copy_to_reg_from_ptr_byte r0 r14
@@ -138,32 +151,37 @@ main() {
 	(
 		# データパケットを受信
 		## 1バイト目
+		# ### 0x90が取得されるのを待つ
+		# sh2_set_reg r2 90
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# (
+		# 	# MIEMP == 0 になるのを待つ
+		# 	cat src/main.2.o
+		# 	sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
+
+		# 	# 取得したバイト == 0x90?
+		# 	sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
+		# 	sh2_compare_reg_eq_reg r1 r2
+		# ) >src/main.7.o
+		# local sz_7=$(stat -c '%s' src/main.7.o)
+		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_7) / 2)))
+		# ### 取得した1バイトをr2へ設定
+		# sh2_copy_to_reg_from_reg r2 r1
 		### MIEMP == 0 になるのを待つ
-		(
-			# MIOSTATとMIBUFを取得
-			sh2_copy_to_reg_from_ptr_word r0 r14
-			# 後のためにr1へコピー
-			sh2_copy_to_reg_from_reg r1 r0
-			# MIOSTAT部分をビット7-0へ持ってくる
-			sh2_shift_right_logical_8 r0
-			# MIEMPビットがセットされているか?
-			sh2_test_r0_and_val_byte $SS_SND_MIOSTAT_BIT_MIEMP
-		) >src/main.2.o
 		cat src/main.2.o
-		local sz_2=$(stat -c '%s' src/main.2.o)
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
 		### 取得した1バイトをr2へ設定
 		sh2_extend_unsigned_to_reg_from_reg_byte r2 r1
 		## 2バイト目
 		### MIEMP == 0 になるのを待つ
 		cat src/main.2.o
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
 		### 取得した1バイトをr3へ設定
 		sh2_extend_unsigned_to_reg_from_reg_byte r3 r1
 		## 3バイト目
 		### MIEMP == 0 になるのを待つ
 		cat src/main.2.o
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
 		### 取得した1バイトをr4へ設定
 		sh2_extend_unsigned_to_reg_from_reg_byte r4 r1
 
