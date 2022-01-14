@@ -239,16 +239,32 @@ main() {
 			sh2_copy_to_ptr_from_reg_byte r13 r0
 
 			# データパケットのデータを使う
-			## そのまま出力
-			### 1バイト目(r2)
-			sh2_abs_call_to_reg_after_next_inst r12
-			sh2_copy_to_reg_from_reg r1 r2
-			### 2バイト目(r3)
+
+			# ## そのまま出力
+			# ### 1バイト目(r2)
+			# sh2_abs_call_to_reg_after_next_inst r12
+			# sh2_copy_to_reg_from_reg r1 r2
+			# ### 2バイト目(r3)
+			# sh2_abs_call_to_reg_after_next_inst r12
+			# sh2_copy_to_reg_from_reg r1 r3
+			# ### 3バイト目(r4)
+			# sh2_abs_call_to_reg_after_next_inst r12
+			# sh2_copy_to_reg_from_reg r1 r4
+			# ### 1文字スペースを空ける
+			# sh2_abs_call_to_reg_after_next_inst r11
+			# sh2_set_reg r1 $CHARCODE_SPACE
+
+			## データのみ出力
+			### 2バイト目(r3) &= 0x03
+			sh2_set_reg r0 03
+			sh2_and_to_reg_from_reg r3 r0
+			### r4 <<= 2
+			sh2_shift_left_logical_2 r4
+			### r3 |= r4
+			sh2_or_to_reg_from_reg r3 r4
+			### r3を出力
 			sh2_abs_call_to_reg_after_next_inst r12
 			sh2_copy_to_reg_from_reg r1 r3
-			### 3バイト目(r4)
-			sh2_abs_call_to_reg_after_next_inst r12
-			sh2_copy_to_reg_from_reg r1 r4
 			### 1文字スペースを空ける
 			sh2_abs_call_to_reg_after_next_inst r11
 			sh2_set_reg r1 $CHARCODE_SPACE
