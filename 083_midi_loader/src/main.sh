@@ -151,27 +151,23 @@ main() {
 	(
 		# データパケットを受信
 		## 1バイト目
-		# ### 0x90が取得されるのを待つ
-		# sh2_set_reg r2 90
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-		# (
-		# 	# MIEMP == 0 になるのを待つ
-		# 	cat src/main.2.o
-		# 	sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
+		### 0x90が取得されるのを待つ
+		sh2_set_reg r2 90
+		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		(
+			# MIEMP == 0 になるのを待つ
+			cat src/main.2.o
+			sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
 
-		# 	# 取得したバイト == 0x90?
-		# 	sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
-		# 	sh2_compare_reg_eq_reg r1 r2
-		# ) >src/main.7.o
-		# local sz_7=$(stat -c '%s' src/main.7.o)
-		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_7) / 2)))
-		# ### 取得した1バイトをr2へ設定
-		# sh2_copy_to_reg_from_reg r2 r1
-		### MIEMP == 0 になるのを待つ
-		cat src/main.2.o
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_2) / 2)))
+			# 取得したバイト == 0x90?
+			sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
+			sh2_compare_reg_eq_reg r1 r2
+		) >src/main.7.o
+		cat src/main.7.o
+		local sz_7=$(stat -c '%s' src/main.7.o)
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_7) / 2)))
 		### 取得した1バイトをr2へ設定
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r1
+		sh2_copy_to_reg_from_reg r2 r1
 		## 2バイト目
 		### MIEMP == 0 になるのを待つ
 		cat src/main.2.o
