@@ -16,17 +16,12 @@ set -ue
 . src/con.sh
 
 # このアプリで使用するシェル変数設定
-## スライドショーの画像枚数(10進数で指定)
-NUM_IMGS_DEC=5
-## 最初の画像のFAD(4桁の16進数で指定)
-FAD_FIRST_IMG=02a2
-## 画像間のオフセット[セクタ]
-### 10進数で指定
-SECTORS_IMG_OFS_DEC=70
-### 2桁の16進数で指定
-SECTORS_IMG_OFS=$(extend_digit $(to16 $SECTORS_IMG_OFS_DEC) 2)
-## 最後の画像のFAD(4桁の16進数で指定)
-FAD_LAST_IMG=$(calc16_4 "${FAD_FIRST_IMG}+$(to16 $((SECTORS_IMG_OFS_DEC * (NUM_IMGS_DEC - 1))))")
+## データパケットの終了フラグ
+DATA_PACKET_BIT_END_FLAG=10
+## ACKパケット
+ACK_PACKET=fa
+## NAKパケット
+NAK_PACKET=fb
 
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
@@ -126,6 +121,18 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定しておく
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MIOSTAT_ADDR
+	copy_to_reg_from_val_long r13 $SS_CT_SND_MOBUF_ADDR
+	copy_to_reg_from_val_long r12 $a_putreg_byte
+	copy_to_reg_from_val_long r11 $a_putchar
+
+	# MOFULL == 0 になるのを待つ処理
+	(
+		# MIOSTATを取得
+		sh2_copy_to_reg_from_ptr_byte r0 r14
+		# MOFULLビットがセットされているか?
+		sh2_test_r0_and_val_byte $SS_SND_MIOSTAT_BIT_MOFULL
+	) >src/main.6.o
+	main_sz_6=$(stat -c '%s' src/main.6.o)
 
 	# 無限ループ
 	(
@@ -195,9 +202,42 @@ main() {
 		sh2_compare_r0_eq_val 00
 		(
 			# 受信したデータパケットに0x00がある場合
+			# データパケットは正しく受信できなかったと判断
+
+			# NAKパケットを送信
+			## MOFULL == 0 になるのを待つ
+			cat src/main.6.o
+			sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_6) / 2)))
+			## 送信
+			sh2_set_reg r0 $NAK_PACKET
+			sh2_copy_to_ptr_from_reg_byte r13 r0
 		) >src/main.4.o
 		(
 			# 受信したデータパケットに0x00がない場合
+			# データパケットは正しく受信できたと判断
+
+			# ACKパケットを送信
+			## MOFULL == 0 になるのを待つ
+			cat src/main.6.o
+			sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_6) / 2)))
+			## 送信
+			sh2_set_reg r0 $ACK_PACKET
+			sh2_copy_to_ptr_from_reg_byte r13 r0
+
+			# データパケットのデータを使う
+			## そのまま出力
+			### 1バイト目(r2)
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_copy_to_reg_from_reg r1 r2
+			### 2バイト目(r3)
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_copy_to_reg_from_reg r1 r3
+			### 3バイト目(r4)
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_copy_to_reg_from_reg r1 r4
+			### 1文字スペースを空ける
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_SPACE
 
 			# 受信したデータパケットに0x00がある場合の処理を飛ばす
 			local sz_4=$(stat -c '%s' src/main.4.o)
