@@ -147,7 +147,7 @@ main() {
 	) >src/main.6.o
 	main_sz_6=$(stat -c '%s' src/main.6.o)
 
-	# 無限ループ
+	# データ受信
 	(
 		# データパケットを受信
 		## 1バイト目
@@ -182,107 +182,121 @@ main() {
 		sh2_extend_unsigned_to_reg_from_reg_byte r4 r1
 
 		# 受信したデータパケットの終了フラグ == 1?
-		sh2_copy_to_reg_from_reg r0 r2
-		sh2_test_r0_and_val_byte $DATA_PACKET_BIT_END_FLAG
-		## 結果が0でないとき0→T
-		## TODO T == 0の時、無限ループを抜ける
-		### 関数へ分離して、returnするようにすれば良いかも
-
-		# 受信したデータパケットに0x00がある?
-		## r5 == 0
-		sh2_set_reg r5 00
-		## 1バイト目(r2) == 0x00?
-		sh2_copy_to_reg_from_reg r0 r2
-		sh2_compare_r0_eq_val 00
-		### r0 != val のとき 0→T
-		(
-			sh2_add_to_reg_from_val_byte r5 01
-		) >src/main.3.o
-		local sz_3=$(stat -c '%s' src/main.3.o)
-		sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
-		cat src/main.3.o
-		## 2バイト目(r3) == 0x00?
 		sh2_copy_to_reg_from_reg r0 r3
-		sh2_compare_r0_eq_val 00
-		sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
-		cat src/main.3.o
-		## 3バイト目(r4) == 0x00?
-		sh2_copy_to_reg_from_reg r0 r4
-		sh2_compare_r0_eq_val 00
-		sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
-		cat src/main.3.o
-		## r5 == 0?
-		sh2_copy_to_reg_from_reg r0 r5
-		sh2_compare_r0_eq_val 00
+		sh2_test_r0_and_val_byte $DATA_PACKET_BIT_END_FLAG
 		(
-			# 受信したデータパケットに0x00がある場合
-			# データパケットは正しく受信できなかったと判断
+			# 受信したデータパケットに0x00がある?
+			## r5 == 0
+			sh2_set_reg r5 00
+			## 1バイト目(r2) == 0x00?
+			sh2_copy_to_reg_from_reg r0 r2
+			sh2_compare_r0_eq_val 00
+			### r0 != val のとき 0→T
+			(
+				sh2_add_to_reg_from_val_byte r5 01
+			) >src/main.3.o
+			local sz_3=$(stat -c '%s' src/main.3.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+			cat src/main.3.o
+			## 2バイト目(r3) == 0x00?
+			sh2_copy_to_reg_from_reg r0 r3
+			sh2_compare_r0_eq_val 00
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+			cat src/main.3.o
+			## 3バイト目(r4) == 0x00?
+			sh2_copy_to_reg_from_reg r0 r4
+			sh2_compare_r0_eq_val 00
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+			cat src/main.3.o
+			## r5 == 0?
+			sh2_copy_to_reg_from_reg r0 r5
+			sh2_compare_r0_eq_val 00
+			(
+				# 受信したデータパケットに0x00がある場合
+				# データパケットは正しく受信できなかったと判断
 
-			# NAKパケットを送信
-			## MOFULL == 0 になるのを待つ
-			cat src/main.6.o
-			sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_6) / 2)))
-			## 送信
-			sh2_set_reg r0 $NAK_PACKET
-			sh2_copy_to_ptr_from_reg_byte r13 r0
-		) >src/main.4.o
-		(
-			# 受信したデータパケットに0x00がない場合
-			# データパケットは正しく受信できたと判断
+				# NAKパケットを送信
+				## MOFULL == 0 になるのを待つ
+				cat src/main.6.o
+				sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_6) / 2)))
+				## 送信
+				sh2_set_reg r0 $NAK_PACKET
+				sh2_copy_to_ptr_from_reg_byte r13 r0
+			) >src/main.4.o
+			(
+				# 受信したデータパケットに0x00がない場合
+				# データパケットは正しく受信できたと判断
 
-			# ACKパケットを送信
-			## MOFULL == 0 になるのを待つ
-			cat src/main.6.o
-			sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_6) / 2)))
-			## 送信
-			sh2_set_reg r0 $ACK_PACKET
-			sh2_copy_to_ptr_from_reg_byte r13 r0
+				# ACKパケットを送信
+				## MOFULL == 0 になるのを待つ
+				cat src/main.6.o
+				sh2_rel_jump_if_false $(two_comp_d $(((4 + main_sz_6) / 2)))
+				## 送信
+				sh2_set_reg r0 $ACK_PACKET
+				sh2_copy_to_ptr_from_reg_byte r13 r0
 
-			# データパケットのデータを使う
+				# データパケットのデータを使う
 
-			# ## そのまま出力
-			# ### 1バイト目(r2)
-			# sh2_abs_call_to_reg_after_next_inst r12
-			# sh2_copy_to_reg_from_reg r1 r2
-			# ### 2バイト目(r3)
-			# sh2_abs_call_to_reg_after_next_inst r12
-			# sh2_copy_to_reg_from_reg r1 r3
-			# ### 3バイト目(r4)
-			# sh2_abs_call_to_reg_after_next_inst r12
-			# sh2_copy_to_reg_from_reg r1 r4
-			# ### 1文字スペースを空ける
-			# sh2_abs_call_to_reg_after_next_inst r11
-			# sh2_set_reg r1 $CHARCODE_SPACE
+				# ## そのまま出力
+				# ### 1バイト目(r2)
+				# sh2_abs_call_to_reg_after_next_inst r12
+				# sh2_copy_to_reg_from_reg r1 r2
+				# ### 2バイト目(r3)
+				# sh2_abs_call_to_reg_after_next_inst r12
+				# sh2_copy_to_reg_from_reg r1 r3
+				# ### 3バイト目(r4)
+				# sh2_abs_call_to_reg_after_next_inst r12
+				# sh2_copy_to_reg_from_reg r1 r4
+				# ### 1文字スペースを空ける
+				# sh2_abs_call_to_reg_after_next_inst r11
+				# sh2_set_reg r1 $CHARCODE_SPACE
 
-			## データのみ出力
-			### 2バイト目(r3) &= 0x03
-			sh2_set_reg r0 03
-			sh2_and_to_reg_from_reg r3 r0
-			### r4 <<= 2
-			sh2_shift_left_logical_2 r4
-			### r3 |= r4
-			sh2_or_to_reg_from_reg r3 r4
-			### r3を出力
-			sh2_abs_call_to_reg_after_next_inst r12
-			sh2_copy_to_reg_from_reg r1 r3
-			### 1文字スペースを空ける
-			sh2_abs_call_to_reg_after_next_inst r11
-			sh2_set_reg r1 $CHARCODE_SPACE
+				## データのみ出力
+				### 2バイト目(r3) &= 0x03
+				sh2_set_reg r0 03
+				sh2_and_to_reg_from_reg r3 r0
+				### r4 <<= 2
+				sh2_shift_left_logical_2 r4
+				### r3 |= r4
+				sh2_or_to_reg_from_reg r3 r4
+				### r3を出力
+				sh2_abs_call_to_reg_after_next_inst r12
+				sh2_copy_to_reg_from_reg r1 r3
+				### 1文字スペースを空ける
+				sh2_abs_call_to_reg_after_next_inst r11
+				sh2_set_reg r1 $CHARCODE_SPACE
 
-			# 受信したデータパケットに0x00がある場合の処理を飛ばす
-			local sz_4=$(stat -c '%s' src/main.4.o)
-			sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_4 / 2))) 3)
-			sh2_nop
-		) >src/main.5.o
-		local sz_5=$(stat -c '%s' src/main.5.o)
-		sh2_rel_jump_if_false $(two_digits_d $(((sz_5 - 2) / 2)))
-		cat src/main.5.o	# T == 1: r5 == 0: 0x00がない
-		cat src/main.4.o	# T == 0: r5 != 0: 0x00がある
+				# 受信したデータパケットに0x00がある場合の処理を飛ばす
+				local sz_4=$(stat -c '%s' src/main.4.o)
+				sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_4 / 2))) 3)
+				sh2_nop
+			) >src/main.5.o
+			local sz_5=$(stat -c '%s' src/main.5.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_5 - 2) / 2)))
+			cat src/main.5.o	# T == 1: r5 == 0: 0x00がない
+			cat src/main.4.o	# T == 0: r5 != 0: 0x00がある
+		) >src/main.8.o
+		## 結果が0でないとき0→T
+		## T == 0の時、無限ループを抜ける
+		local sz_8=$(stat -c '%s' src/main.8.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_8 + 4 - 2) / 2)))
+		cat src/main.8.o
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
 	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((4 + sz_1) / 2)))
 	sh2_nop
+
+	# "END"を出力
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r1 $CHARCODE_E
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r1 $CHARCODE_N
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r1 $CHARCODE_D
+
+	# 無限ループ
+	infinite_loop
 }
 
 make_bin() {
