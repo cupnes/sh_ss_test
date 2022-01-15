@@ -16,7 +16,7 @@ main() {
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r0
 
-	# "HELLO WORLD!"を出力
+	# "HELLO WORLD!\n"を出力
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_set_reg r1 $CHARCODE_H
 	sh2_abs_call_to_reg_after_next_inst r11
@@ -41,6 +41,8 @@ main() {
 	sh2_set_reg r1 $CHARCODE_D
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_set_reg r1 $CHARCODE_EXCLAMATION
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r1 $CHARCODE_LF
 
 	# 退避したレジスタを復帰しreturn
 	## pr
