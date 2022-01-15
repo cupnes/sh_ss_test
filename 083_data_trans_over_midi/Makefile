@@ -1,4 +1,4 @@
-NAME=083_midi_loader
+NAME=083_data_trans_over_midi
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
