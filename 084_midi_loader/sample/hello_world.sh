@@ -40,8 +40,6 @@ main() {
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_set_reg r1 $CHARCODE_D
 	sh2_abs_call_to_reg_after_next_inst r11
-	sh2_set_reg r1 $CHARCODE_D
-	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_set_reg r1 $CHARCODE_EXCLAMATION
 
 	# 退避したレジスタを復帰しreturn

@@ -4,6 +4,13 @@
 set -ue
 
 midi_dev=/dev/snd/midiC1D0
+
+if [ "$1" == "-e" ]; then
+	# send end flag
+	echo -en '\x90\x7c\x40' >$midi_dev
+	exit
+fi
+
 byte_hex_str=$1
 
 ACK_PACKET='fa'

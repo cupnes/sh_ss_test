@@ -299,6 +299,8 @@ main() {
 	sh2_set_reg r1 $CHARCODE_N
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_set_reg r1 $CHARCODE_D
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r1 $CHARCODE_LF
 
 	# ロードしたプログラムを実行する
 	copy_to_reg_from_val_long r1 $PROG_LOAD_BASE
@@ -307,6 +309,8 @@ main() {
 
 	# "EXIT"を出力
 	copy_to_reg_from_val_long r11 $a_putchar
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_set_reg r1 $CHARCODE_LF
 	sh2_abs_call_to_reg_after_next_inst r11
 	sh2_set_reg r1 $CHARCODE_E
 	sh2_abs_call_to_reg_after_next_inst r11
