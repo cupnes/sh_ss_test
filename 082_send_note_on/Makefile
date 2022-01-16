@@ -1,4 +1,4 @@
-NAME=082_send_key_on
+NAME=082_send_note_on
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
