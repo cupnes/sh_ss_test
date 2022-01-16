@@ -5,8 +5,6 @@ set -ue
 
 . include/common.sh
 . include/sh2.sh
-. include/lib.sh
-. include/ss.sh
 . include/charcode.sh
 
 main() {
