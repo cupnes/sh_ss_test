@@ -15,19 +15,6 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-# このアプリで使用するシェル変数設定
-## スライドショーの画像枚数(10進数で指定)
-NUM_IMGS_DEC=5
-## 最初の画像のFAD(4桁の16進数で指定)
-FAD_FIRST_IMG=02a2
-## 画像間のオフセット[セクタ]
-### 10進数で指定
-SECTORS_IMG_OFS_DEC=70
-### 2桁の16進数で指定
-SECTORS_IMG_OFS=$(extend_digit $(to16 $SECTORS_IMG_OFS_DEC) 2)
-## 最後の画像のFAD(4桁の16進数で指定)
-FAD_LAST_IMG=$(calc16_4 "${FAD_FIRST_IMG}+$(to16 $((SECTORS_IMG_OFS_DEC * (NUM_IMGS_DEC - 1))))")
-
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
 #     : r1* - put_file_to_addrの作業用
@@ -125,27 +112,9 @@ main() {
 	vdp_init
 
 	# 使用するアドレスをレジスタへ設定しておく
-	copy_to_reg_from_val_long r14 $SS_CT_SND_MIBUF_ADDR
-	# copy_to_reg_from_val_long r4 $a_putreg_xy
 	copy_to_reg_from_val_long r13 $a_putreg_byte
 	copy_to_reg_from_val_long r7 $SS_CT_SND_MIOSTAT_ADDR
 	copy_to_reg_from_val_long r6 $a_putchar
-
-	# 遅延カウント
-	copy_to_reg_from_val_long r12 000006c0
-
-	# # var_next_cp_other_addr var_next_vdpcom_other_addr の値を退避
-	# copy_to_reg_from_val_long r11 $var_next_cp_other_addr
-	# sh2_copy_to_reg_from_ptr_long r10 r11
-	# copy_to_reg_from_val_long r9 $var_next_vdpcom_other_addr
-	# sh2_copy_to_reg_from_ptr_long r8 r9
-
-	# # 値を出力する座標設定
-	# sh2_set_reg r2 00	# X = 0
-	# sh2_set_reg r3 00	# Y = 0
-
-	# # [debug] カウンタ
-	# sh2_set_reg r5 00
 
 	# 無限ループ
 	(
@@ -165,26 +134,6 @@ main() {
 		## MIEMPビットがセットされていれば(T == 0)、繰り返す
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
 
-		# MIBUFから1バイト読み出す
-		# sh2_copy_to_reg_from_ptr_byte r1 r14
-		# # [debug] カウンタをインクリメントしr1へ設定
-		# sh2_add_to_reg_from_val_byte r5 01
-		# sh2_copy_to_reg_from_reg r1 r5
-		# sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
-
-		# # r1へ取得したMIOSTAT・MIBUFを出力
-		# ## 一旦r0へコピー
-		# sh2_copy_to_reg_from_reg r0 r1
-		# ## MIOSTAT(ビット15-8)を出力
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_shift_right_logical_8 r1
-		# ## MIBUF(ビット7-0)を出力
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_copy_to_reg_from_reg r1 r0
-		# ## 1文字スペースを空ける
-		# sh2_abs_call_to_reg_after_next_inst r6
-		# sh2_set_reg r1 $CHARCODE_SPACE
-
 		# r1へ取得したMIOSTAT・MIBUFからMIBUFのみ出力
 		## MIBUF(ビット7-0)を出力
 		sh2_abs_call_to_reg_after_next_inst r13
@@ -192,49 +141,6 @@ main() {
 		## 1文字スペースを空ける
 		sh2_abs_call_to_reg_after_next_inst r6
 		sh2_set_reg r1 $CHARCODE_SPACE
-
-		# # 遅延を入れる
-		# sh2_set_reg r0 00
-		# (
-		# 	sh2_add_to_reg_from_val_byte r0 01
-		# 	sh2_compare_reg_gt_reg_unsigned r0 r12
-		# ) >src/main.2.o
-		# cat src/main.2.o
-		# local sz_2=$(stat -c '%s' src/main.2.o)
-		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
-
-		# # 読み出した1バイトをコンソール出力
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_nop
-
-		# # 1文字スペースを空ける
-		# sh2_abs_call_to_reg_after_next_inst r6
-		# sh2_set_reg r1 $CHARCODE_SPACE
-
-		# # 読み出した1バイトが0だったら出力せずスキップ
-		# sh2_set_reg r0 00
-		# sh2_compare_reg_eq_reg r1 r0
-		# (
-		# 	# # 出力
-		# 	# sh2_abs_call_to_reg_after_next_inst r4
-		# 	# sh2_nop
-
-		# 	# # var_next_cp_other_addr var_next_vdpcom_other_addr を元に戻す
-		# 	# sh2_copy_to_ptr_from_reg_long r11 r10
-		# 	# sh2_copy_to_ptr_from_reg_long r9 r8
-
-		# 	# 読み出した1バイトをコンソール出力
-		# 	sh2_abs_call_to_reg_after_next_inst r13
-		# 	sh2_nop
-
-		# 	# 1文字スペースを空ける
-		# 	sh2_abs_call_to_reg_after_next_inst r6
-		# 	sh2_set_reg r1 $CHARCODE_SPACE
-		# ) >src/main.4.o
-		# local sz_4=$(stat -c '%s' src/main.4.o)
-		# ## T == 1だったらスキップ
-		# sh2_rel_jump_if_true $(two_digits_d $(((sz_4 - 2) / 2)))
-		# cat src/main.4.o
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
