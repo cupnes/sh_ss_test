@@ -15,19 +15,6 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-# このアプリで使用するシェル変数設定
-## スライドショーの画像枚数(10進数で指定)
-NUM_IMGS_DEC=5
-## 最初の画像のFAD(4桁の16進数で指定)
-FAD_FIRST_IMG=02a2
-## 画像間のオフセット[セクタ]
-### 10進数で指定
-SECTORS_IMG_OFS_DEC=70
-### 2桁の16進数で指定
-SECTORS_IMG_OFS=$(extend_digit $(to16 $SECTORS_IMG_OFS_DEC) 2)
-## 最後の画像のFAD(4桁の16進数で指定)
-FAD_LAST_IMG=$(calc16_4 "${FAD_FIRST_IMG}+$(to16 $((SECTORS_IMG_OFS_DEC * (NUM_IMGS_DEC - 1))))")
-
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
 #     : r1* - put_file_to_addrの作業用
