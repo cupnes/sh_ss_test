@@ -15,19 +15,6 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-# このアプリで使用するシェル変数設定
-## スライドショーの画像枚数(10進数で指定)
-NUM_IMGS_DEC=5
-## 最初の画像のFAD(4桁の16進数で指定)
-FAD_FIRST_IMG=02a2
-## 画像間のオフセット[セクタ]
-### 10進数で指定
-SECTORS_IMG_OFS_DEC=70
-### 2桁の16進数で指定
-SECTORS_IMG_OFS=$(extend_digit $(to16 $SECTORS_IMG_OFS_DEC) 2)
-## 最後の画像のFAD(4桁の16進数で指定)
-FAD_LAST_IMG=$(calc16_4 "${FAD_FIRST_IMG}+$(to16 $((SECTORS_IMG_OFS_DEC * (NUM_IMGS_DEC - 1))))")
-
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
 #     : r1* - put_file_to_addrの作業用
@@ -126,9 +113,7 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定しておく
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MOBUF_ADDR
-	copy_to_reg_from_val_long r13 $a_putreg_byte
 	copy_to_reg_from_val_long r7 $SS_CT_SND_MIOSTAT_ADDR
-	copy_to_reg_from_val_long r6 $a_putchar
 
 	# 遅延カウント
 	copy_to_reg_from_val_long r12 00100000
@@ -146,29 +131,6 @@ main() {
 
 	# 無限ループ
 	(
-		# # MOFULL == 0 になるのを待つ
-		# cat src/main.3.o
-		# ## MOFULLビットがセットされていれば(T == 0)、繰り返す
-		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_3) / 2)))
-
-		# # 遅延を入れる
-		# sh2_set_reg r0 00
-		# (
-		# 	sh2_add_to_reg_from_val_byte r0 01
-		# 	sh2_compare_reg_gt_reg_unsigned r0 r12
-		# ) >src/main.2.o
-		# cat src/main.2.o
-		# local sz_2=$(stat -c '%s' src/main.2.o)
-		# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
-
-		# # 0xfeを送信
-		# sh2_set_reg r0 fe
-		# sh2_copy_to_ptr_from_reg_byte r14 r0
-
-		# # 0xf8を送信
-		# sh2_set_reg r0 f8
-		# sh2_copy_to_ptr_from_reg_byte r14 r0
-
 		# MOFULL == 0 になるのを待つ
 		cat src/main.3.o
 		## MOFULLビットがセットされていれば(T == 0)、繰り返す
@@ -194,14 +156,6 @@ main() {
 		# 0x40を送信
 		sh2_set_reg r0 40
 		sh2_copy_to_ptr_from_reg_byte r14 r0
-
-		# # 書き込んだ1バイトをコンソール出力
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_copy_to_reg_from_reg r1 r11
-
-		# # 1文字スペースを空ける
-		# sh2_abs_call_to_reg_after_next_inst r6
-		# sh2_set_reg r1 $CHARCODE_SPACE
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
