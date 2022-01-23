@@ -1,4 +1,4 @@
-NAME=086_pc_key_receiver
+NAME=086_midi_loader_refactored
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
@@ -35,7 +35,8 @@ run: run_yabause
 
 clean:
 	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.img *.ppm	\
-	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~
+	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~ sample/*~	\
+	sample/*.exe
 
 clean_all: clean
 	rm -f IP.BIN
