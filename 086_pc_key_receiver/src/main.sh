@@ -123,8 +123,8 @@ main() {
 	(
 		(
 			# 使用するアドレスをレジスタへ設定しておく
-			copy_to_reg_from_val_long r13 $PROG_LOAD_BASE
-			copy_to_reg_from_val_long r12 $a_putreg_byte
+			copy_to_reg_from_val_long r13 $a_putreg_byte
+			copy_to_reg_from_val_long r12 $PROG_LOAD_BASE
 			copy_to_reg_from_val_long r11 $a_putchar
 			copy_to_reg_from_val_long r10 $a_rcv_byte
 			copy_to_reg_from_val_long r9 $a_getchar_from_pad
@@ -174,7 +174,7 @@ main() {
 			# "Exx"を出力(xx=チェックサム下位8ビット)
 			sh2_abs_call_to_reg_after_next_inst r11
 			sh2_set_reg r1 $CHARCODE_E
-			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_abs_call_to_reg_after_next_inst r13
 			sh2_copy_to_reg_from_reg r1 r8
 			sh2_abs_call_to_reg_after_next_inst r11
 			sh2_set_reg r1 $CHARCODE_LF
