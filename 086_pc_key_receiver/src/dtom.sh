@@ -7,6 +7,7 @@ SRC_DTOM_SH=true
 . include/sh2.sh
 . include/ss.sh
 . include/common.sh
+# . include/charcode.sh	# [debug]
 
 DTOM_DATAPACKET_BIT_ENDFLAG=10
 ACK_PACKET=fa
@@ -29,16 +30,28 @@ f_rcv_byte() {
 	## r5
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r5
+	# ## [debug] r11
+	# sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	# sh2_copy_to_ptr_from_reg_long r15 r11
+	# ## [debug] r12
+	# sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	# sh2_copy_to_ptr_from_reg_long r15 r12
 	## r13
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r13
 	## r14
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r14
+	# ## [debug] pr
+	# sh2_copy_to_reg_from_pr r0
+	# sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	# sh2_copy_to_ptr_from_reg_long r15 r0
 
 	# 使用するアドレスをレジスタへ設定しておく
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MIOSTAT_ADDR
 	copy_to_reg_from_val_long r13 $SS_CT_SND_MOBUF_ADDR
+	# copy_to_reg_from_val_long r12 $a_putreg_byte	# [debug]
+	# copy_to_reg_from_val_long r11 $a_putchar	# [debug]
 
 	# 繰り返し使用する処理
 	## MIEMP == 0 になるのを待つ処理
@@ -83,18 +96,27 @@ f_rcv_byte() {
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_7) / 2)))
 		### 取得した1バイトをr2へ設定
 		sh2_copy_to_reg_from_reg r2 r1
+		# ### [debug]
+		# sh2_abs_call_to_reg_after_next_inst r12
+		# sh2_copy_to_reg_from_reg r1 r2
 		## 2バイト目
 		### MIEMP == 0 になるのを待つ
 		cat src/f_rcv_byte.2.o
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + f_rcv_byte_sz_2) / 2)))
 		### 取得した1バイトをr3へ設定
 		sh2_extend_unsigned_to_reg_from_reg_byte r3 r1
+		# ### [debug]
+		# sh2_abs_call_to_reg_after_next_inst r12
+		# sh2_copy_to_reg_from_reg r1 r3
 		## 3バイト目
 		### MIEMP == 0 になるのを待つ
 		cat src/f_rcv_byte.2.o
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + f_rcv_byte_sz_2) / 2)))
 		### 取得した1バイトをr4へ設定
 		sh2_extend_unsigned_to_reg_from_reg_byte r4 r1
+		# ### [debug]
+		# sh2_abs_call_to_reg_after_next_inst r12
+		# sh2_copy_to_reg_from_reg r1 r4
 
 		# 受信したデータパケットに0x00がある?
 		## r5 == 0
@@ -133,6 +155,10 @@ f_rcv_byte() {
 			## 送信
 			sh2_set_reg r0 $NAK_PACKET
 			sh2_copy_to_ptr_from_reg_byte r13 r0
+
+			# # [debug]
+			# sh2_abs_call_to_reg_after_next_inst r11
+			# sh2_set_reg r1 $CHARCODE_N
 		) >src/f_rcv_byte.4.o
 		(
 			# 受信したデータパケットに0x00がない場合
@@ -145,6 +171,10 @@ f_rcv_byte() {
 			## 送信
 			sh2_set_reg r0 $ACK_PACKET
 			sh2_copy_to_ptr_from_reg_byte r13 r0
+
+			# # [debug]
+			# sh2_abs_call_to_reg_after_next_inst r11
+			# sh2_set_reg r1 $CHARCODE_A
 
 			# 受信したデータパケットに0x00がある場合の処理を飛ばし、無限ループを抜ける
 			local sz_4=$(stat -c '%s' src/f_rcv_byte.4.o)
@@ -179,14 +209,30 @@ f_rcv_byte() {
 	sh2_or_to_reg_from_reg r3 r4
 	### r1 = r3
 	sh2_copy_to_reg_from_reg r1 r3
+	# ## [debug]
+	# sh2_abs_call_to_reg_after_next_inst r12
+	# sh2_copy_to_reg_from_reg r3 r1
+	# sh2_abs_call_to_reg_after_next_inst r12
+	# sh2_copy_to_reg_from_reg r1 r2
+	# sh2_copy_to_reg_from_reg r1 r3
 
 	# 退避したレジスタを復帰しreturn
+	# ## [debug] pr
+	# sh2_copy_to_reg_from_ptr_long r0 r15
+	# sh2_add_to_reg_from_val_byte r15 04
+	# sh2_copy_to_pr_from_reg r0
 	## r14
 	sh2_copy_to_reg_from_ptr_long r14 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	## r13
 	sh2_copy_to_reg_from_ptr_long r13 r15
 	sh2_add_to_reg_from_val_byte r15 04
+	# ## [debug] r12
+	# sh2_copy_to_reg_from_ptr_long r12 r15
+	# sh2_add_to_reg_from_val_byte r15 04
+	# ## [debug] r11
+	# sh2_copy_to_reg_from_ptr_long r11 r15
+	# sh2_add_to_reg_from_val_byte r15 04
 	## r5
 	sh2_copy_to_reg_from_ptr_long r5 r15
 	sh2_add_to_reg_from_val_byte r15 04
