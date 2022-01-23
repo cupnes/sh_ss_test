@@ -27,19 +27,12 @@ f_rcv_byte() {
 	## r5
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r5
-	## r6
-	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	sh2_copy_to_ptr_from_reg_long r15 r6
 	## r13
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r13
 	## r14
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r14
-	## pr
-	sh2_copy_to_reg_from_pr r0
-	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	sh2_copy_to_ptr_from_reg_long r15 r0
 
 	# 使用するアドレスをレジスタへ設定しておく
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MIOSTAT_ADDR
@@ -101,97 +94,96 @@ f_rcv_byte() {
 		### 取得した1バイトをr4へ設定
 		sh2_extend_unsigned_to_reg_from_reg_byte r4 r1
 
-		# 受信したデータパケットの終了フラグ == 1?
-		sh2_copy_to_reg_from_reg r0 r3
-		sh2_test_r0_and_val_byte $DATA_PACKET_BIT_END_FLAG
+		# 受信したデータパケットに0x00がある?
+		## r5 == 0
+		sh2_set_reg r5 00
+		## 1バイト目(r2) == 0x00?
+		sh2_copy_to_reg_from_reg r0 r2
+		sh2_compare_r0_eq_val 00
+		### r0 != val のとき 0→T
 		(
-			# 受信したデータパケットに0x00がある?
-			## r5 == 0
-			sh2_set_reg r5 00
-			## 1バイト目(r2) == 0x00?
-			sh2_copy_to_reg_from_reg r0 r2
-			sh2_compare_r0_eq_val 00
-			### r0 != val のとき 0→T
-			(
-				sh2_add_to_reg_from_val_byte r5 01
-			) >src/f_rcv_byte.3.o
-			local sz_3=$(stat -c '%s' src/f_rcv_byte.3.o)
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
-			cat src/f_rcv_byte.3.o
-			## 2バイト目(r3) == 0x00?
-			sh2_copy_to_reg_from_reg r0 r3
-			sh2_compare_r0_eq_val 00
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
-			cat src/f_rcv_byte.3.o
-			## 3バイト目(r4) == 0x00?
-			sh2_copy_to_reg_from_reg r0 r4
-			sh2_compare_r0_eq_val 00
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
-			cat src/f_rcv_byte.3.o
-			## r5 == 0?
-			sh2_copy_to_reg_from_reg r0 r5
-			sh2_compare_r0_eq_val 00
-			(
-				# 受信したデータパケットに0x00がある場合
-				# データパケットは正しく受信できなかったと判断
+			sh2_add_to_reg_from_val_byte r5 01
+		) >src/f_rcv_byte.3.o
+		local sz_3=$(stat -c '%s' src/f_rcv_byte.3.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+		cat src/f_rcv_byte.3.o
+		## 2バイト目(r3) == 0x00?
+		sh2_copy_to_reg_from_reg r0 r3
+		sh2_compare_r0_eq_val 00
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+		cat src/f_rcv_byte.3.o
+		## 3バイト目(r4) == 0x00?
+		sh2_copy_to_reg_from_reg r0 r4
+		sh2_compare_r0_eq_val 00
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_3 - 2) / 2)))
+		cat src/f_rcv_byte.3.o
+		## r5 == 0?
+		sh2_copy_to_reg_from_reg r0 r5
+		sh2_compare_r0_eq_val 00
+		(
+			# 受信したデータパケットに0x00がある場合
+			# データパケットは正しく受信できなかったと判断
 
-				# NAKパケットを送信
-				## MOFULL == 0 になるのを待つ
-				cat src/f_rcv_byte.6.o
-				sh2_rel_jump_if_false $(two_comp_d $(((4 + f_rcv_byte_sz_6) / 2)))
-				## 送信
-				sh2_set_reg r0 $NAK_PACKET
-				sh2_copy_to_ptr_from_reg_byte r13 r0
-			) >src/f_rcv_byte.4.o
-			(
-				# 受信したデータパケットに0x00がない場合
-				# データパケットは正しく受信できたと判断
+			# NAKパケットを送信
+			## MOFULL == 0 になるのを待つ
+			cat src/f_rcv_byte.6.o
+			sh2_rel_jump_if_false $(two_comp_d $(((4 + f_rcv_byte_sz_6) / 2)))
+			## 送信
+			sh2_set_reg r0 $NAK_PACKET
+			sh2_copy_to_ptr_from_reg_byte r13 r0
+		) >src/f_rcv_byte.4.o
+		(
+			# 受信したデータパケットに0x00がない場合
+			# データパケットは正しく受信できたと判断
 
-				# ACKパケットを送信
-				## MOFULL == 0 になるのを待つ
-				cat src/f_rcv_byte.6.o
-				sh2_rel_jump_if_false $(two_comp_d $(((4 + f_rcv_byte_sz_6) / 2)))
-				## 送信
-				sh2_set_reg r0 $ACK_PACKET
-				sh2_copy_to_ptr_from_reg_byte r13 r0
+			# ACKパケットを送信
+			## MOFULL == 0 になるのを待つ
+			cat src/f_rcv_byte.6.o
+			sh2_rel_jump_if_false $(two_comp_d $(((4 + f_rcv_byte_sz_6) / 2)))
+			## 送信
+			sh2_set_reg r0 $ACK_PACKET
+			sh2_copy_to_ptr_from_reg_byte r13 r0
 
-				# データパケットのデータを使う
-				## TODO
-
-				# 受信したデータパケットに0x00がある場合の処理を飛ばす
-				local sz_4=$(stat -c '%s' src/f_rcv_byte.4.o)
-				sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_4 / 2))) 3)
-				sh2_nop
-			) >src/f_rcv_byte.5.o
-			local sz_5=$(stat -c '%s' src/f_rcv_byte.5.o)
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_5 - 2) / 2)))
-			cat src/f_rcv_byte.5.o	# T == 1: r5 == 0: 0x00がない
-			cat src/f_rcv_byte.4.o	# T == 0: r5 != 0: 0x00がある
-		) >src/f_rcv_byte.8.o
-		## 結果が0でないとき0→T
-		## T == 0の時、無限ループを抜ける
-		local sz_8=$(stat -c '%s' src/f_rcv_byte.8.o)
-		sh2_rel_jump_if_false $(two_digits_d $(((sz_8 + 4 - 2) / 2)))
-		cat src/f_rcv_byte.8.o
+			# 受信したデータパケットに0x00がある場合の処理を飛ばし、無限ループを抜ける
+			local sz_4=$(stat -c '%s' src/f_rcv_byte.4.o)
+			sh2_rel_jump_after_next_inst $(extend_digit $(to16 $(((sz_4 + 4) / 2))) 3)
+			sh2_nop
+		) >src/f_rcv_byte.5.o
+		local sz_5=$(stat -c '%s' src/f_rcv_byte.5.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_5 - 2) / 2)))
+		cat src/f_rcv_byte.5.o	# T == 1: r5 == 0: 0x00がない
+		cat src/f_rcv_byte.4.o	# T == 0: r5 != 0: 0x00がある
 	) >src/f_rcv_byte.1.o
 	cat src/f_rcv_byte.1.o
 	local sz_1=$(stat -c '%s' src/f_rcv_byte.1.o)
-	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((4 + sz_1) / 2)))
-	sh2_nop
+	sh2_rel_jump_after_next_inst $(two_comp_3_d $(((4 + sz_1) / 2)))	# 2
+	sh2_nop	# 2
+
+	# 2バイト目(r3)・3バイト目(r4)をパースし、
+	# データをr1へ、終了フラグをr2へ設定
+	## 終了フラグをr2へ設定
+	sh2_copy_to_reg_from_reg r0 r3
+	sh2_and_to_r0_from_val_byte $DTOM_DATAPACKET_BIT_ENDFLAG
+	sh2_shift_right_logical_2 r0
+	sh2_shift_right_logical_2 r0
+	sh2_copy_to_reg_from_reg r2 r0
+	## データをr1へ設定
+	### r3 &= 0x03
+	sh2_set_reg r0 03
+	sh2_and_to_reg_from_reg r3 r0
+	### r4 <<= 2
+	sh2_shift_left_logical_2 r4
+	### r3 |= r4
+	sh2_or_to_reg_from_reg r3 r4
+	### r1 = r3
+	sh2_copy_to_reg_from_reg r1 r3
 
 	# 退避したレジスタを復帰しreturn
-	## pr
-	sh2_copy_to_reg_from_ptr_long r0 r15
-	sh2_add_to_reg_from_val_byte r15 04
-	sh2_copy_to_pr_from_reg r0
 	## r14
 	sh2_copy_to_reg_from_ptr_long r14 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	## r13
 	sh2_copy_to_reg_from_ptr_long r13 r15
-	sh2_add_to_reg_from_val_byte r15 04
-	## r6
-	sh2_copy_to_reg_from_ptr_long r6 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	## r5
 	sh2_copy_to_reg_from_ptr_long r5 r15
