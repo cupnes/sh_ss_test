@@ -121,41 +121,111 @@ main() {
 
 	# 無限ループ
 	(
-		# 使用するアドレスをレジスタへ設定しておく
-		copy_to_reg_from_val_long r14 $SS_CT_SND_MIOSTAT_ADDR
-		copy_to_reg_from_val_long r13 $SS_CT_SND_MOBUF_ADDR
-		copy_to_reg_from_val_long r12 $a_putreg_byte
-		copy_to_reg_from_val_long r11 $a_putchar
-		copy_to_reg_from_val_long r10 $PROG_LOAD_BASE
-
-		# "RCV:"を出力
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_R
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_C
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_V
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_COLON
-
-		# 一連のデータ受信
 		(
+			# 使用するアドレスをレジスタへ設定しておく
+			copy_to_reg_from_val_long r13 $PROG_LOAD_BASE
+			copy_to_reg_from_val_long r12 $a_putreg_byte
+			copy_to_reg_from_val_long r11 $a_putchar
+			copy_to_reg_from_val_long r10 $a_rcv_byte
+			copy_to_reg_from_val_long r9 $a_getchar_from_pad
 
-		) >src/main.1.o
-		cat src/main.1.o
-		local sz_1=$(stat -c '%s' src/main.1.o)
-		sh2_rel_jump_after_next_inst $(two_comp_3_d $(((4 + sz_1) / 2)))
-		sh2_nop
+			# "RCV:"を出力
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_R
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_C
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_V
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_COLON
 
-		# "END"を出力
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_E
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_N
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_D
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_set_reg r1 $CHARCODE_LF
+			# チェックサム用レジスタをゼロクリア
+			sh2_set_reg r8 00
+
+			# 一連のデータ受信
+			(
+				# データ1バイトの受信処理を呼び出す
+				sh2_abs_call_to_reg_after_next_inst r10
+				sh2_nop
+
+				# 受信した1バイトをチェックサム用レジスタへ加算
+				sh2_add_to_reg_from_reg r8 r1
+
+				# データを使う
+				## データのみ出力
+				## (r1のデータはr3にもコピーしておく)
+				sh2_abs_call_to_reg_after_next_inst r13
+				sh2_copy_to_reg_from_reg r3 r1
+				sh2_abs_call_to_reg_after_next_inst r11
+				sh2_set_reg r1 $CHARCODE_SPACE
+				## メモリへ配置
+				sh2_copy_to_ptr_from_reg_byte r12 r3
+				sh2_add_to_reg_from_val_byte r12 01
+
+				# 終了フラグ == 1?
+				sh2_set_reg r0 01
+				sh2_compare_reg_eq_reg r2 r0
+			) >src/main.1.o
+			cat src/main.1.o
+			local sz_1=$(stat -c '%s' src/main.1.o)
+			## T == 0なら、繰り返す
+			sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
+
+			# "Exx"を出力(xx=チェックサム下位8ビット)
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_E
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_copy_to_reg_from_reg r1 r8
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_set_reg r1 $CHARCODE_LF
+
+			# Start/Rボタン入力待ち
+			(
+				sh2_set_reg r2 $CHARCODE_NULL
+
+				# キー入力を取得
+				sh2_abs_call_to_reg_after_next_inst r9
+				sh2_nop
+
+				# Startが入力されたか?
+				sh2_set_reg r0 $CHARCODE_LF
+				sh2_compare_reg_eq_reg r1 r0
+				(
+					sh2_set_reg r2 $CHARCODE_LF
+				) >src/main.6.o
+				local sz_6=$(stat -c '%s' src/main.6.o)
+				## T == 0なら飛ばす
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_6 - 2) / 2)))
+				cat src/main.6.o
+
+				# Rが入力されたか?
+				sh2_set_reg r0 $CHARCODE_BS
+				sh2_compare_reg_eq_reg r1 r0
+				(
+					sh2_set_reg r2 $CHARCODE_BS
+				) >src/main.7.o
+				local sz_7=$(stat -c '%s' src/main.7.o)
+				## T == 0なら飛ばす
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_7 - 2) / 2)))
+				cat src/main.7.o
+
+				# r2 == NULL?
+				sh2_set_reg r0 $CHARCODE_NULL
+				sh2_compare_reg_eq_reg r2 r0
+			) >src/main.5.o
+			cat src/main.5.o
+			local sz_5=$(stat -c '%s' src/main.5.o)
+			## T == 1なら繰り返す
+			sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_5) / 2)))
+
+			# Rボタンが入力されたか?
+			sh2_set_reg r0 $CHARCODE_BS
+			sh2_compare_reg_eq_reg r2 r0
+		) >src/main.8.o
+		cat src/main.8.o
+		local sz_8=$(stat -c '%s' src/main.8.o)
+		## T == 1なら繰り返す
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_8) / 2)))
 
 		# ロードしたプログラムを実行する
 		copy_to_reg_from_val_long r1 $PROG_LOAD_BASE

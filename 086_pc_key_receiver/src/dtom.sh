@@ -9,6 +9,8 @@ SRC_DTOM_SH=true
 . include/common.sh
 
 DTOM_DATAPACKET_BIT_ENDFLAG=10
+ACK_PACKET=fa
+NAK_PACKET=fb
 
 # データを1バイト受信する
 # out : r1 - 受信したデータ(1バイト)
