@@ -14,6 +14,7 @@ set -ue
 . src/vdp.sh
 . src/pad.sh
 . src/cd.sh
+. src/dtom.sh
 
 # 符号付き32ビット除算
 # in  : r1 - 被除数
@@ -690,6 +691,13 @@ funcs() {
 	echo -e "a_load_img_from_cd_and_view=$a_load_img_from_cd_and_view" >>$map_file
 	f_load_img_from_cd_and_view >src/f_load_img_from_cd_and_view.o
 	cat src/f_load_img_from_cd_and_view.o
+
+	# データを1バイト受信する
+	fsz=$(to16 $(stat -c '%s' src/f_load_img_from_cd_and_view.o))
+	a_rcv_byte=$(calc16_8 "${a_load_img_from_cd_and_view}+${fsz}")
+	echo -e "a_rcv_byte=$a_rcv_byte" >>$map_file
+	f_rcv_byte >src/f_rcv_byte.o
+	cat src/f_rcv_byte.o
 }
 
 funcs
