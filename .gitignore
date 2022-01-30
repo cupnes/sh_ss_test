@@ -9,5 +9,6 @@
 *.log
 *.img
 *.ppm
+*.exe
 map.sh
 *_map.sh
