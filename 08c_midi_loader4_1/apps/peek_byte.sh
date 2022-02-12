@@ -26,14 +26,15 @@ main() {
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r14
 
+	# 使用するアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $SS_CT_SND_MCIPDH_ADDR
+	copy_to_reg_from_val_long r13 $SS_CT_SND_MOBUF_ADDR
+
 	# 指定されたアドレスから値を読み出し
 	copy_to_reg_from_val_long r1 $addr
 	sh2_copy_to_reg_from_ptr_byte r1 r1
 
 	# データパケットをMIDI送信
-	## 使用するアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $SS_CT_SND_MCIPDH_ADDR
-	copy_to_reg_from_val_long r13 $SS_CT_SND_MOBUF_ADDR
 	## ステータス・バイト(0x91)送信
 	### MCIPDのMOビットが設定されるのを待つ
 	(
