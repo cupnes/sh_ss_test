@@ -53,7 +53,18 @@ case "$access_width" in
 	echo "obase=16;ibase=16;($supp_byte_hex * 2) + $data_byte_hex + 100" | bc | cut -c2-3
 	;;
 "word")
-	echo "TBD"
+	data_byte_list_hex=$(od -A n -t x1 -v $temp_out | tr ' ' '\n' | tr [:lower:] [:upper:] | grep -vE '^$|^9.$')
+	supp_byte_hex=$(printf "%s\n" $data_byte_list_hex | sed -n '1p')
+	supp_byte_bin=$(printf "%08d" $(echo "obase=2;ibase=16;$supp_byte_hex" | bc))
+	for i in 2 3; do
+		data_byte_hex=$(printf "%s\n" $data_byte_list_hex | sed -n "${i}p")
+		data_byte_bin_nomsb=$(printf "%07d" $(echo "obase=2;ibase=16;$data_byte_hex" | bc))
+		data_msb=$(echo "$supp_byte_bin" | cut -c${i})
+		data_hex=$(echo "obase=16;ibase=2;${data_msb}${data_byte_bin_nomsb}" | bc)
+		data_hex_2=$(echo "obase=16;ibase=16;$data_hex + 100" | bc | cut -c2-3)
+		echo -n $data_hex_2
+	done
+	echo
 	;;
 "long")
 	echo "TBD"
