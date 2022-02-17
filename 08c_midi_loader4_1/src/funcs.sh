@@ -664,9 +664,16 @@ funcs() {
 	f_putreg_byte >src/f_putreg_byte.o
 	cat src/f_putreg_byte.o
 
-	# r1をコンソール出力する
+	# r1の下位16ビットをコンソール出力する
 	fsz=$(to16 $(stat -c '%s' src/f_putreg_byte.o))
-	a_putreg=$(calc16_8 "${a_putreg_byte}+${fsz}")
+	a_putreg_word=$(calc16_8 "${a_putreg_byte}+${fsz}")
+	echo -e "a_putreg_word=$a_putreg_word" >>$map_file
+	f_putreg_word >src/f_putreg_word.o
+	cat src/f_putreg_word.o
+
+	# r1をコンソール出力する
+	fsz=$(to16 $(stat -c '%s' src/f_putreg_word.o))
+	a_putreg=$(calc16_8 "${a_putreg_word}+${fsz}")
 	echo -e "a_putreg=$a_putreg" >>$map_file
 	f_putreg >src/f_putreg.o
 	cat src/f_putreg.o
