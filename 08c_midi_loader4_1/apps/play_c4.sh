@@ -69,13 +69,14 @@ main() {
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	### 08H
-	sh2_set_reg r2 00
+	sh2_set_reg r2 20
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	### 0AH
-	sh2_set_reg r2 3c
-	sh2_shift_left_logical_8 r2
-	sh2_copy_to_ptr_from_reg_word r1 r2
+	sh2_set_reg r0 3f
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ff
+	sh2_copy_to_ptr_from_reg_word r1 r0
 	sh2_add_to_reg_from_val_byte r1 02
 	### 0CH
 	copy_to_reg_from_val_word r2 0380
