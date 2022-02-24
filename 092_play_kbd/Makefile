@@ -9,8 +9,8 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN
-	./iso9660.sh 0.BIN >$@
+$(NAME).iso: 0.BIN desc.img
+	./iso9660.sh $^ >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
 	src/funcs_map.sh src/vdp.sh
@@ -34,7 +34,7 @@ run_mednafen: $(NAME).cue
 run: run_yabause
 
 clean:
-	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.img *.ppm	\
+	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.ppm	\
 	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~
 
 clean_all: clean
