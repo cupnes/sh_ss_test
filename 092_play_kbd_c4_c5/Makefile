@@ -1,4 +1,4 @@
-NAME=092_play_kbd
+NAME=092_play_kbd_c4_c5
 TARGETS=$(NAME).iso $(NAME).cue
 TOOLS_PATH=../tools
 EMU_YABAUSE=yabause -a -nb -i
