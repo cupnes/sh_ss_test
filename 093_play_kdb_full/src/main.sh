@@ -256,8 +256,8 @@ main() {
 		sh2_copy_to_reg_from_ptr_byte r2 r13
 		## ノート番号に応じたPITCHレジスタ値をr3へ設定
 		local note_dec note pitch sz_nXX
-		### ノート番号 == 0x53の場合の処理
-		note=53
+		### ノート番号 == 0x54の場合の処理
+		note=54
 		#### ノート番号に応じたPITCHレジスタ値を表から取得
 		pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
 		(
@@ -269,8 +269,8 @@ main() {
 		) >src/main_n${note}.o
 		local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
 		local sz_esc=$((6 + sz_nXX))
-		### ノート番号が0x30(48)〜0x52(82)の場合の処理
-		for note_dec in $(seq 48 82 | tac); do
+		### ノート番号が0x30(48)〜0x53(83)の場合の処理
+		for note_dec in $(seq 48 83 | tac); do
 			# ノート番号を16進数へ変換
 			note=$(to16_2 $note_dec)
 
@@ -292,8 +292,8 @@ main() {
 			sz_nXX=$(stat -c '%s' src/main_n${note}.o)
 			sz_esc=$((sz_esc + 6 + sz_nXX))
 		done
-		### ノート番号が0x30(48)〜0x53(83)の場合の条件分岐
-		for note_dec in $(seq 48 83); do
+		### ノート番号が0x30(48)〜0x54(84)の場合の条件分岐
+		for note_dec in $(seq 48 84); do
 			# ノート番号を16進数へ変換
 			note=$(to16_2 $note_dec)
 
