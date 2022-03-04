@@ -25,6 +25,9 @@ src/vars.o src/vars_map.sh: src/vars.sh font.lut
 font.lut: ../font_lut
 	cat $</* >$@
 
+desc.img: desc.png
+	$(TOOLS_PATH)/conv_img_using_cbin.sh $< $@
+
 run_yabause: $(NAME).iso
 	$(EMU_YABAUSE) $<
 
@@ -34,7 +37,7 @@ run_mednafen: $(NAME).cue
 run: run_yabause
 
 clean:
-	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.ppm	\
+	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.ppm *.img	\
 	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~
 
 clean_all: clean
