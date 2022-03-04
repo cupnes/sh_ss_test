@@ -15,7 +15,7 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-FAD_FIRST_IMG=02a2
+FAD_FIRST_IMG=02a3
 
 PCM_DATA_BASE=25A01000
 SQUARE_WAVE_LOW=80
@@ -255,17 +255,22 @@ main() {
 		### MIBUFから1バイト取得
 		sh2_copy_to_reg_from_ptr_byte r2 r13
 		## ノート番号に応じたPITCHレジスタ値をr3へ設定
-		### ノート番号 == 0x48の場合の処理
-		(
-			# OCT=1, FNS=0x000
-			sh2_set_reg r3 08
-			sh2_shift_left_logical_8 r3
-		) >src/main_n48.o
-		local sz_n48=$(stat -c '%s' src/main_n48.o)
-		local sz_esc=$((6 + sz_n48))
-		### ノート番号が0x47〜0x3cの場合の処理
 		local note_dec note pitch sz_nXX
-		for note_dec in $(seq 60 71 | tac); do
+		### ノート番号 == 0x53の場合の処理
+		note=53
+		#### ノート番号に応じたPITCHレジスタ値を表から取得
+		pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
+		(
+			# PITCHレジスタ値をr3へ設定
+			sh2_set_reg r0 $(echo $pitch | cut -c1-2)
+			sh2_shift_left_logical_8 r0
+			sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
+			sh2_copy_to_reg_from_reg r3 r0
+		) >src/main_n${note}.o
+		local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+		local sz_esc=$((6 + sz_nXX))
+		### ノート番号が0x30(48)〜0x52(82)の場合の処理
+		for note_dec in $(seq 48 82 | tac); do
 			# ノート番号を16進数へ変換
 			note=$(to16_2 $note_dec)
 
@@ -287,8 +292,8 @@ main() {
 			sz_nXX=$(stat -c '%s' src/main_n${note}.o)
 			sz_esc=$((sz_esc + 6 + sz_nXX))
 		done
-		### ノート番号が0x3c〜0x48の場合の条件分岐
-		for note_dec in $(seq 60 72); do
+		### ノート番号が0x30(48)〜0x53(83)の場合の条件分岐
+		for note_dec in $(seq 48 83); do
 			# ノート番号を16進数へ変換
 			note=$(to16_2 $note_dec)
 
