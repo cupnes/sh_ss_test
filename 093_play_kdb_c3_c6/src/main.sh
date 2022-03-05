@@ -206,6 +206,16 @@ main() {
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 
+	## スロット1〜31をKEY_OFFへ設定
+	### 変数設定
+	copy_to_reg_from_val_long r1 $SS_CT_SND_SLOTCTR_S1_ADDR
+	sh2_set_reg r0 00
+	### スロット1〜31の00Hへ設定
+	for i in $(seq 1 31); do
+		sh2_copy_to_ptr_from_reg_word r1 r0
+		sh2_add_to_reg_from_val_byte r1 20
+	done
+
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MCIPDL_ADDR
 	copy_to_reg_from_val_long r13 $SS_CT_SND_MIBUF_ADDR
