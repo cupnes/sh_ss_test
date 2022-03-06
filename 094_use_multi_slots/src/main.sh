@@ -166,6 +166,7 @@ main() {
 	copy_to_reg_from_val_long r10 $a_key_off
 	copy_to_reg_from_val_long r9 $a_synth_get_slot_on_with_note
 	copy_to_reg_from_val_long r8 $a_synth_proc_noteon
+	copy_to_reg_from_val_long r7 $a_synth_all_slots_off
 
 	(
 		# 何度も使用する処理を定義
@@ -239,13 +240,36 @@ main() {
 		(
 			# ノート・オフの場合
 
-			# KEY_OFF
-			## 取得したノート番号を鳴らしているスロット番号を返す
-			sh2_abs_call_to_reg_after_next_inst r9
-			sh2_nop
-			## 取得したスロット番号のスロットをKEY_OFFする
-			sh2_abs_call_to_reg_after_next_inst r10
-			sh2_nop
+			# WORKAROUND: ノート番号 == 84(0x54)の時は全てのスロットをKEY_OFFする
+			sh2_set_reg r0 54
+			sh2_compare_reg_eq_reg r1 r0
+			(
+				# ノート番号 != 84(0x54)の場合
+
+				# KEY_OFF
+				## 取得したノート番号を鳴らしているスロット番号を返す
+				sh2_abs_call_to_reg_after_next_inst r9
+				sh2_nop
+				## 取得したスロット番号のスロットをKEY_OFFする
+				sh2_abs_call_to_reg_after_next_inst r10
+				sh2_nop
+			) >src/main.noteoff.1.o
+			(
+				# ノート番号 == 84(0x54)の場合
+
+				# 全てのスロットをKEY_OFFにする
+				sh2_abs_call_to_reg_after_next_inst r7
+				sh2_nop
+
+				# ノート番号 != 84(0x54)の場合の処理を飛ばす
+				local sz_noteoff_1=$(stat -c '%s' src/main.noteoff.1.o)
+				sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_noteoff_1 / 2))) 3)
+				sh2_nop
+			) >src/main.noteoff.wa.o
+			local sz_noteoff_wa=$(stat -c '%s' src/main.noteoff.wa.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff_wa - 2) / 2)))
+			cat src/main.noteoff.wa.o
+			cat src/main.noteoff.1.o
 
 			# ノート・オンの場合の処理を飛ばす
 			local sz_noteon=$(stat -c '%s' src/main.noteon.o)

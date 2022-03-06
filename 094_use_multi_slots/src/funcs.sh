@@ -769,6 +769,13 @@ funcs() {
 	echo -e "a_synth_proc_noteon=$a_synth_proc_noteon" >>$map_file
 	f_synth_proc_noteon >src/f_synth_proc_noteon.o
 	cat src/f_synth_proc_noteon.o
+
+	# 全てのスロットをKEY_OFFにする
+	fsz=$(to16 $(stat -c '%s' src/f_synth_proc_noteon.o))
+	a_synth_all_slots_off=$(calc16_8 "${a_synth_proc_noteon}+${fsz}")
+	echo -e "a_synth_all_slots_off=$a_synth_all_slots_off" >>$map_file
+	f_synth_all_slots_off >src/f_synth_all_slots_off.o
+	cat src/f_synth_all_slots_off.o
 }
 
 funcs

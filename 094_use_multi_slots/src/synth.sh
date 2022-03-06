@@ -500,3 +500,109 @@ f_synth_proc_noteon() {
 	sh2_return_after_next_inst
 	sh2_nop
 }
+
+# 全てのスロットをKEY_OFFにする
+f_synth_all_slots_off() {
+	# 変更が発生するレジスタを退避
+	## r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r1
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r1
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r3
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r3
+	## r4
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r4
+	## r14
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r14
+
+	# KEY_OFF
+	copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+	## スロット番号を0〜30まで繰り返し
+	sh2_set_reg r2 00
+	sh2_set_reg r3 1e
+	(
+		# KEY_OFF登録
+		sh2_copy_to_reg_from_ptr_word r1 r14
+		sh2_set_reg r0 f7
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_r0_from_val_byte ff
+		sh2_and_to_reg_from_reg r1 r0
+		sh2_copy_to_ptr_from_reg_word r14 r1
+
+		# 次のスロット番号のレジスタへ
+		sh2_add_to_reg_from_reg r2 01
+		sh2_copy_to_reg_from_reg r4 r2
+		sh2_shift_left_logical_2 r4
+		sh2_shift_left_logical_2 r4
+		sh2_shift_left_logical r4
+		sh2_add_to_reg_from_reg r14 r4
+
+		# スロット番号 > 30?
+		sh2_compare_reg_gt_reg_unsigned r2 r3
+	) >src/f_synth_all_slots_off.1.o
+	cat src/f_synth_all_slots_off.1.o
+	local sz_1=$(stat -c '%s' src/f_synth_all_slots_off.1.o)
+	## スロット番号 > 30ならループを抜ける
+	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
+	## 最後の一つ(31)はKEY_ON/OFFの実行ビットもセットする
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	sh2_set_reg r0 f7
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ff
+	sh2_and_to_reg_from_reg r1 r0
+	sh2_set_reg r0 10
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_reg_from_reg r1 r0
+	sh2_copy_to_ptr_from_reg_word r14 r1
+
+	# スロットの状態管理変数を全て0にする
+	copy_to_reg_from_val_long r14 $var_synth_slot_state_base
+	sh2_set_reg r0 00
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+	sh2_copy_to_ptr_from_reg_long r14 r0
+	sh2_add_to_reg_from_val_byte r14 04
+
+	# 退避したレジスタを復帰しreturn
+	## r14
+	sh2_copy_to_reg_from_ptr_long r14 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r4
+	sh2_copy_to_reg_from_ptr_long r4 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r3
+	sh2_copy_to_reg_from_ptr_long r3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r1
+	sh2_copy_to_reg_from_ptr_long r1 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r0
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## return
+	sh2_return_after_next_inst
+	sh2_nop
+}
