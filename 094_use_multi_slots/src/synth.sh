@@ -321,7 +321,7 @@ f_synth_get_slot_off() {
 # 指定されたノート番号を鳴らしているスロット番号を返す
 # in  : r1 - ノート番号
 # out : r1 - スロット番号
-#            ※ 無かった場合は 0x7f を返す
+#            ※ 無かった場合は$SLOT_NOT_FOUNDを返す
 f_synth_get_slot_on_with_note() {
 	# 変更が発生するレジスタを退避
 	## r0
@@ -347,7 +347,7 @@ f_synth_get_slot_on_with_note() {
 	copy_to_reg_from_val_long r14 $var_synth_slot_state_base
 
 	# 戻り値を無かった場合の値で初期化
-	sh2_set_reg r1 7f
+	sh2_set_reg r1 $SLOT_NOT_FOUND
 
 	# スロット番号を0〜31まで繰り返し
 	sh2_set_reg r2 00
@@ -417,6 +417,86 @@ f_synth_get_slot_on_with_note() {
 	sh2_copy_to_reg_from_ptr_long r0 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	## return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# ノート・オンの場合の処理
+f_synth_proc_noteon() {
+	# prだけ退避
+	sh2_copy_to_reg_from_pr r0
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r0
+
+	# ノート番号をr1へコピー
+	sh2_copy_to_reg_from_reg r1 r4
+
+	# ノート番号に応じたPITCHレジスタ値をr3へ設定
+	local note_dec note pitch sz_nXX
+	## ノート番号 == 0x54の場合の処理
+	note=54
+	### ノート番号に応じたPITCHレジスタ値を表から取得
+	pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
+	(
+		# PITCHレジスタ値をr3へ設定
+		sh2_set_reg r0 $(echo $pitch | cut -c1-2)
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
+		sh2_copy_to_reg_from_reg r3 r0
+	) >src/main_n${note}.o
+	local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+	local sz_esc=$((6 + sz_nXX))
+	## ノート番号が0x30(48)〜0x53(83)の場合の処理
+	for note_dec in $(seq 48 83 | tac); do
+		# ノート番号を16進数へ変換
+		note=$(to16_2 $note_dec)
+
+		# ノート番号に応じたPITCHレジスタ値を表から取得
+		pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
+
+		# 処理を生成
+		(
+			# PITCHレジスタ値をr3へ設定
+			sh2_set_reg r0 $(echo $pitch | cut -c1-2)
+			sh2_shift_left_logical_8 r0
+			sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
+			sh2_copy_to_reg_from_reg r3 r0
+
+			# 以降の条件処理を飛ばす
+			sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_esc / 2))) 3)
+			sh2_nop
+		) >src/main_n${note}.o
+		sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+		sz_esc=$((sz_esc + 6 + sz_nXX))
+	done
+	## ノート番号が0x30(48)〜0x54(84)の場合の条件分岐
+	for note_dec in $(seq 48 84); do
+		# ノート番号を16進数へ変換
+		note=$(to16_2 $note_dec)
+
+		# ノート番号に応じた処理
+		sh2_set_reg r0 $note
+		sh2_compare_reg_eq_reg r1 r0
+		sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_nXX - 2) / 2)))
+		cat src/main_n${note}.o
+	done
+
+	# KEY_OFFのスロット番号を取得
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_nop
+
+	# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
+	sh2_copy_to_reg_from_reg r2 r3
+	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_copy_to_reg_from_reg r3 r4
+
+	# prだけ復帰
+	sh2_copy_to_reg_from_ptr_long r0 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	sh2_copy_to_pr_from_reg r0
+
+	# return
 	sh2_return_after_next_inst
 	sh2_nop
 }

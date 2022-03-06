@@ -762,6 +762,13 @@ funcs() {
 	echo -e "a_synth_get_slot_on_with_note=$a_synth_get_slot_on_with_note" >>$map_file
 	f_synth_get_slot_on_with_note >src/f_synth_get_slot_on_with_note.o
 	cat src/f_synth_get_slot_on_with_note.o
+
+	# synth: ノート・オンの場合の処理
+	fsz=$(to16 $(stat -c '%s' src/f_synth_get_slot_on_with_note.o))
+	a_synth_proc_noteon=$(calc16_8 "${a_synth_get_slot_on_with_note}+${fsz}")
+	echo -e "a_synth_proc_noteon=$a_synth_proc_noteon" >>$map_file
+	f_synth_proc_noteon >src/f_synth_proc_noteon.o
+	cat src/f_synth_proc_noteon.o
 }
 
 funcs

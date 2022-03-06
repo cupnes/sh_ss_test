@@ -16,8 +16,7 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-FAD_FIRST_IMG=02a3
-NOTE_PITCH_CSV=src/note_pitch.csv
+FAD_FIRST_IMG=02a2
 
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
@@ -166,6 +165,7 @@ main() {
 	copy_to_reg_from_val_long r11 $a_key_on_with_pitch
 	copy_to_reg_from_val_long r10 $a_key_off
 	copy_to_reg_from_val_long r9 $a_synth_get_slot_on_with_note
+	copy_to_reg_from_val_long r8 $a_synth_proc_noteon
 
 	(
 		# 何度も使用する処理を定義
@@ -217,68 +217,24 @@ main() {
 		(
 			# ノート・オンの場合
 
-			# ノート番号に応じたPITCHレジスタ値をr3へ設定
-			local note_dec note pitch sz_nXX
-			## ノート番号 == 0x54の場合の処理
-			note=54
-			### ノート番号に応じたPITCHレジスタ値を表から取得
-			pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
-			(
-				# PITCHレジスタ値をr3へ設定
-				sh2_set_reg r0 $(echo $pitch | cut -c1-2)
-				sh2_shift_left_logical_8 r0
-				sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
-				sh2_copy_to_reg_from_reg r3 r0
-			) >src/main_n${note}.o
-			local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
-			local sz_esc=$((6 + sz_nXX))
-			## ノート番号が0x30(48)〜0x53(83)の場合の処理
-			for note_dec in $(seq 48 83 | tac); do
-				# ノート番号を16進数へ変換
-				note=$(to16_2 $note_dec)
-
-				# ノート番号に応じたPITCHレジスタ値を表から取得
-				pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
-
-				# 処理を生成
-				(
-					# PITCHレジスタ値をr3へ設定
-					sh2_set_reg r0 $(echo $pitch | cut -c1-2)
-					sh2_shift_left_logical_8 r0
-					sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
-					sh2_copy_to_reg_from_reg r3 r0
-
-					# 以降の条件処理を飛ばす
-					sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_esc / 2))) 3)
-					sh2_nop
-				) >src/main_n${note}.o
-				sz_nXX=$(stat -c '%s' src/main_n${note}.o)
-				sz_esc=$((sz_esc + 6 + sz_nXX))
-			done
-			## ノート番号が0x30(48)〜0x54(84)の場合の条件分岐
-			for note_dec in $(seq 48 84); do
-				# ノート番号を16進数へ変換
-				note=$(to16_2 $note_dec)
-
-				# ノート番号に応じた処理
-				sh2_set_reg r0 $note
-				sh2_compare_reg_eq_reg r1 r0
-				sz_nXX=$(stat -c '%s' src/main_n${note}.o)
-				sh2_rel_jump_if_false $(two_digits_d $(((sz_nXX - 2) / 2)))
-				cat src/main_n${note}.o
-			done
-
 			# r1に格納されているノート番号をr4へコピーしておく
 			sh2_copy_to_reg_from_reg r4 r1
 
-			# KEY_OFFのスロット番号を取得
-			sh2_abs_call_to_reg_after_next_inst r12
+			# 既にノート・オンしているか?
+			## 取得したノート番号を鳴らしているスロット番号を探す
+			sh2_abs_call_to_reg_after_next_inst r9
 			sh2_nop
-
-			# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
-			sh2_copy_to_reg_from_reg r2 r3
-			sh2_abs_call_to_reg_after_next_inst r11
-			sh2_copy_to_reg_from_reg r3 r4
+			## 取得したスロット番号 == $SLOT_NOT_FOUND?
+			sh2_set_reg r0 $SLOT_NOT_FOUND
+			sh2_compare_reg_eq_reg r1 r0
+			(
+				sh2_abs_call_to_reg_after_next_inst r8
+				sh2_nop
+			) >src/main.noteon.1.o
+			local sz_noteon_1=$(stat -c '%s' src/main.noteon.1.o)
+			### 取得したスロット番号 != $SLOT_NOT_FOUNDなら処理を飛ばす
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteon_1 - 2) / 2)))
+			cat src/main.noteon.1.o
 		) >src/main.noteon.o
 		(
 			# ノート・オフの場合
