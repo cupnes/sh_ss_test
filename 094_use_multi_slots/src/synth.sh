@@ -321,11 +321,18 @@ f_synth_get_slot_off() {
 # 指定されたノート番号を鳴らしているスロット番号を返す
 # in  : r1 - ノート番号
 # out : r1 - スロット番号
+#            ※ 無かった場合は 0x7f を返す
 f_synth_get_slot_on_with_note() {
 	# 変更が発生するレジスタを退避
 	## r0
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r0
+	## r2
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r2
+	## r3
+	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
+	sh2_copy_to_ptr_from_reg_long r15 r3
 	## r13
 	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
 	sh2_copy_to_ptr_from_reg_long r15 r13
@@ -339,26 +346,59 @@ f_synth_get_slot_on_with_note() {
 	# スロットの状態管理変数のアドレスをr14へ設定
 	copy_to_reg_from_val_long r14 $var_synth_slot_state_base
 
-	# スロット番号0を仮定
-	sh2_set_reg r1 00
+	# 戻り値を無かった場合の値で初期化
+	sh2_set_reg r1 7f
 
-	# 指定されたノート番号でKEY_ONのスロットを見つけるまで繰り返し
+	# スロット番号を0〜31まで繰り返し
+	sh2_set_reg r2 00
+	sh2_set_reg r3 1f
 	(
 		# 変数値を取得
 		sh2_copy_to_reg_from_ptr_byte r0 r14
-		# スロット番号と変数アドレスを進める
-		sh2_add_to_reg_from_val_byte r1 01
-		sh2_add_to_reg_from_val_byte r14 01
+
 		# 取得した値 == 指定されたノート番号?
 		sh2_compare_reg_eq_reg r0 r13
+		(
+			# 取得した値 == 指定されたノート番号の場合
+
+			# 戻り値を設定
+			sh2_copy_to_reg_from_reg r1 r2
+
+			# 退避したレジスタを復帰しreturn
+			## r14
+			sh2_copy_to_reg_from_ptr_long r14 r15
+			sh2_add_to_reg_from_val_byte r15 04
+			## r13
+			sh2_copy_to_reg_from_ptr_long r13 r15
+			sh2_add_to_reg_from_val_byte r15 04
+			## r3
+			sh2_copy_to_reg_from_ptr_long r3 r15
+			sh2_add_to_reg_from_val_byte r15 04
+			## r2
+			sh2_copy_to_reg_from_ptr_long r2 r15
+			sh2_add_to_reg_from_val_byte r15 04
+			## r0
+			sh2_copy_to_reg_from_ptr_long r0 r15
+			sh2_add_to_reg_from_val_byte r15 04
+			## return
+			sh2_return_after_next_inst
+			sh2_nop
+		) >src/f_synth_get_slot_on_with_note.found.o
+		local sz_found=$(stat -c '%s' src/f_synth_get_slot_on_with_note.found.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_found - 2) / 2)))
+		cat src/f_synth_get_slot_on_with_note.found.o
+
+		# スロット番号と変数アドレスを進める
+		sh2_add_to_reg_from_val_byte r2 01
+		sh2_add_to_reg_from_val_byte r14 01
+
+		# スロット番号 > 31?
+		sh2_compare_reg_gt_reg_unsigned r2 r3
 	) >src/f_synth_get_slot_on_with_note.1.o
 	cat src/f_synth_get_slot_on_with_note.1.o
 	local sz_1=$(stat -c '%s' src/f_synth_get_slot_on_with_note.1.o)
-	## 取得した値 != 指定されたノート番号 (T == 0)なら繰り返す
+	## スロット番号 > 31ならループを抜ける
 	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
-
-	# -1した値が見つけたスロット番号
-	sh2_add_to_reg_from_val_byte r1 $(two_comp_d 1)
 
 	# 退避したレジスタを復帰しreturn
 	## r14
@@ -366,6 +406,12 @@ f_synth_get_slot_on_with_note() {
 	sh2_add_to_reg_from_val_byte r15 04
 	## r13
 	sh2_copy_to_reg_from_ptr_long r13 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r3
+	sh2_copy_to_reg_from_ptr_long r3 r15
+	sh2_add_to_reg_from_val_byte r15 04
+	## r2
+	sh2_copy_to_reg_from_ptr_long r2 r15
 	sh2_add_to_reg_from_val_byte r15 04
 	## r0
 	sh2_copy_to_reg_from_ptr_long r0 r15

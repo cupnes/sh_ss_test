@@ -176,7 +176,7 @@ main() {
 		) >src/main.3.o
 		local sz_3=$(stat -c '%s' src/main.3.o)
 
-		# ノート・オンのMIDIメッセージに応じた処理
+		# ノート・オン/オフのMIDIメッセージを取得
 		## MIBUFから0x90が取得できるまでMIBUFの取得を繰り返す
 		(
 			# MCIPD[3] == 1を待つ
@@ -204,91 +204,102 @@ main() {
 		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
 		### MIBUFから1バイト取得
 		sh2_copy_to_reg_from_ptr_byte r1 r13
-		## ベロシティをr2へ取得(取得するが今の所使わない)
+		## ベロシティをr2へ取得
 		### MCIPD[3] == 1を待つ
 		cat src/main.3.o
 		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
 		### MIBUFから1バイト取得
 		sh2_copy_to_reg_from_ptr_byte r2 r13
-		## ノート番号に応じたPITCHレジスタ値をr3へ設定
-		local note_dec note pitch sz_nXX
-		### ノート番号 == 0x54の場合の処理
-		note=54
-		#### ノート番号に応じたPITCHレジスタ値を表から取得
-		pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
+
+		# 受信したMIDIメッセージはノート・オンかノート・オフか?
+		sh2_set_reg r0 00
+		sh2_compare_reg_eq_reg r2 r0
 		(
-			# PITCHレジスタ値をr3へ設定
-			sh2_set_reg r0 $(echo $pitch | cut -c1-2)
-			sh2_shift_left_logical_8 r0
-			sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
-			sh2_copy_to_reg_from_reg r3 r0
-		) >src/main_n${note}.o
-		local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
-		local sz_esc=$((6 + sz_nXX))
-		### ノート番号が0x30(48)〜0x53(83)の場合の処理
-		for note_dec in $(seq 48 83 | tac); do
-			# ノート番号を16進数へ変換
-			note=$(to16_2 $note_dec)
+			# ノート・オンの場合
 
-			# ノート番号に応じたPITCHレジスタ値を表から取得
+			# ノート番号に応じたPITCHレジスタ値をr3へ設定
+			local note_dec note pitch sz_nXX
+			## ノート番号 == 0x54の場合の処理
+			note=54
+			### ノート番号に応じたPITCHレジスタ値を表から取得
 			pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
-
-			# 処理を生成
 			(
 				# PITCHレジスタ値をr3へ設定
 				sh2_set_reg r0 $(echo $pitch | cut -c1-2)
 				sh2_shift_left_logical_8 r0
 				sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
 				sh2_copy_to_reg_from_reg r3 r0
-
-				# 以降の条件処理を飛ばす
-				sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_esc / 2))) 3)
-				sh2_nop
 			) >src/main_n${note}.o
-			sz_nXX=$(stat -c '%s' src/main_n${note}.o)
-			sz_esc=$((sz_esc + 6 + sz_nXX))
-		done
-		### ノート番号が0x30(48)〜0x54(84)の場合の条件分岐
-		for note_dec in $(seq 48 84); do
-			# ノート番号を16進数へ変換
-			note=$(to16_2 $note_dec)
+			local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+			local sz_esc=$((6 + sz_nXX))
+			## ノート番号が0x30(48)〜0x53(83)の場合の処理
+			for note_dec in $(seq 48 83 | tac); do
+				# ノート番号を16進数へ変換
+				note=$(to16_2 $note_dec)
 
-			# ノート番号に応じた処理
-			sh2_set_reg r0 $note
-			sh2_compare_reg_eq_reg r1 r0
-			sz_nXX=$(stat -c '%s' src/main_n${note}.o)
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_nXX - 2) / 2)))
-			cat src/main_n${note}.o
-		done
-		## r1に格納されているノート番号をr4へコピーしておく
-		sh2_copy_to_reg_from_reg r4 r1
-		## KEY_OFFのスロット番号を取得
-		sh2_abs_call_to_reg_after_next_inst r12
-		sh2_nop
-		## 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
-		sh2_copy_to_reg_from_reg r2 r3
-		sh2_abs_call_to_reg_after_next_inst r11
-		sh2_copy_to_reg_from_reg r3 r4
+				# ノート番号に応じたPITCHレジスタ値を表から取得
+				pitch=$(awk -F ',' '$1=="'$note'"{print $2}' $NOTE_PITCH_CSV)
 
-		# ノート・オフのMIDIメッセージに応じた処理
-		## MIBUFから0x90が取得できるまでMIBUFの取得を繰り返す
-		cat src/main.2.o
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_2) / 2)))
-		## ノート番号をr1へ取得
-		### MCIPD[3] == 1を待つ
-		cat src/main.3.o
-		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
-		### MIBUFから1バイト取得
-		sh2_copy_to_reg_from_ptr_byte r1 r13
-		## 他バイトは読み飛ばす
-		## (次のMIDIメッセージ取得処理で読み飛ばされる)
-		## KEY_OFF
-		### 取得したノート番号を鳴らしているスロット番号を返す
-		sh2_abs_call_to_reg_after_next_inst r9
-		sh2_nop
-		### 取得したスロット番号のスロットをKEY_OFFする
-		sh2_abs_call_to_reg_after_next_inst r10
-		sh2_nop
+				# 処理を生成
+				(
+					# PITCHレジスタ値をr3へ設定
+					sh2_set_reg r0 $(echo $pitch | cut -c1-2)
+					sh2_shift_left_logical_8 r0
+					sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
+					sh2_copy_to_reg_from_reg r3 r0
+
+					# 以降の条件処理を飛ばす
+					sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_esc / 2))) 3)
+					sh2_nop
+				) >src/main_n${note}.o
+				sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+				sz_esc=$((sz_esc + 6 + sz_nXX))
+			done
+			## ノート番号が0x30(48)〜0x54(84)の場合の条件分岐
+			for note_dec in $(seq 48 84); do
+				# ノート番号を16進数へ変換
+				note=$(to16_2 $note_dec)
+
+				# ノート番号に応じた処理
+				sh2_set_reg r0 $note
+				sh2_compare_reg_eq_reg r1 r0
+				sz_nXX=$(stat -c '%s' src/main_n${note}.o)
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_nXX - 2) / 2)))
+				cat src/main_n${note}.o
+			done
+
+			# r1に格納されているノート番号をr4へコピーしておく
+			sh2_copy_to_reg_from_reg r4 r1
+
+			# KEY_OFFのスロット番号を取得
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_nop
+
+			# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
+			sh2_copy_to_reg_from_reg r2 r3
+			sh2_abs_call_to_reg_after_next_inst r11
+			sh2_copy_to_reg_from_reg r3 r4
+		) >src/main.noteon.o
+		(
+			# ノート・オフの場合
+
+			# KEY_OFF
+			## 取得したノート番号を鳴らしているスロット番号を返す
+			sh2_abs_call_to_reg_after_next_inst r9
+			sh2_nop
+			## 取得したスロット番号のスロットをKEY_OFFする
+			sh2_abs_call_to_reg_after_next_inst r10
+			sh2_nop
+
+			# ノート・オンの場合の処理を飛ばす
+			local sz_noteon=$(stat -c '%s' src/main.noteon.o)
+			sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_noteon / 2))) 3)
+			sh2_nop
+		) >src/main.noteoff.o
+		local sz_noteoff=$(stat -c '%s' src/main.noteoff.o)
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff - 2) / 2)))
+		cat src/main.noteoff.o
+		cat src/main.noteon.o
 	) >src/main.1.o
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
