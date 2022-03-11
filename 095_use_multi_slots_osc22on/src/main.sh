@@ -360,40 +360,48 @@ main() {
 		(
 			# ノート・オフの場合
 
-			# WORKAROUND: ノート番号 == 84(0x54)の時は全てのスロットをKEY_OFFする
-			sh2_set_reg r0 54
-			sh2_compare_reg_eq_reg r1 r0
-			(
-				# ノート番号 != 84(0x54)の場合
+			# # WORKAROUND: ノート番号 == 84(0x54)の時は全てのスロットをKEY_OFFする
+			# sh2_set_reg r0 54
+			# sh2_compare_reg_eq_reg r1 r0
+			# (
+			# 	# ノート番号 != 84(0x54)の場合
 
-				# KEY_OFF
-				## 取得したノート番号を鳴らしているスロット番号を返す
-				sh2_abs_call_to_reg_after_next_inst r9
-				sh2_nop
-				## 取得したスロット番号のスロットをKEY_OFFする
+			# 	# KEY_OFF
+			# 	## 取得したノート番号を鳴らしているスロット番号を返す
+			# 	sh2_abs_call_to_reg_after_next_inst r9
+			# 	sh2_nop
+			# 	## 取得したスロット番号のスロットをKEY_OFFする
+			# 	sh2_abs_call_to_reg_after_next_inst r10
+			# 	sh2_nop
+			# ) >src/main.noteoff.1.o
+			# (
+			# 	# ノート番号 == 84(0x54)の場合
+
+			# 	# 全スロットをKEY_OFFする
+			# 	local slot_num_dec
+			# 	for slot_num_dec in $(seq 0 31); do
+			# 		sh2_abs_call_to_reg_after_next_inst r10
+			# 		sh2_set_reg r1 $(to16_2 $slot_num_dec)
+			# 	done
+
+			# 	# ノート番号 != 84(0x54)の場合の処理を飛ばす
+			# 	local sz_noteoff_1=$(stat -c '%s' src/main.noteoff.1.o)
+			# 	sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_noteoff_1 / 2))) 3)
+			# 	sh2_nop
+			# ) >src/main.noteoff.wa.o
+			# ## ノート番号 != 84(0x54)(T == 0)ならジャンプ
+			# local sz_noteoff_wa=$(stat -c '%s' src/main.noteoff.wa.o)
+			# sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff_wa - 2) / 2)))
+			# cat src/main.noteoff.wa.o
+			# cat src/main.noteoff.1.o
+
+			# WORKAROUND2: 常に全てのスロットをKEY_OFFする
+			# 全スロットをKEY_OFFする
+			local slot_num_dec
+			for slot_num_dec in $(seq 0 31); do
 				sh2_abs_call_to_reg_after_next_inst r10
-				sh2_nop
-			) >src/main.noteoff.1.o
-			(
-				# ノート番号 == 84(0x54)の場合
-
-				# 全スロットをKEY_OFFする
-				local slot_num_dec
-				for slot_num_dec in $(seq 0 31); do
-					sh2_abs_call_to_reg_after_next_inst r10
-					sh2_set_reg r1 $(to16_2 $slot_num_dec)
-				done
-
-				# ノート番号 != 84(0x54)の場合の処理を飛ばす
-				local sz_noteoff_1=$(stat -c '%s' src/main.noteoff.1.o)
-				sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_noteoff_1 / 2))) 3)
-				sh2_nop
-			) >src/main.noteoff.wa.o
-			## ノート番号 != 84(0x54)(T == 0)ならジャンプ
-			local sz_noteoff_wa=$(stat -c '%s' src/main.noteoff.wa.o)
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff_wa - 2) / 2)))
-			cat src/main.noteoff.wa.o
-			cat src/main.noteoff.1.o
+				sh2_set_reg r1 $(to16_2 $slot_num_dec)
+			done
 
 			# ノート・オンの場合の処理を飛ばす
 			local sz_noteon=$(stat -c '%s' src/main.noteon.o)
