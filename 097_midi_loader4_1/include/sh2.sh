@@ -84,6 +84,24 @@ sh2_copy_to_reg_from_ptr_long() {
 	echo -e "mov.l @$src,$dst\t;1" >>$ASM_LIST_FILE
 }
 
+sh2_dec_ptr_and_copy_to_ptr_from_reg_long() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x2${dstnum}\x${srcnum}6"	# mov.l $src,@-$dst
+	echo -e "mov.l $src,@-$dst\t;1" >>$ASM_LIST_FILE
+}
+
+sh2_copy_to_reg_from_ptr_and_inc_ptr_long() {
+	local dst=$1
+	local src=$2
+	local dstnum=$(to_regnum $dst)
+	local srcnum=$(to_regnum $src)
+	echo -en "\x6${dstnum}\x${srcnum}6"	# mov.l @$src+,$dst
+	echo -e "mov.l @$src+,$dst\t;1" >>$ASM_LIST_FILE
+}
+
 sh2_add_to_reg_from_reg() {
 	local dst=$1
 	local src=$2
