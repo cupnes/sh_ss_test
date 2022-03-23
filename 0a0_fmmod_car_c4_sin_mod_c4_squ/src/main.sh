@@ -15,6 +15,7 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
+FAD_FIRST_IMG=02a3
 PCM_DATA_BASE=25A01000
 PCM_TXT_FILE=src/pcm_c4_sin_16bit.txt
 PCM2_DATA_BASE=25A02000
@@ -118,6 +119,15 @@ main() {
 
 	# VDP1/2の初期化
 	vdp_init
+
+	# 説明画像を表示
+	## 使用する関数のアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
+	## 表示する画像のFADをr12へ設定
+	copy_to_reg_from_val_word r12 $FAD_FIRST_IMG
+	## 表示画像更新
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_copy_to_reg_from_reg r1 r12
 
 	# PCMデータをサウンドメモリへ配置
 	## キャリア
