@@ -128,36 +128,23 @@ main() {
 		sh2_copy_to_ptr_from_reg_word r1 r2
 		sh2_add_to_reg_from_val_byte r1 02
 	done
-	# ## モジュレータ
-	# copy_to_reg_from_val_long r1 $PCM2_DATA_BASE
-	# copy_to_reg_from_val_word r2 $SQUARE_WAVE_LOW
-	# local n=$((PCM_WAVE_PERIOD_DEC / 2))
-	# local i
-	# for i in $(seq $n); do
-	# 	sh2_copy_to_ptr_from_reg_word r1 r2
-	# 	sh2_add_to_reg_from_val_byte r1 02
-	# done
-	# copy_to_reg_from_val_word r2 $SQUARE_WAVE_HIGH
-	# for i in $(seq $n); do
-	# 	sh2_copy_to_ptr_from_reg_word r1 r2
-	# 	sh2_add_to_reg_from_val_byte r1 02
-	# done
-
-	# debug
-	# local n=359	# X
-	# local n=269	# X
-	# local n=224	# X
-	# local n=201	# X
-	# local n=195	# X
-	local n=194	# O
-	# local n=193	# O
-	# local n=192	# O
-	# local n=190	# O
-	# local n=179	# O
-	local i
-	for i in $(seq $n); do
-		sh2_nop
-	done
+	## モジュレータ
+	copy_to_reg_from_val_long r1 $PCM2_DATA_BASE
+	copy_to_reg_from_val_word r2 $SQUARE_WAVE_LOW
+	sh2_set_reg r0 $(calc16_2 "${PCM_WAVE_PERIOD}/2")	# カウント数設定
+	(
+		sh2_copy_to_ptr_from_reg_word r1 r2
+		sh2_add_to_reg_from_val_byte r1 02
+		sh2_add_to_reg_from_val_byte r0 $(two_comp_d 1)
+		sh2_compare_r0_eq_val 00
+	) >src/main.1.o
+	cat src/main.1.o
+	local sz_1=$(stat -c '%s' src/main.1.o)
+	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
+	copy_to_reg_from_val_word r2 $SQUARE_WAVE_HIGH
+	sh2_set_reg r0 $(calc16_2 "${PCM_WAVE_PERIOD}/2")	# カウント数設定
+	cat src/main.1.o
+	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
 
 	# コントロールレジスタを設定
 	## SCSP共通制御レジスタ
