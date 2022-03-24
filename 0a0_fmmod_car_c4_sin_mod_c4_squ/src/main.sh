@@ -140,7 +140,7 @@ main() {
 	done
 	## モジュレータ
 	copy_to_reg_from_val_long r1 $PCM2_DATA_BASE
-	copy_to_reg_from_val_word r2 $SQUARE_WAVE_LOW
+	copy_to_reg_from_val_word r2 $SQUARE_WAVE_HIGH
 	sh2_set_reg r0 $(calc16_2 "${PCM_WAVE_PERIOD}/2")	# カウント数設定
 	(
 		sh2_copy_to_ptr_from_reg_word r1 r2
@@ -151,7 +151,7 @@ main() {
 	cat src/main.1.o
 	local sz_1=$(stat -c '%s' src/main.1.o)
 	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
-	copy_to_reg_from_val_word r2 $SQUARE_WAVE_HIGH
+	copy_to_reg_from_val_word r2 $SQUARE_WAVE_LOW
 	sh2_set_reg r0 $(calc16_2 "${PCM_WAVE_PERIOD}/2")	# カウント数設定
 	cat src/main.1.o
 	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_1) / 2)))
