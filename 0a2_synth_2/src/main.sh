@@ -148,70 +148,18 @@ main() {
 	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_4) / 2)))
 
 	# 使用するアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $SS_CT_SND_MCIPDL_ADDR
-	copy_to_reg_from_val_long r13 $SS_CT_SND_MIBUF_ADDR
-	copy_to_reg_from_val_long r12 $a_synth_get_slot_off
-	copy_to_reg_from_val_long r11 $a_key_on_with_pitch
+	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r10 $a_key_off
 	copy_to_reg_from_val_long r9 $a_synth_get_slot_on_with_note
 	copy_to_reg_from_val_long r8 $a_synth_proc_noteon
-	copy_to_reg_from_val_long r7 $a_synth_midimsg_enq
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
 	(
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
 		# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
-		## MCIPD[3]を確認
-		sh2_copy_to_reg_from_ptr_byte r0 r14
-		sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
-		### MCIPD[3] == 0の時、T == 1
-		## MCIPD[3] == 0なら処理を飛ばす
-		(
-			# MCIPD[3] == 1の場合
-
-			# MIBUFから1バイト取得
-			sh2_copy_to_reg_from_ptr_byte r0 r13
-
-			# 取得したバイト == 0x90?
-			sh2_compare_r0_eq_val 90
-			## 取得したバイト != 0x90の時、T == 0
-
-			# 取得したバイト != 0x90なら処理を飛ばす
-			(
-				# 取得したバイト == 0x90の場合
-
-				# ノート番号取得
-				## MCIPD[3] == 1を待つ
-				(
-					sh2_copy_to_reg_from_ptr_byte r0 r14
-					sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
-				) >src/main.3.o
-				cat src/main.3.o
-				local sz_3=$(stat -c '%s' src/main.3.o)
-				### MCIPD[3]がセットされていなければ(T == 1)繰り返す
-				sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
-				## MIBUFから1バイト取得しエンキュー
-				sh2_abs_call_to_reg_after_next_inst r7
-				sh2_copy_to_reg_from_ptr_byte r1 r13
-
-				# ベロシティ取得
-				## MCIPD[3] == 1を待つ
-				cat src/main.3.o
-				sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
-				## MIBUFから1バイト取得しエンキュー
-				sh2_abs_call_to_reg_after_next_inst r7
-				sh2_copy_to_reg_from_ptr_byte r1 r13
-			) >src/main.6.o
-			local sz_6=$(stat -c '%s' src/main.6.o)
-			## T == 0の時、処理を飛ばす
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_6 - 2) / 2)))
-			cat src/main.6.o
-		) >src/main.5.o
-		local sz_5=$(stat -c '%s' src/main.5.o)
-		### T == 1の時、処理を飛ばす
-		sh2_rel_jump_if_true $(two_digits_d $(((sz_5 - 2) / 2)))
-		cat src/main.5.o
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_nop
 
 		# SYNTH_MIDIMSG_QUEUEにMIDIメッセージがあれば
 		# デキューしMIDIメッセージに応じた処理を実行

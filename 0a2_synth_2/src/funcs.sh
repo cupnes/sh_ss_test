@@ -742,9 +742,17 @@ funcs() {
 	f_synth_midimsg_is_empty >src/f_synth_midimsg_is_empty.o
 	cat src/f_synth_midimsg_is_empty.o
 
-	# シンセ共通部分を初期化する
+	# MIBUFに注目対象のMIDIメッセージがあれば取得し
+	# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
 	fsz=$(to16 $(stat -c '%s' src/f_synth_midimsg_is_empty.o))
-	a_synth_common_init=$(calc16_8 "${a_synth_midimsg_is_empty}+${fsz}")
+	a_synth_check_and_enq_midimsg=$(calc16_8 "${a_synth_midimsg_is_empty}+${fsz}")
+	echo -e "a_synth_check_and_enq_midimsg=$a_synth_check_and_enq_midimsg" >>$map_file
+	f_synth_check_and_enq_midimsg >src/f_synth_check_and_enq_midimsg.o
+	cat src/f_synth_check_and_enq_midimsg.o
+
+	# シンセ共通部分を初期化する
+	fsz=$(to16 $(stat -c '%s' src/f_synth_check_and_enq_midimsg.o))
+	a_synth_common_init=$(calc16_8 "${a_synth_check_and_enq_midimsg}+${fsz}")
 	echo -e "a_synth_common_init=$a_synth_common_init" >>$map_file
 	f_synth_common_init >src/f_synth_common_init.o
 	cat src/f_synth_common_init.o
