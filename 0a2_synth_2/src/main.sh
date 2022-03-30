@@ -197,8 +197,8 @@ main() {
 			(
 				# ノート・オンの場合
 
-				# r1に格納されているノート番号をr4へコピーしておく
-				sh2_copy_to_reg_from_reg r4 r1
+				# r1に格納されているノート番号をr2へコピーしておく
+				sh2_copy_to_reg_from_reg r2 r1
 
 				# 既にノート・オンしているか?
 				## 取得したノート番号を鳴らしているスロット番号を探す
@@ -208,8 +208,9 @@ main() {
 				sh2_set_reg r0 $SLOT_NOT_FOUND
 				sh2_compare_reg_eq_reg r1 r0
 				(
+					# ノート・オンの場合の処理を呼び出す
 					sh2_abs_call_to_reg_after_next_inst r8
-					sh2_nop
+					sh2_copy_to_reg_from_reg r1 r2
 				) >src/main.noteon.1.o
 				local sz_noteon_1=$(stat -c '%s' src/main.noteon.1.o)
 				### 取得したスロット番号 != $SLOT_NOT_FOUNDなら処理を飛ばす

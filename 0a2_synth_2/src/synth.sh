@@ -648,14 +648,17 @@ f_synth_get_slot_on_with_note() {
 }
 
 # ノート・オンの場合の処理
+# in  : r1 - ノート・オン対象のノート番号
 f_synth_proc_noteon() {
-	# prだけ退避
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r4
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r5
 	sh2_copy_to_reg_from_pr r0
-	sh2_add_to_reg_from_val_byte r15 $(two_comp_d 4)
-	sh2_copy_to_ptr_from_reg_long r15 r0
-
-	# ノート番号をr1へコピー
-	sh2_copy_to_reg_from_reg r1 r4
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
 	# ノート番号に応じたPITCHレジスタ値をr3へ設定
 	local note_dec note pitch sz_nXX
@@ -708,19 +711,29 @@ f_synth_proc_noteon() {
 		cat src/main_n${note}.o
 	done
 
+	# ノート番号をr4へコピーしておく
+	sh2_copy_to_reg_from_reg r4 r1
+
 	# KEY_OFFのスロット番号を取得
-	sh2_abs_call_to_reg_after_next_inst r12
+	copy_to_reg_from_val_long r1 $a_synth_get_slot_off
+	sh2_abs_call_to_reg_after_next_inst r1
 	sh2_nop
 
 	# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
+	copy_to_reg_from_val_long r5 $a_key_on_with_pitch
 	sh2_copy_to_reg_from_reg r2 r3
-	sh2_abs_call_to_reg_after_next_inst r11
+	sh2_abs_call_to_reg_after_next_inst r5
 	sh2_copy_to_reg_from_reg r3 r4
 
-	# prだけ復帰
-	sh2_copy_to_reg_from_ptr_long r0 r15
-	sh2_add_to_reg_from_val_byte r15 04
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r5 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
 	# return
 	sh2_return_after_next_inst
