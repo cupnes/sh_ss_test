@@ -657,8 +657,12 @@ f_synth_proc_noteon() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r4
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r5
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# 使用するアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $a_synth_check_and_enq_midimsg
 
 	# ノート番号に応じたPITCHレジスタ値をr3へ設定
 	local note_dec note pitch sz_nXX
@@ -672,6 +676,11 @@ f_synth_proc_noteon() {
 		sh2_shift_left_logical_8 r0
 		sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
 		sh2_copy_to_reg_from_reg r3 r0
+
+		# MIBUFに注目対象のMIDIメッセージがあれば取得し
+		# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_nop
 	) >src/main_n${note}.o
 	local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
 	local sz_esc=$((6 + sz_nXX))
@@ -690,6 +699,11 @@ f_synth_proc_noteon() {
 			sh2_shift_left_logical_8 r0
 			sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
 			sh2_copy_to_reg_from_reg r3 r0
+
+			# MIBUFに注目対象のMIDIメッセージがあれば取得し
+			# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_nop
 
 			# 以降の条件処理を飛ばす
 			sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_esc / 2))) 3)
@@ -719,6 +733,11 @@ f_synth_proc_noteon() {
 	sh2_abs_call_to_reg_after_next_inst r1
 	sh2_nop
 
+	# MIBUFに注目対象のMIDIメッセージがあれば取得し
+	# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_nop
+
 	# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
 	copy_to_reg_from_val_long r5 $a_key_on_with_pitch
 	sh2_copy_to_reg_from_reg r2 r3
@@ -728,6 +747,7 @@ f_synth_proc_noteon() {
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r5 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15

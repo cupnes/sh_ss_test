@@ -191,6 +191,11 @@ main() {
 			## r1へノート番号を設定
 			sh2_copy_to_reg_from_reg r1 r0
 
+			# MIBUFに注目対象のMIDIメッセージがあれば取得し
+			# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_nop
+
 			# ノート・オンかノート・オフか?
 			sh2_set_reg r0 00
 			sh2_compare_reg_eq_reg r2 r0
@@ -203,6 +208,10 @@ main() {
 				# 既にノート・オンしているか?
 				## 取得したノート番号を鳴らしているスロット番号を探す
 				sh2_abs_call_to_reg_after_next_inst r9
+				sh2_nop
+				## MIBUFに注目対象のMIDIメッセージがあれば取得し
+				## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+				sh2_abs_call_to_reg_after_next_inst r12
 				sh2_nop
 				## 取得したスロット番号 == $SLOT_NOT_FOUND?
 				sh2_set_reg r0 $SLOT_NOT_FOUND
@@ -223,6 +232,10 @@ main() {
 				# KEY_OFF
 				## 取得したノート番号を鳴らしているスロット番号を返す
 				sh2_abs_call_to_reg_after_next_inst r9
+				sh2_nop
+				## MIBUFに注目対象のMIDIメッセージがあれば取得し
+				## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+				sh2_abs_call_to_reg_after_next_inst r12
 				sh2_nop
 				## 取得したスロット番号のスロットをKEY_OFFする
 				sh2_abs_call_to_reg_after_next_inst r10
