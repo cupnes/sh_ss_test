@@ -853,6 +853,13 @@ funcs() {
 	echo -e "a_synth_proc_noteon=$a_synth_proc_noteon" >>$map_file
 	f_synth_proc_noteon >src/f_synth_proc_noteon.o
 	cat src/f_synth_proc_noteon.o
+
+	# synth: スロットの波形データ開始アドレスを設定する
+	fsz=$(to16 $(stat -c '%s' src/f_synth_proc_noteon.o))
+	a_synth_set_start_addr=$(calc16_8 "${a_synth_proc_noteon}+${fsz}")
+	echo -e "a_synth_set_start_addr=$a_synth_set_start_addr" >>$map_file
+	f_synth_set_start_addr >src/f_synth_set_start_addr.o
+	cat src/f_synth_set_start_addr.o
 }
 
 funcs

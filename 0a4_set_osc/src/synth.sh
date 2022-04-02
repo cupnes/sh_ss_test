@@ -164,18 +164,63 @@ f_synth_check_and_enq_midimsg() {
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r13 $SS_CT_SND_MIBUF_ADDR
 
-	# MIBUFから1バイト取得
+	# MIBUFからステータス・バイト取得
 	sh2_copy_to_reg_from_ptr_byte r0 r13
 
-	# 取得したバイト == 0x90?
+	# ステータス・バイト == 0x90?
 	sh2_compare_r0_eq_val 90
-	## 取得したバイト == 0x90の時、T == 1
+	## ステータス・バイト != 0x90の時、T == 0
 
-	# 取得したバイト != 0x90ならreturn
+	# ステータス・バイト == 0x90なら
+	# ノート・オン/オフのMIDIメッセージをエンキュー
 	(
-		# 取得したバイト != 0x90の場合
+		# ステータス・バイト == 0x90の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+
+		# ステータス・バイトをr1へコピーしておく
+		sh2_copy_to_reg_from_reg r1 r0
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
+		sh2_copy_to_reg_from_pr r0
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+		# 使用するアドレスをレジスタへ設定
+		copy_to_reg_from_val_long r12 $a_synth_midimsg_enq
+
+		# ステータス・バイトをエンキュー
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_nop
+
+		# MIDIメッセージ: ノート・オン/オフ 固有処理
+		## ノート番号取得
+		### MCIPD[3] == 1を待つ
+		(
+			sh2_copy_to_reg_from_ptr_byte r0 r14
+			sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
+		) >src/f_synth_check_and_enq_midimsg.3.o
+		cat src/f_synth_check_and_enq_midimsg.3.o
+		local sz_3=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.3.o)
+		#### MCIPD[3]がセットされていなければ(T == 1)繰り返す
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
+		### MIBUFから1バイト取得しエンキュー
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_copy_to_reg_from_ptr_byte r1 r13
+		## ベロシティ取得
+		### MCIPD[3] == 1を待つ
+		cat src/f_synth_check_and_enq_midimsg.3.o
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
+		### MIBUFから1バイト取得しエンキュー
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_copy_to_reg_from_ptr_byte r1 r13
 
 		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
@@ -183,48 +228,13 @@ f_synth_check_and_enq_midimsg() {
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	) >src/f_synth_check_and_enq_midimsg.2.o
-	local sz_2=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.2.o)
-	## T == 1なら処理を飛ばす
-	sh2_rel_jump_if_true $(two_digits_d $(((sz_2 - 2) / 2)))
-	cat src/f_synth_check_and_enq_midimsg.2.o
-
-	# 変更が発生するレジスタを退避
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
-	sh2_copy_to_reg_from_pr r0
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
-
-	# 使用するアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r12 $a_synth_midimsg_enq
-
-	# ノート番号取得
-	## MCIPD[3] == 1を待つ
-	(
-		sh2_copy_to_reg_from_ptr_byte r0 r14
-		sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
-	) >src/f_synth_check_and_enq_midimsg.3.o
-	cat src/f_synth_check_and_enq_midimsg.3.o
-	local sz_3=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.3.o)
-	### MCIPD[3]がセットされていなければ(T == 1)繰り返す
-	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
-	## MIBUFから1バイト取得しエンキュー
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_copy_to_reg_from_ptr_byte r1 r13
-
-	# ベロシティ取得
-	## MCIPD[3] == 1を待つ
-	cat src/f_synth_check_and_enq_midimsg.3.o
-	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
-	## MIBUFから1バイト取得しエンキュー
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_copy_to_reg_from_ptr_byte r1 r13
+	) >src/f_synth_check_and_enq_midimsg.noteonoff.o
+	local sz_noteonoff=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.noteonoff.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_noteonoff - 2) / 2)))
+	cat src/f_synth_check_and_enq_midimsg.noteonoff.o
 
 	# 退避したレジスタを復帰
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
-	sh2_copy_to_pr_from_reg r0
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
@@ -299,13 +309,11 @@ f_synth_slot_init() {
 	sh2_set_reg r2 20
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
-	## 0x02: 0x12A0
+	## 0x02: 0x1000
 	## 1111 1111 1111 1111
 	## 1:SA start address
-	# sh2_set_reg r2 10
-	# sh2_shift_left_logical_8 r2
-	# copy_to_reg_from_val_word r2 1150
-	copy_to_reg_from_val_word r2 12a0
+	sh2_set_reg r2 10
+	sh2_shift_left_logical_8 r2
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	## 0x04: 0x0000
@@ -785,6 +793,39 @@ f_synth_proc_noteon() {
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# スロットの波形データ開始アドレスを設定する
+# in  : r1 - スロット番号
+#     : r2 - 開始アドレス
+# ※ 開始アドレスは2バイト以内であること
+f_synth_set_start_addr() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+	# 指定されたスロット番号のスロット別制御レジスタのアドレスをr14へ設定
+	copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+	sh2_shift_left_logical_2 r1
+	sh2_shift_left_logical_2 r1
+	sh2_shift_left_logical r1
+	sh2_add_to_reg_from_reg r14 r1
+
+	# 開始アドレス下位2バイトのレジスタへのオフセットを加算
+	sh2_add_to_reg_from_val_byte r14 02
+
+	# 開始アドレスを設定
+	sh2_copy_to_ptr_from_reg_word r14 r2
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
