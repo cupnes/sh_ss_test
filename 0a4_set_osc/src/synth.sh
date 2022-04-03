@@ -183,6 +183,8 @@ f_synth_check_and_enq_midimsg() {
 		sh2_copy_to_reg_from_reg r1 r0
 
 		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
 		sh2_copy_to_reg_from_pr r0
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
@@ -208,6 +210,25 @@ f_synth_check_and_enq_midimsg() {
 		### MIBUFから1バイト取得しエンキュー
 		sh2_abs_call_to_reg_after_next_inst r12
 		sh2_copy_to_reg_from_ptr_byte r1 r13
+		### もし取得したバイトのMSB==1だったら止める
+		sh2_copy_to_reg_from_reg r0 r1
+		sh2_test_r0_and_val_byte 80
+		(
+			# MSB == 1の場合
+			copy_to_reg_from_val_long r14 $a_putreg_byte
+			sh2_copy_to_reg_from_reg r2 r1
+			sh2_abs_call_to_reg_after_next_inst r14
+			sh2_set_reg r1 90
+			sh2_abs_call_to_reg_after_next_inst r14
+			sh2_copy_to_reg_from_reg r1 r2
+			infinite_loop
+		) >src/f_synth_check_and_enq_midimsg.ast1.o
+		local sz_ast1=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.ast1.o)
+		#### T == 1の時、処理を飛ばす
+		sh2_rel_jump_if_true $(two_digits_d $(((sz_ast1 - 2) / 2)))
+		cat src/f_synth_check_and_enq_midimsg.ast1.o
+		### ノート番号をr2へコピー
+		sh2_copy_to_reg_from_reg r2 r1
 		## ベロシティ取得
 		### MCIPD[3] == 1を待つ
 		cat src/f_synth_check_and_enq_midimsg.3.o
@@ -215,11 +236,32 @@ f_synth_check_and_enq_midimsg() {
 		### MIBUFから1バイト取得しエンキュー
 		sh2_abs_call_to_reg_after_next_inst r12
 		sh2_copy_to_reg_from_ptr_byte r1 r13
+		### もし取得したバイトのMSB==1だったら止める
+		sh2_copy_to_reg_from_reg r0 r1
+		sh2_test_r0_and_val_byte 80
+		(
+			# MSB == 1の場合
+			copy_to_reg_from_val_long r14 $a_putreg_byte
+			sh2_copy_to_reg_from_reg r3 r1
+			sh2_abs_call_to_reg_after_next_inst r14
+			sh2_set_reg r1 90
+			sh2_abs_call_to_reg_after_next_inst r14
+			sh2_copy_to_reg_from_reg r1 r2
+			sh2_abs_call_to_reg_after_next_inst r14
+			sh2_copy_to_reg_from_reg r1 r3
+			infinite_loop
+		) >src/f_synth_check_and_enq_midimsg.ast2.o
+		local sz_ast2=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.ast2.o)
+		#### T == 1の時、処理を飛ばす
+		sh2_rel_jump_if_true $(two_digits_d $(((sz_ast2 - 2) / 2)))
+		cat src/f_synth_check_and_enq_midimsg.ast2.o
 
 		# 退避したレジスタを復帰
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 		sh2_copy_to_pr_from_reg r0
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
