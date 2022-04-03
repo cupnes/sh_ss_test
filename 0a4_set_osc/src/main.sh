@@ -208,94 +208,109 @@ main() {
 		(
 			# キューが空でない場合
 
-			# ステータス・バイトを読み飛ばす
-			## デキュー
+			# ステータス・バイトをデキュー
 			sh2_abs_call_to_reg_after_next_inst r6
 			sh2_nop
+			sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 
-			# ノート番号とベロシティをデキュー
-			## 一旦r0へノート番号を設定
-			### デキュー
-			sh2_abs_call_to_reg_after_next_inst r6
-			sh2_nop
-			### 一旦r0へコピー
-			sh2_copy_to_reg_from_reg r0 r1
-			## r2へベロシティを設定
-			### デキュー
-			sh2_abs_call_to_reg_after_next_inst r6
-			sh2_nop
-			### r2へコピー
-			sh2_copy_to_reg_from_reg r2 r1
-			## r1へノート番号を設定
-			sh2_copy_to_reg_from_reg r1 r0
+			# ステータス・バイト == 0x90?
+			sh2_set_reg r0 90
+			sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+			sh2_compare_reg_eq_reg r1 r0
+			## ステータス・バイト != 0x90ならT == 0
 
-			# MIBUFに注目対象のMIDIメッセージがあれば取得し
-			# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
-			sh2_abs_call_to_reg_after_next_inst r12
-			sh2_nop
-
-			# ノート・オンかノート・オフか?
-			sh2_set_reg r0 00
-			sh2_compare_reg_eq_reg r2 r0
+			# ステータス・バイト != 0x90なら
+			# ノート・オン/オフ固有処理を飛ばす
 			(
-				# ノート・オンの場合
+				# ステータス・バイト == 0x90 の場合
 
-				# r1に格納されているノート番号をr2へコピーしておく
+				# ノート番号とベロシティをデキュー
+				## 一旦r0へノート番号を設定
+				### デキュー
+				sh2_abs_call_to_reg_after_next_inst r6
+				sh2_nop
+				### 一旦r0へコピー
+				sh2_copy_to_reg_from_reg r0 r1
+				## r2へベロシティを設定
+				### デキュー
+				sh2_abs_call_to_reg_after_next_inst r6
+				sh2_nop
+				### r2へコピー
 				sh2_copy_to_reg_from_reg r2 r1
+				## r1へノート番号を設定
+				sh2_copy_to_reg_from_reg r1 r0
 
-				# 既にノート・オンしているか?
-				## 取得したノート番号を鳴らしているスロット番号を探す
-				sh2_abs_call_to_reg_after_next_inst r9
-				sh2_nop
-				## MIBUFに注目対象のMIDIメッセージがあれば取得し
-				## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+				# MIBUFに注目対象のMIDIメッセージがあれば取得し
+				# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
 				sh2_abs_call_to_reg_after_next_inst r12
 				sh2_nop
-				## 取得したスロット番号 == $SLOT_NOT_FOUND?
-				sh2_set_reg r0 $SLOT_NOT_FOUND
-				sh2_compare_reg_eq_reg r1 r0
+
+				# ノート・オンかノート・オフか?
+				sh2_set_reg r0 00
+				sh2_compare_reg_eq_reg r2 r0
 				(
-					# ノート・オンの場合の処理を呼び出す
-					sh2_abs_call_to_reg_after_next_inst r8
-					sh2_copy_to_reg_from_reg r1 r2
-				) >src/main.noteon.1.o
-				local sz_noteon_1=$(stat -c '%s' src/main.noteon.1.o)
-				### 取得したスロット番号 != $SLOT_NOT_FOUNDなら処理を飛ばす
-				sh2_rel_jump_if_false $(two_digits_d $(((sz_noteon_1 - 2) / 2)))
-				cat src/main.noteon.1.o
-			) >src/main.noteon.o
-			(
-				# ノート・オフの場合
+					# ノート・オンの場合
 
-				# KEY_OFF
-				## 取得したノート番号を鳴らしているスロット番号を返す
-				sh2_abs_call_to_reg_after_next_inst r9
-				sh2_nop
-				## MIBUFに注目対象のMIDIメッセージがあれば取得し
-				## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
-				sh2_abs_call_to_reg_after_next_inst r12
-				sh2_nop
-				## 取得したスロット番号のスロットをKEY_OFFする
-				sh2_abs_call_to_reg_after_next_inst r10
-				sh2_nop
+					# r1に格納されているノート番号をr2へコピーしておく
+					sh2_copy_to_reg_from_reg r2 r1
 
-				# # WORKAROUND2: 常に全てのスロットをKEY_OFFする
-				# # 全スロットをKEY_OFFする
-				# local slot_num_dec
-				# for slot_num_dec in $(seq 0 31); do
-				# 	sh2_abs_call_to_reg_after_next_inst r10
-				# 	sh2_set_reg r1 $(to16_2 $slot_num_dec)
-				# done
+					# 既にノート・オンしているか?
+					## 取得したノート番号を鳴らしているスロット番号を探す
+					sh2_abs_call_to_reg_after_next_inst r9
+					sh2_nop
+					## MIBUFに注目対象のMIDIメッセージがあれば取得し
+					## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+					sh2_abs_call_to_reg_after_next_inst r12
+					sh2_nop
+					## 取得したスロット番号 == $SLOT_NOT_FOUND?
+					sh2_set_reg r0 $SLOT_NOT_FOUND
+					sh2_compare_reg_eq_reg r1 r0
+					(
+						# ノート・オンの場合の処理を呼び出す
+						sh2_abs_call_to_reg_after_next_inst r8
+						sh2_copy_to_reg_from_reg r1 r2
+					) >src/main.noteon.1.o
+					local sz_noteon_1=$(stat -c '%s' src/main.noteon.1.o)
+					### 取得したスロット番号 != $SLOT_NOT_FOUNDなら処理を飛ばす
+					sh2_rel_jump_if_false $(two_digits_d $(((sz_noteon_1 - 2) / 2)))
+					cat src/main.noteon.1.o
+				) >src/main.noteon.o
+				(
+					# ノート・オフの場合
 
-				# ノート・オンの場合の処理を飛ばす
-				local sz_noteon=$(stat -c '%s' src/main.noteon.o)
-				sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_noteon / 2))) 3)
-				sh2_nop
-			) >src/main.noteoff.o
-			local sz_noteoff=$(stat -c '%s' src/main.noteoff.o)
-			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff - 2) / 2)))
-			cat src/main.noteoff.o
-			cat src/main.noteon.o
+					# KEY_OFF
+					## 取得したノート番号を鳴らしているスロット番号を返す
+					sh2_abs_call_to_reg_after_next_inst r9
+					sh2_nop
+					## MIBUFに注目対象のMIDIメッセージがあれば取得し
+					## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
+					sh2_abs_call_to_reg_after_next_inst r12
+					sh2_nop
+					## 取得したスロット番号のスロットをKEY_OFFする
+					sh2_abs_call_to_reg_after_next_inst r10
+					sh2_nop
+
+					# # WORKAROUND2: 常に全てのスロットをKEY_OFFする
+					# # 全スロットをKEY_OFFする
+					# local slot_num_dec
+					# for slot_num_dec in $(seq 0 31); do
+					# 	sh2_abs_call_to_reg_after_next_inst r10
+					# 	sh2_set_reg r1 $(to16_2 $slot_num_dec)
+					# done
+
+					# ノート・オンの場合の処理を飛ばす
+					local sz_noteon=$(stat -c '%s' src/main.noteon.o)
+					sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_noteon / 2))) 3)
+					sh2_nop
+				) >src/main.noteoff.o
+				local sz_noteoff=$(stat -c '%s' src/main.noteoff.o)
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff - 2) / 2)))
+				cat src/main.noteoff.o
+				cat src/main.noteon.o
+			) >src/main.noteonoff.o
+			local sz_noteonoff=$(stat -c '%s' src/main.noteonoff.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteonoff - 2) / 2)))
+			cat src/main.noteonoff.o
 		) >src/main.7.o
 		local sz_7=$(stat -c '%s' src/main.7.o)
 		### T == 0なら処理を飛ばす
