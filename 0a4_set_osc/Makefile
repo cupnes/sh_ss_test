@@ -9,7 +9,7 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN
+$(NAME).iso: 0.BIN desc.img
 	./iso9660.sh $^ >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
@@ -24,6 +24,9 @@ src/vars.o src/vars_map.sh: src/vars.sh font.lut
 
 font.lut: ../font_lut
 	cat $</* >$@
+
+desc.img: desc.png
+	$(TOOLS_PATH)/conv_img_using_cbin.sh $< $@
 
 src/pcm_c4_saw_16bit.txt:
 	./make_pcm_c4_saw_16bit.sh >$@
