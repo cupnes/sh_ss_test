@@ -137,8 +137,13 @@ f_synth_check_and_enq_midimsg() {
 	copy_to_reg_from_val_long r14 $SS_CT_SND_MCIPDL_ADDR
 
 	# MCIPD[3]を確認
-	sh2_copy_to_reg_from_ptr_byte r0 r14
-	sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
+	# (繰り返しでも使用する処理なのでファイルへ書き出しておく)
+	(
+		sh2_copy_to_reg_from_ptr_byte r0 r14
+		sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
+	) >src/f_synth_check_and_enq_midimsg.chkmi.o
+	local sz_chkmi=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.chkmi.o)
+	cat src/f_synth_check_and_enq_midimsg.chkmi.o
 	## MCIPD[3] == 1の時、T == 0
 
 	# MCIPD[3] == 0ならreturn
@@ -163,6 +168,22 @@ f_synth_check_and_enq_midimsg() {
 
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r13 $SS_CT_SND_MIBUF_ADDR
+
+	# 繰り返し使用する処理をファイル書き出し
+	## データ・バイト取得処理
+	(
+		# MCIPD[3] == 1を待つ
+		cat src/f_synth_check_and_enq_midimsg.chkmi.o
+		## MCIPD[3]がセットされていなければ(T == 1)繰り返す
+		sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_chkmi) / 2)))
+
+		# MIBUFから1バイト取得
+		sh2_copy_to_reg_from_ptr_byte r0 r13
+
+		# もし取得したバイトのMSB == 1?
+		sh2_test_r0_and_val_byte 80
+	) >src/f_synth_check_and_enq_midimsg.getdatabyte.o
+	local sz_getdatabyte=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.getdatabyte.o)
 
 	# MIBUFからステータス・バイト取得
 	sh2_copy_to_reg_from_ptr_byte r0 r13
@@ -197,26 +218,8 @@ f_synth_check_and_enq_midimsg() {
 		# MIDIメッセージ: ノート・オン/オフ 固有処理
 		## ノート番号取得
 		### データ・バイト取得処理
-		(
-			# MCIPD[3] == 1を待つ
-			(
-				sh2_copy_to_reg_from_ptr_byte r0 r14
-				sh2_test_r0_and_val_byte $SS_SND_MCIPDL_BIT_MI
-			) >src/f_synth_check_and_enq_midimsg.3.o
-			cat src/f_synth_check_and_enq_midimsg.3.o
-			local sz_3=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.3.o)
-			## MCIPD[3]がセットされていなければ(T == 1)繰り返す
-			sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_3) / 2)))
-
-			# MIBUFから1バイト取得
-			sh2_copy_to_reg_from_ptr_byte r0 r13
-
-			# もし取得したバイトのMSB == 1?
-			sh2_test_r0_and_val_byte 80
-		) >src/f_synth_check_and_enq_midimsg.getdatabyte.o
 		cat src/f_synth_check_and_enq_midimsg.getdatabyte.o
-		local sz_getdatabyte=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.getdatabyte.o)
-		### 取得したバイトのMSB == 1(T == 0)なら繰り返す
+		#### 取得したバイトのMSB == 1(T == 0)なら繰り返す
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_getdatabyte) / 2)))
 		### エンキュー
 		sh2_abs_call_to_reg_after_next_inst r12
@@ -246,6 +249,61 @@ f_synth_check_and_enq_midimsg() {
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_noteonoff - 2) / 2)))
 	cat src/f_synth_check_and_enq_midimsg.noteonoff.o
+
+	# ステータス・バイト == 0xc0?
+	sh2_compare_r0_eq_val c0
+	## ステータス・バイト != 0xc0の時、T == 0
+
+	# ステータス・バイト == 0xc0なら
+	# プログラム・チェンジのMIDIメッセージをエンキュー
+	(
+		# ステータス・バイト == 0xc0の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+
+		# ステータス・バイトをr1へコピーしておく
+		sh2_copy_to_reg_from_reg r1 r0
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
+		sh2_copy_to_reg_from_pr r0
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+		# 使用するアドレスをレジスタへ設定
+		copy_to_reg_from_val_long r12 $a_synth_midimsg_enq
+
+		# ステータス・バイトをエンキュー
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_nop
+
+		# MIDIメッセージ: プログラム・チェンジ 固有処理
+		## プログラム番号取得
+		### データ・バイト取得処理
+		cat src/f_synth_check_and_enq_midimsg.getdatabyte.o
+		#### 取得したバイトのMSB == 1(T == 0)なら繰り返す
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_getdatabyte) / 2)))
+		### エンキュー
+		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_copy_to_reg_from_reg r1 r0
+
+		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_check_and_enq_midimsg.progchg.o
+	local sz_progchg=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.progchg.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))
+	cat src/f_synth_check_and_enq_midimsg.progchg.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15

@@ -171,22 +171,22 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# 全スロットの波形データ開始アドレスを変更してみる
-	## サイン波へ変更することにする
-	copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
-	## 全スロットへ設定
-	sh2_set_reg r1 00
-	sh2_set_reg r0 1f
-	(
-		sh2_abs_call_to_reg_after_next_inst r14
-		sh2_nop
-		sh2_add_to_reg_from_val_byte r1 01
-		sh2_compare_reg_gt_reg_unsigned r1 r0
-	) >src/main.setsa.o
-	cat src/main.setsa.o
-	### r1 > 31(0x1f)ならループを抜ける
-	local sz_setsa=$(stat -c '%s' src/main.setsa.o)
-	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setsa) / 2)))
+	# # 全スロットの波形データ開始アドレスを変更してみる
+	# ## サイン波へ変更することにする
+	# copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
+	# ## 全スロットへ設定
+	# sh2_set_reg r1 00
+	# sh2_set_reg r0 1f
+	# (
+	# 	sh2_abs_call_to_reg_after_next_inst r14
+	# 	sh2_nop
+	# 	sh2_add_to_reg_from_val_byte r1 01
+	# 	sh2_compare_reg_gt_reg_unsigned r1 r0
+	# ) >src/main.setsa.o
+	# cat src/main.setsa.o
+	# ### r1 > 31(0x1f)ならループを抜ける
+	# local sz_setsa=$(stat -c '%s' src/main.setsa.o)
+	# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setsa) / 2)))
 
 	(
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
