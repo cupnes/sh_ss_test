@@ -860,6 +860,13 @@ funcs() {
 	echo -e "a_synth_set_start_addr=$a_synth_set_start_addr" >>$map_file
 	f_synth_set_start_addr >src/f_synth_set_start_addr.o
 	cat src/f_synth_set_start_addr.o
+
+	# synth: 現在のオシレータを示す文字を表示する(デモ用)
+	fsz=$(to16 $(stat -c '%s' src/f_synth_set_start_addr.o))
+	a_synth_point_current_osc=$(calc16_8 "${a_synth_set_start_addr}+${fsz}")
+	echo -e "a_synth_point_current_osc=$a_synth_point_current_osc" >>$map_file
+	f_synth_point_current_osc >src/f_synth_point_current_osc.o
+	cat src/f_synth_point_current_osc.o
 }
 
 funcs

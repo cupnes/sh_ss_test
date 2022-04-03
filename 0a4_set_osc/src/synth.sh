@@ -904,3 +904,56 @@ f_synth_set_start_addr() {
 	sh2_return_after_next_inst
 	sh2_nop
 }
+
+# 現在のオシレータを示す文字を表示する(デモ用)
+# in  : r1 - 領域左上のX座標
+#     : r2 - 領域左上のY座標
+f_synth_point_current_osc() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r4
+	sh2_copy_to_reg_from_pr r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# Y座標をr3へ、X座標をr2へ設定
+	sh2_copy_to_reg_from_reg r3 r2
+	sh2_copy_to_reg_from_reg r2 r1
+
+	# '>'を表示
+	copy_to_reg_from_val_long r4 $a_putchar_xy
+	sh2_abs_call_to_reg_after_next_inst r4
+	sh2_set_reg r1 $CHARCODE_GREATER_THAN
+
+	# 次に表示するときのために各種アドレス変数を戻す
+	## キャラクタパターンを配置するアドレス
+	## 1文字のフォントサイズ($CON_FONT_SIZE)分戻す
+	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r1
+	sh2_set_reg r3 $CON_FONT_SIZE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_sub_to_reg_from_reg r2 r3
+	sh2_copy_to_ptr_from_reg_long r1 r2
+	## VDPコマンドを配置するアドレス
+	## コマンドのサイズ(32=0x20)分戻す
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r1
+	sh2_set_reg r3 20
+	sh2_sub_to_reg_from_reg r2 r3
+	sh2_copy_to_ptr_from_reg_long r1 r2
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}

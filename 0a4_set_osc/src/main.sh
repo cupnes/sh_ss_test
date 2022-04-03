@@ -72,6 +72,7 @@ setup_vram_command_table() {
 # カラールックアップテーブル設定
 # work: r0* - copy_to_reg_from_val_longの作業用
 #     : r1* - この中の作業用
+#     : r2* - この中の作業用
 # ※ *が付いているレジスタはこの関数で書き換えられる
 setup_vram_color_lookup_table() {
 	# 配置先アドレスをr1へ設定
@@ -81,10 +82,21 @@ setup_vram_color_lookup_table() {
 	sh2_xor_to_reg_from_reg r0 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# | 1 | 白   | 0xffff |
+	# # | 1 | 白   | 0xffff |
+	# sh2_add_to_reg_from_val_byte r1 02
+	# sh2_set_reg r0 ff
+	# sh2_copy_to_ptr_from_reg_word r1 r0
+
+	# # | 1 | 黒   | 0x8000 |
+	# sh2_add_to_reg_from_val_byte r1 02
+	# sh2_set_reg r0 80
+	# sh2_shift_left_logical_8 r0
+	# sh2_copy_to_ptr_from_reg_word r1 r0
+
+	# | 1 | 赤   | 0x801f |
 	sh2_add_to_reg_from_val_byte r1 02
-	sh2_set_reg r0 ff
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	copy_to_reg_from_val_word r2 801f
+	sh2_copy_to_ptr_from_reg_word r1 r2
 
 	# | 2 | 透明 | 0x0000 |
 	# | : |  :   |   :    |
@@ -122,6 +134,20 @@ main() {
 	## 表示画像更新
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_copy_to_reg_from_reg r1 r12
+
+	# 画像を表示した分、各種アドレス変数を進める
+	## キャラクタパターンを配置するアドレス
+	## 画像のサイズ(143360=0x23000バイト)分進める
+	## 0x05C10C00 + 0x23000 = 0x05C33C00
+	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
+	copy_to_reg_from_val_long r2 05C33C00
+	sh2_copy_to_ptr_from_reg_long r1 r2
+	## VDPコマンドを配置するアドレス
+	## コマンドのサイズ(32=0x20)分進める
+	## 0x05C02360 + 0x20 = 0x05C02380
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
+	copy_to_reg_from_val_long r2 05C02380
+	sh2_copy_to_ptr_from_reg_long r1 r2
 
 	# オシレータ用のPCMデータをサウンドメモリへ配置
 	copy_to_reg_from_val_long r4 $a_memcpy_word
@@ -175,6 +201,7 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_set_start_addr
+	copy_to_reg_from_val_long r13 $a_synth_point_current_osc
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r10 $a_key_off
 	copy_to_reg_from_val_long r9 $a_synth_get_slot_on_with_note
@@ -182,22 +209,11 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# # 全スロットの波形データ開始アドレスを変更してみる
-	# ## サイン波へ変更することにする
-	# copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
-	# ## 全スロットへ設定
-	# sh2_set_reg r1 00
-	# sh2_set_reg r0 1f
-	# (
-	# 	sh2_abs_call_to_reg_after_next_inst r14
-	# 	sh2_nop
-	# 	sh2_add_to_reg_from_val_byte r1 01
-	# 	sh2_compare_reg_gt_reg_unsigned r1 r0
-	# ) >src/main.setsa.o
-	# cat src/main.setsa.o
-	# ### r1 > 31(0x1f)ならループを抜ける
-	# local sz_setsa=$(stat -c '%s' src/main.setsa.o)
-	# sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setsa) / 2)))
+	# カーソル表示(デフォルト=ノコギリ波)
+	sh2_set_reg r1 $OSC_CURSOR_X
+	sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 	(
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
@@ -345,6 +361,13 @@ main() {
 				sh2_compare_reg_eq_reg r1 r0
 				### プログラム番号 != ノコギリ波の時、T == 0
 				(
+					# カーソル表示
+					sh2_set_reg r1 $OSC_CURSOR_X
+					sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+					sh2_abs_call_to_reg_after_next_inst r13
+					sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+					# r2へオシレータ波形アドレス設定
 					copy_to_reg_from_val_long r2 $OSC_PCM_SAW_MC68K_BASE
 				) >src/main.progchg.saw.o
 				local sz_progchg_saw=$(stat -c '%s' src/main.progchg.saw.o)
@@ -355,6 +378,13 @@ main() {
 				sh2_compare_reg_eq_reg r1 r0
 				### プログラム番号 != 矩形波の時、T == 0
 				(
+					# カーソル表示
+					sh2_set_reg r1 $OSC_CURSOR_X
+					sh2_set_reg r2 $OSC_CURSOR_Y_SQU
+					sh2_abs_call_to_reg_after_next_inst r13
+					sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+					# r2へオシレータ波形アドレス設定
 					copy_to_reg_from_val_long r2 $OSC_PCM_SQU_MC68K_BASE
 				) >src/main.progchg.squ.o
 				local sz_progchg_squ=$(stat -c '%s' src/main.progchg.squ.o)
@@ -365,6 +395,13 @@ main() {
 				sh2_compare_reg_eq_reg r1 r0
 				### プログラム番号 != サイン波の時、T == 0
 				(
+					# カーソル表示
+					sh2_set_reg r1 $OSC_CURSOR_X
+					sh2_set_reg r2 $OSC_CURSOR_Y_SIN
+					sh2_abs_call_to_reg_after_next_inst r13
+					sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+					# r2へオシレータ波形アドレス設定
 					copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
 				) >src/main.progchg.sin.o
 				local sz_progchg_sin=$(stat -c '%s' src/main.progchg.sin.o)
