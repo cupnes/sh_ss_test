@@ -311,6 +311,72 @@ main() {
 			local sz_noteonoff=$(stat -c '%s' src/main.noteonoff.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteonoff - 2) / 2)))
 			cat src/main.noteonoff.o
+
+			# ステータス・バイト == 0xc0?
+			sh2_set_reg r0 c0
+			sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+			sh2_compare_reg_eq_reg r1 r0
+			## ステータス・バイト != 0xc0ならT == 0
+
+			# ステータス・バイト != 0xc0なら
+			# プログラム・チェンジ固有処理を飛ばす
+			(
+				# ステータス・バイト == 0xc0 の場合
+
+				# プログラム番号をデキュー
+				sh2_abs_call_to_reg_after_next_inst r6
+				sh2_nop
+
+				# プログラム番号に応じたオシレータ波形アドレスを
+				# レジスタへ設定
+				## ノコギリ波
+				sh2_set_reg r0 $PROGNUM_OSC_SAW
+				sh2_compare_reg_eq_reg r1 r0
+				### プログラム番号 != ノコギリ波の時、T == 0
+				(
+					copy_to_reg_from_val_long r2 $OSC_PCM_SAW_MC68K_BASE
+				) >src/main.progchg.saw.o
+				local sz_progchg_saw=$(stat -c '%s' src/main.progchg.saw.o)
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg_saw - 2) / 2)))
+				cat src/main.progchg.saw.o
+				## 矩形波
+				sh2_set_reg r0 $PROGNUM_OSC_SQU
+				sh2_compare_reg_eq_reg r1 r0
+				### プログラム番号 != 矩形波の時、T == 0
+				(
+					copy_to_reg_from_val_long r2 $OSC_PCM_SQU_MC68K_BASE
+				) >src/main.progchg.squ.o
+				local sz_progchg_squ=$(stat -c '%s' src/main.progchg.squ.o)
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg_squ - 2) / 2)))
+				cat src/main.progchg.squ.o
+				## サイン波
+				sh2_set_reg r0 $PROGNUM_OSC_SIN
+				sh2_compare_reg_eq_reg r1 r0
+				### プログラム番号 != サイン波の時、T == 0
+				(
+					copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
+				) >src/main.progchg.sin.o
+				local sz_progchg_sin=$(stat -c '%s' src/main.progchg.sin.o)
+				sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg_sin - 2) / 2)))
+				cat src/main.progchg.sin.o
+
+				# 全スロットの波形データ開始アドレスを変更
+				sh2_set_reg r1 00
+				sh2_set_reg r0 1f
+				(
+					sh2_abs_call_to_reg_after_next_inst r14
+					sh2_nop
+					sh2_add_to_reg_from_val_byte r1 01
+					sh2_compare_reg_gt_reg_unsigned r1 r0
+				) >src/main.setsa.o
+				cat src/main.setsa.o
+				## r1 > 31(0x1f)ならループを抜ける
+				local sz_setsa=$(stat -c '%s' src/main.setsa.o)
+				sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setsa) / 2)))
+			) >src/main.progchg.o
+			local sz_progchg=$(stat -c '%s' src/main.progchg.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))
+			cat src/main.progchg.o
 		) >src/main.7.o
 		local sz_7=$(stat -c '%s' src/main.7.o)
 		### T == 0なら処理を飛ばす
