@@ -41,7 +41,7 @@ run: run_yabause
 
 clean:
 	rm -rf *~ font.lut *.o *.dat *.bin 0.BIN *.lst *.ppm *.img	\
-	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~
+	src/*_map.sh $(TARGETS) src/*~ src/*.o include/*~ doc/*~
 
 clean_all: clean
 	rm -f IP.BIN
