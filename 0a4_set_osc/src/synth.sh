@@ -791,7 +791,7 @@ f_synth_proc_noteon() {
 
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
 		# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
-		sh2_abs_call_to_reg_after_next_inst r12
+		sh2_abs_call_to_reg_after_next_inst r14
 		sh2_nop
 	) >src/main_n${note}.o
 	local sz_nXX=$(stat -c '%s' src/main_n${note}.o)
@@ -814,7 +814,7 @@ f_synth_proc_noteon() {
 
 			# MIBUFに注目対象のMIDIメッセージがあれば取得し
 			# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
-			sh2_abs_call_to_reg_after_next_inst r12
+			sh2_abs_call_to_reg_after_next_inst r14
 			sh2_nop
 
 			# 以降の条件処理を飛ばす
@@ -847,7 +847,7 @@ f_synth_proc_noteon() {
 
 	# MIBUFに注目対象のMIDIメッセージがあれば取得し
 	# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
-	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 
 	# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
