@@ -240,6 +240,23 @@ main() {
 			sh2_nop
 			sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
 
+			# ステータス・バイト == 0xe0?
+			sh2_set_reg r0 e0
+			sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+			sh2_compare_reg_eq_reg r1 r0
+			## ステータス・バイト != 0xe0ならT == 0
+
+			# ステータス・バイト != 0xe0なら
+			# ピッチ・ベンド・チェンジ固有処理を飛ばす
+			(
+				# ステータス・バイト == 0xe0 の場合
+
+				# ピッチベンド値(LSB)とピッチベンド値(MSB)をデキュー
+			) >src/main.pbc.o
+			local sz_pbc=$(stat -c '%s' src/main.pbc.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_pbc - 2) / 2)))
+			cat src/main.pbc.o
+
 			# ステータス・バイト == 0x90?
 			sh2_set_reg r0 90
 			sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
