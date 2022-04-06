@@ -867,6 +867,13 @@ funcs() {
 	echo -e "a_synth_point_current_osc=$a_synth_point_current_osc" >>$map_file
 	f_synth_point_current_osc >src/f_synth_point_current_osc.o
 	cat src/f_synth_point_current_osc.o
+
+	# synth: スロットへピッチ値を加算する
+	fsz=$(to16 $(stat -c '%s' src/f_synth_point_current_osc.o))
+	a_synth_add_pitch_to_slot=$(calc16_8 "${a_synth_point_current_osc}+${fsz}")
+	echo -e "a_synth_add_pitch_to_slot=$a_synth_add_pitch_to_slot" >>$map_file
+	f_synth_add_pitch_to_slot >src/f_synth_add_pitch_to_slot.o
+	cat src/f_synth_add_pitch_to_slot.o
 }
 
 funcs

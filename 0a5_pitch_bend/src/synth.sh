@@ -972,3 +972,73 @@ f_synth_point_current_osc() {
 	sh2_return_after_next_inst
 	sh2_nop
 }
+
+# スロットへピッチ値を加算する
+# in  : r1 - スロット番号(0始まり)
+#     : r2 - ピッチ値
+f_synth_add_pitch_to_slot() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+	# 指定されたスロット番号のスロット別制御レジスタのアドレスをr14へ設定
+	copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+	sh2_shift_left_logical_2 r1
+	sh2_shift_left_logical_2 r1
+	sh2_shift_left_logical r1
+	sh2_add_to_reg_from_reg r14 r1
+
+	# PITCHレジスタへのオフセットを加算
+	sh2_add_to_reg_from_val_byte r14 10
+
+	# PITCHレジスタ値を取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+
+	# r1 = (OCT >> 1) | FNS
+	## OCTビットを抽出し1ビット右シフトした値をr3へ設定
+	sh2_set_reg r0 78
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_reg_from_reg r3 r1
+	sh2_and_to_reg_from_reg r3 r0
+	sh2_shift_right_logical r3
+	## FNSビットを抽出しr1へ設定
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ff
+	sh2_and_to_reg_from_reg r1 r0
+	## r1 |= r3
+	sh2_or_to_reg_from_reg r1 r3
+
+	# r1 += r2
+	sh2_add_to_reg_from_reg r1 r2
+
+	# r1からOCTとFNSを抽出しPITCHレジスタの形式にする
+	## OCTビットを抽出し1ビット左シフトした値をr3へ設定
+	sh2_set_reg r0 3c
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_reg_from_reg r3 r1
+	sh2_and_to_reg_from_reg r3 r0
+	sh2_shift_left_logical r3
+	## FNSビットを抽出しr1へ設定
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ff
+	sh2_and_to_reg_from_reg r1 r0
+	## r1 |= r3
+	sh2_or_to_reg_from_reg r1 r3
+
+	# 結果をPITCHレジスタへ設定
+	sh2_copy_to_ptr_from_reg_word r14 r1
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
