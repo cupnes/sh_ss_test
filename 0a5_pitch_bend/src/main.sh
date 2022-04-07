@@ -203,9 +203,11 @@ main() {
 	copy_to_reg_from_val_long r14 $a_synth_set_start_addr
 	copy_to_reg_from_val_long r13 $a_synth_point_current_osc
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
+	copy_to_reg_from_val_long r11 $var_synth_slot_state_base
 	copy_to_reg_from_val_long r10 $a_key_off
 	copy_to_reg_from_val_long r9 $a_synth_get_slot_on_with_note
 	copy_to_reg_from_val_long r8 $a_synth_proc_noteon
+	copy_to_reg_from_val_long r7 $a_synth_add_pitch_to_slot
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
@@ -252,6 +254,63 @@ main() {
 				# ステータス・バイト == 0xe0 の場合
 
 				# ピッチベンド値(LSB)とピッチベンド値(MSB)をデキュー
+				## ピッチベンド値(LSB)をデキューしr2へ設定
+				sh2_abs_call_to_reg_after_next_inst r6
+				sh2_nop
+				sh2_copy_to_reg_from_reg r2 r1
+				## ピッチベンド値(MSB)をデキューしr3へ設定
+				sh2_abs_call_to_reg_after_next_inst r6
+				sh2_nop
+				sh2_copy_to_reg_from_reg r3 r1
+
+				# r2へピッチ値を設定
+				## r2 = (r3 << 7) | r2
+				sh2_shift_left_logical_8 r3
+				sh2_shift_right_logical r3
+				sh2_or_to_reg_from_reg r2 r3
+				## r2 -= 0x4000
+				sh2_set_reg r0 40
+				sh2_shift_left_logical_8 r0
+				sh2_sub_to_reg_from_reg r2 r0
+
+				# KEY_ON中のスロットのPITCHレジスタへピッチ値を加算
+				## r3へ各スロットの状態管理変数のアドレスを設定
+				sh2_copy_to_reg_from_reg r3 r11
+				## スロット番号へ初期値として0を設定
+				sh2_set_reg r1 00
+				(
+					# スロットの状態をr4へ取得
+					sh2_copy_to_reg_from_ptr_byte r4 r3
+
+					# スロットはKEY_ONか? (スロットの状態 != 0か?)
+					sh2_set_reg r0 00
+					sh2_compare_reg_eq_reg r4 r0
+					(
+						# KEY_ONの場合
+
+						# スロットのPITCHレジスタへピッチ値を加算
+						sh2_abs_call_to_reg_after_next_inst r7
+						sh2_nop
+					) >src/main.pbc.1.o
+					local sz_pbc_1=$(stat -c '%s' src/main.pbc.1.o)
+					## r4 != r0(T == 0)なら処理を飛ばす
+					sh2_rel_jump_if_false $(two_digits_d $(((sz_pbc_1 - 2) / 2)))
+					cat src/main.pbc.1.o
+
+					# スロットの状態管理変数のアドレスを1バイト進める
+					sh2_add_to_reg_from_val_byte r3 01
+
+					# スロット番号をインクリメント
+					sh2_add_to_reg_from_val_byte r1 01
+
+					# スロット番号 >= 0x20?
+					sh2_set_reg r0 20
+					sh2_compare_reg_ge_reg_unsigned r1 r0
+				) >src/main.pbc.2.o
+				cat src/main.pbc.2.o
+				local sz_pbc_2=$(stat -c '%s' src/main.pbc.2.o)
+				### スロット番号 >= 0x20 でない(T == 0)なら繰り返す
+				sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_pbc_2) / 2)))
 			) >src/main.pbc.o
 			local sz_pbc=$(stat -c '%s' src/main.pbc.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_pbc - 2) / 2)))
