@@ -285,6 +285,7 @@ main() {
 					# スロットはKEY_ONか? (スロットの状態 != 0か?)
 					sh2_set_reg r0 00
 					sh2_compare_reg_eq_reg r4 r0
+					## KEY_OFFの時、r4 == r0なのでT == 1
 					(
 						# KEY_ONの場合
 
@@ -293,8 +294,8 @@ main() {
 						sh2_nop
 					) >src/main.pbc.1.o
 					local sz_pbc_1=$(stat -c '%s' src/main.pbc.1.o)
-					## r4 != r0(T == 0)なら処理を飛ばす
-					sh2_rel_jump_if_false $(two_digits_d $(((sz_pbc_1 - 2) / 2)))
+					## T == 1なら処理を飛ばす
+					sh2_rel_jump_if_true $(two_digits_d $(((sz_pbc_1 - 2) / 2)))
 					cat src/main.pbc.1.o
 
 					# スロットの状態管理変数のアドレスを1バイト進める
