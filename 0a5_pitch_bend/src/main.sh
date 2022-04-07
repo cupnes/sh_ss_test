@@ -268,8 +268,8 @@ main() {
 				sh2_shift_left_logical_8 r3
 				sh2_shift_right_logical r3
 				sh2_or_to_reg_from_reg r2 r3
-				## r2 -= 0x4000
-				sh2_set_reg r0 40
+				## r2 -= 0x2000
+				sh2_set_reg r0 20
 				sh2_shift_left_logical_8 r0
 				sh2_sub_to_reg_from_reg r2 r0
 
