@@ -201,7 +201,7 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_set_start_addr
-	copy_to_reg_from_val_long r13 $a_synth_point_current_osc
+	# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r11 $var_synth_slot_state_base
 	copy_to_reg_from_val_long r10 $a_key_off
@@ -211,11 +211,11 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# カーソル表示(デフォルト=ノコギリ波)
-	sh2_set_reg r1 $OSC_CURSOR_X
-	sh2_set_reg r2 $OSC_CURSOR_Y_SAW
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# # カーソル表示(デフォルト=ノコギリ波)
+	# sh2_set_reg r1 $OSC_CURSOR_X
+	# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 	(
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し

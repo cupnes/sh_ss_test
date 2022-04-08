@@ -1000,12 +1000,12 @@ f_synth_proc_progchg() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	# sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
 	# 繰り返し使用するアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $a_synth_point_current_osc
+	# copy_to_reg_from_val_long r14 $a_synth_point_current_osc
 	copy_to_reg_from_val_long r13 $a_synth_set_start_addr
 
 	# プログラム番号をデキュー
@@ -1020,11 +1020,11 @@ f_synth_proc_progchg() {
 	sh2_compare_reg_eq_reg r1 r0
 	### プログラム番号 != ノコギリ波の時、T == 0
 	(
-		# カーソル表示
-		sh2_set_reg r1 $OSC_CURSOR_X
-		sh2_set_reg r2 $OSC_CURSOR_Y_SAW
-		sh2_abs_call_to_reg_after_next_inst r14
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# # カーソル表示
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+		# sh2_abs_call_to_reg_after_next_inst r14
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# r2へオシレータ波形アドレス設定
 		copy_to_reg_from_val_long r2 $OSC_PCM_SAW_MC68K_BASE
@@ -1037,11 +1037,11 @@ f_synth_proc_progchg() {
 	sh2_compare_reg_eq_reg r1 r0
 	### プログラム番号 != 矩形波の時、T == 0
 	(
-		# カーソル表示
-		sh2_set_reg r1 $OSC_CURSOR_X
-		sh2_set_reg r2 $OSC_CURSOR_Y_SQU
-		sh2_abs_call_to_reg_after_next_inst r14
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# # カーソル表示
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SQU
+		# sh2_abs_call_to_reg_after_next_inst r14
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# r2へオシレータ波形アドレス設定
 		copy_to_reg_from_val_long r2 $OSC_PCM_SQU_MC68K_BASE
@@ -1054,11 +1054,11 @@ f_synth_proc_progchg() {
 	sh2_compare_reg_eq_reg r1 r0
 	### プログラム番号 != サイン波の時、T == 0
 	(
-		# カーソル表示
-		sh2_set_reg r1 $OSC_CURSOR_X
-		sh2_set_reg r2 $OSC_CURSOR_Y_SIN
-		sh2_abs_call_to_reg_after_next_inst r14
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# # カーソル表示
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SIN
+		# sh2_abs_call_to_reg_after_next_inst r14
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# r2へオシレータ波形アドレス設定
 		copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
@@ -1084,7 +1084,7 @@ f_synth_proc_progchg() {
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	# sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
