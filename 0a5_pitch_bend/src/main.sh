@@ -263,7 +263,7 @@ main() {
 				sh2_nop
 				sh2_copy_to_reg_from_reg r3 r1
 
-				# r2へピッチ値を設定
+				# r2へピッチ値への加算値を設定
 				## r2 = (r3 << 7) | r2
 				sh2_shift_left_logical_8 r3
 				sh2_shift_right_logical r3
@@ -272,6 +272,11 @@ main() {
 				sh2_set_reg r0 20
 				sh2_shift_left_logical_8 r0
 				sh2_sub_to_reg_from_reg r2 r0
+				## r2を4ビット右シフト
+				sh2_shift_right_arithmetic r2
+				sh2_shift_right_arithmetic r2
+				sh2_shift_right_arithmetic r2
+				sh2_shift_right_arithmetic r2
 
 				# KEY_ON中のスロットのPITCHレジスタへピッチ値を加算
 				## r3へ各スロットの状態管理変数のアドレスを設定
