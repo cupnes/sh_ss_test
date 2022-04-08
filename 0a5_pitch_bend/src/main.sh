@@ -278,7 +278,7 @@ main() {
 				sh2_shift_right_arithmetic r2
 				sh2_shift_right_arithmetic r2
 
-				# KEY_ON中のスロットのPITCHレジスタへピッチ値を加算
+				# KEY_ON中のスロットへピッチ値を加算
 				## r3へ各スロットの状態管理変数のアドレスを設定
 				sh2_copy_to_reg_from_reg r3 r11
 				## スロット番号へ初期値として0を設定
@@ -294,7 +294,7 @@ main() {
 					(
 						# KEY_ONの場合
 
-						# スロットのPITCHレジスタへピッチ値を加算
+						# スロットへピッチ値を加算
 						sh2_abs_call_to_reg_after_next_inst r7
 						sh2_nop
 					) >src/main.pbc.1.o
