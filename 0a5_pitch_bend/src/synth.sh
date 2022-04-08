@@ -538,6 +538,26 @@ f_key_on_with_pitch() {
 	sh2_add_to_reg_from_reg r1 r13
 	## 変数更新
 	sh2_copy_to_ptr_from_reg_byte r1 r3
+	## ピッチ値を求める (OCT >> 1) | FNS
+	### OCTビットを抽出し1ビット右シフトした値をr1へ設定
+	sh2_set_reg r0 78
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_reg_from_reg r1 r2
+	sh2_and_to_reg_from_reg r1 r0
+	sh2_shift_right_logical r1
+	### FNSビットを抽出しr2へ設定
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte ff
+	sh2_and_to_reg_from_reg r2 r0
+	## r2 |= r1
+	sh2_or_to_reg_from_reg r2 r1
+	## 該当スロットのピッチ値の変数のアドレスをr1へ設定
+	copy_to_reg_from_val_long r1 $var_synth_slot_pitchval_base
+	sh2_shift_left_logical r13
+	sh2_add_to_reg_from_reg r1 r13
+	## 変数更新
+	sh2_copy_to_ptr_from_reg_word r1 r2
 
 	# 退避したレジスタを復帰しreturn
 	## r14

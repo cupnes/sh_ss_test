@@ -114,10 +114,17 @@ vars() {
 	dd if=/dev/zero bs=1 count=32 status=none
 	## 4バイト境界
 
+	## - ピッチ値(2バイト)
+	## を32スロット分用意(計64(0x40)バイト)
+	var_synth_slot_pitchval_base=$(calc16_8 "$var_synth_slot_state_base+20")
+	echo -e "var_synth_slot_pitchval_base=$var_synth_slot_pitchval_base" >>$map_file
+	dd if=/dev/zero bs=1 count=64 status=none
+	## 4バイト境界
+
 	# synth: オシレータ用PCMデータ
 	local d
 	## ノコギリ波
-	var_synth_osc_pcm_saw_base=$(calc16_8 "$var_synth_slot_state_base+20")
+	var_synth_osc_pcm_saw_base=$(calc16_8 "$var_synth_slot_pitchval_base+40")
 	echo -e "var_synth_osc_pcm_saw_base=$var_synth_osc_pcm_saw_base" >>$map_file
 	for d in $(cat $OSC_PCM_TXT_FILE_SAW); do
 		echo -en "\x$(echo $d | cut -c1-2)\x$(echo $d | cut -c3-4)"
