@@ -16,8 +16,6 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-FAD_FIRST_IMG=02a2
-
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
 #     : r1* - put_file_to_addrの作業用
@@ -125,29 +123,6 @@ main() {
 
 	# VDP1/2の初期化
 	vdp_init
-
-	# 説明画像を表示
-	## 使用する関数のアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
-	## 表示する画像のFADをr12へ設定
-	copy_to_reg_from_val_word r12 $FAD_FIRST_IMG
-	## 表示画像更新
-	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_copy_to_reg_from_reg r1 r12
-
-	# 画像を表示した分、各種アドレス変数を進める
-	## キャラクタパターンを配置するアドレス
-	## 画像のサイズ(143360=0x23000バイト)分進める
-	## 0x05C10C00 + 0x23000 = 0x05C33C00
-	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
-	copy_to_reg_from_val_long r2 05C33C00
-	sh2_copy_to_ptr_from_reg_long r1 r2
-	## VDPコマンドを配置するアドレス
-	## コマンドのサイズ(32=0x20)分進める
-	## 0x05C02360 + 0x20 = 0x05C02380
-	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
-	copy_to_reg_from_val_long r2 05C02380
-	sh2_copy_to_ptr_from_reg_long r1 r2
 
 	# オシレータ用のPCMデータをサウンドメモリへ配置
 	copy_to_reg_from_val_long r4 $a_memcpy_word
