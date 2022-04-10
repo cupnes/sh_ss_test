@@ -415,11 +415,11 @@ f_synth_slot_init() {
 	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
-	## 0x08: 0x0020
+	## 0x08: 0x001F
 	## 1111 1222 2234 4444
 	## 1:D2R decay 2 rate 2:D1R decay 1 rate 3:EGHOLD eg hold mode
 	## 4:AR attack rate
-	sh2_set_reg r2 20
+	sh2_set_reg r2 1f
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	## 0x0A: 0x3FFF
