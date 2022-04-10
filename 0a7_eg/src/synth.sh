@@ -1248,3 +1248,91 @@ f_synth_add_pitch_to_slot() {
 	sh2_return_after_next_inst
 	sh2_nop
 }
+
+# アサイナブルホイール固有処理
+f_synth_proc_assign() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	sh2_copy_to_reg_from_pr r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# 繰り返し使用するアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $a_synth_midimsg_deq
+	copy_to_reg_from_val_long r13 $SS_CT_SND_SLOTCTR_S0_ADDR
+
+	# コントロール番号をデキューしr2へ設定
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+	sh2_copy_to_reg_from_reg r2 r1
+
+	# ホイール回転角に比例した値をデキューしr1へ設定
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# AR(attack rate)処理
+	## コントロール番号 == 0x01?
+	sh2_set_reg r0 01
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x01ならT == 0
+	(
+		# コントロール番号 == 0x01 の場合
+
+		# r1を2ビット右シフト
+		sh2_shift_right_logical_2 r1
+
+		# ARを含む1ワード分のEGレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 08
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# ARビット[4:0]をマスク
+		sh2_set_reg r0 E0
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		(
+			# AR更新
+			sh2_copy_to_ptr_from_reg_word r13 r2
+
+			# 次のスロットのアドレスへ、オフセットを加算
+			sh2_add_to_reg_from_val_byte r13 20
+
+			# スロット番号をインクリメント
+			sh2_add_to_reg_from_val_byte r1 01
+
+			# スロット番号 > 0x1f(31)?
+			sh2_set_reg r0 1f
+			sh2_compare_reg_gt_reg_unsigned r1 r0
+		) >src/f_synth_proc_assign.setar.o
+		cat src/f_synth_proc_assign.setar.o
+		## r1 > 31(0x1f)ならループを抜ける
+		local sz_setar=$(stat -c '%s' src/f_synth_proc_assign.setar.o)
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setar) / 2)))
+	) >src/f_synth_proc_assign.ar.o
+	local sz_ar=$(stat -c '%s' src/f_synth_proc_assign.ar.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_ar - 2) / 2)))
+	cat src/f_synth_proc_assign.ar.o
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}

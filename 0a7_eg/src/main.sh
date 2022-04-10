@@ -396,6 +396,26 @@ main() {
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteonoff - 2) / 2)))
 			cat src/main.noteonoff.o
 
+			# ステータス・バイト == 0xb0?
+			sh2_set_reg r0 b0
+			sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+			sh2_compare_reg_eq_reg r1 r0
+			## ステータス・バイト != 0xb0ならT == 0
+
+			# ステータス・バイト != 0xb0なら
+			# アサイナブルホイール固有処理を飛ばす
+			(
+				# ステータス・バイト == 0xb0 の場合
+
+				# アサイナブルホイール固有処理の関数を呼び出す
+				copy_to_reg_from_val_long r1 $a_synth_proc_assign
+				sh2_abs_call_to_reg_after_next_inst r1
+				sh2_nop
+			) >src/main.assign.o
+			local sz_assign=$(stat -c '%s' src/main.assign.o)
+			sh2_rel_jump_if_false $(two_digits_d $(((sz_assign - 2) / 2)))
+			cat src/main.assign.o
+
 			# ステータス・バイト == 0xc0?
 			sh2_set_reg r0 c0
 			sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
