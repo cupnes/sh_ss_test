@@ -1297,6 +1297,11 @@ f_synth_proc_assign() {
 		# r2 |= r1
 		sh2_or_to_reg_from_reg r2 r1
 
+		# debug
+		copy_to_reg_from_val_long r14 $a_putreg_word
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_copy_to_reg_from_reg r1 r2
+
 		# 全スロットへr2を設定
 		sh2_set_reg r1 00
 		(

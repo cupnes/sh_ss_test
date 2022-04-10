@@ -80,10 +80,10 @@ setup_vram_color_lookup_table() {
 	sh2_xor_to_reg_from_reg r0 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# # | 1 | 白   | 0xffff |
-	# sh2_add_to_reg_from_val_byte r1 02
-	# sh2_set_reg r0 ff
-	# sh2_copy_to_ptr_from_reg_word r1 r0
+	# | 1 | 白   | 0xffff |
+	sh2_add_to_reg_from_val_byte r1 02
+	sh2_set_reg r0 ff
+	sh2_copy_to_ptr_from_reg_word r1 r0
 
 	# # | 1 | 黒   | 0x8000 |
 	# sh2_add_to_reg_from_val_byte r1 02
@@ -91,10 +91,10 @@ setup_vram_color_lookup_table() {
 	# sh2_shift_left_logical_8 r0
 	# sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# | 1 | 赤   | 0x801f |
-	sh2_add_to_reg_from_val_byte r1 02
-	copy_to_reg_from_val_word r2 801f
-	sh2_copy_to_ptr_from_reg_word r1 r2
+	# # | 1 | 赤   | 0x801f |
+	# sh2_add_to_reg_from_val_byte r1 02
+	# copy_to_reg_from_val_word r2 801f
+	# sh2_copy_to_ptr_from_reg_word r1 r2
 
 	# | 2 | 透明 | 0x0000 |
 	# | : |  :   |   :    |
