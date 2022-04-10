@@ -190,7 +190,7 @@ f_synth_check_and_enq_midimsg() {
 	# MIBUFからステータス・バイト取得
 	sh2_copy_to_reg_from_ptr_byte r0 r13
 
-	# ステータス・バイト == 0x90 || ステータス・バイト == 0xe0 ?
+	# ステータス・バイト == 0x90 || ステータス・バイト == 0xb0 || ステータス・バイト == 0xe0 ?
 	## フラグをゼロクリア
 	sh2_set_reg r1 00
 	## ステータス・バイト == 0x90ならフラグをセット
@@ -200,6 +200,11 @@ f_synth_check_and_enq_midimsg() {
 		sh2_set_reg r1 01
 	) >src/f_synth_check_and_enq_midimsg.setr101.o
 	local sz_setr101=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.setr101.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_setr101 - 2) / 2)))
+	cat src/f_synth_check_and_enq_midimsg.setr101.o
+	## ステータス・バイト == 0xb0ならフラグをセット
+	sh2_compare_r0_eq_val b0
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_setr101 - 2) / 2)))
 	cat src/f_synth_check_and_enq_midimsg.setr101.o
@@ -213,10 +218,10 @@ f_synth_check_and_enq_midimsg() {
 	sh2_compare_reg_eq_reg r1 r2
 	### フラグがセットされていない時、T == 0
 
-	# ステータス・バイト == 0x90 || ステータス・バイト == 0xe0 なら
-	# ノート・オン/オフあるいはピッチ・ベンド・チェンジのMIDIメッセージをエンキュー
+	# ステータス・バイト == 0x90 || ステータス・バイト == 0xb0 || ステータス・バイト == 0xe0 なら
+	# ノート・オン/オフ,アサイナブルホイール,ピッチ・ベンド・チェンジのMIDIメッセージをエンキュー
 	(
-		# ステータス・バイト == 0x90 || ステータス・バイト == 0xe0 の場合
+		# ステータス・バイト == 0x90 || ステータス・バイト == 0xb0 || ステータス・バイト == 0xe0 の場合
 
 		# ステータス・バイトをr1へコピーしておく
 		sh2_copy_to_reg_from_reg r1 r0
@@ -232,8 +237,8 @@ f_synth_check_and_enq_midimsg() {
 		sh2_abs_call_to_reg_after_next_inst r2
 		sh2_nop
 
-		# MIDIメッセージ: ノート・オン/オフ or ピッチ・ベンド・チェンジ 固有処理
-		## ノート番号 or ピッチベンド値(LSB) 取得
+		# MIDIメッセージ: ノート・オン/オフ or アサイナブルホイール or ピッチ・ベンド・チェンジ 固有処理
+		## ノート番号 or コントロール番号 or ピッチベンド値(LSB) 取得
 		### データ・バイト取得処理
 		cat src/f_synth_check_and_enq_midimsg.getdatabyte.o
 		#### 取得したバイトのMSB == 1(T == 0)なら繰り返す
@@ -241,7 +246,7 @@ f_synth_check_and_enq_midimsg() {
 		### エンキュー
 		sh2_abs_call_to_reg_after_next_inst r2
 		sh2_copy_to_reg_from_reg r1 r0
-		## ベロシティ or ピッチベンド値(MSB) 取得
+		## ベロシティ or ホイール回転角に比例した値 or ピッチベンド値(MSB) 取得
 		### データ・バイト取得処理
 		cat src/f_synth_check_and_enq_midimsg.getdatabyte.o
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_getdatabyte) / 2)))
