@@ -809,22 +809,12 @@ f_synth_proc_noteon() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r4
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r5
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12	# debug
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13	# debug
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_check_and_enq_midimsg
-	copy_to_reg_from_val_long r13 $a_putchar	# debug
-	copy_to_reg_from_val_long r12 $a_putreg_byte	# debug
-
-	# debug
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_OPEN_SQUARE_BRACKET
-	sh2_copy_to_reg_from_reg r1 r0
 
 	# ノート番号に応じたPITCHレジスタ値をr3へ設定
 	local note_dec note pitch sz_nXX
@@ -838,10 +828,6 @@ f_synth_proc_noteon() {
 		sh2_shift_left_logical_8 r0
 		sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
 		sh2_copy_to_reg_from_reg r3 r0
-
-		# debug
-		sh2_abs_call_to_reg_after_next_inst r12
-		sh2_nop
 
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
 		# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
@@ -865,10 +851,6 @@ f_synth_proc_noteon() {
 			sh2_shift_left_logical_8 r0
 			sh2_or_to_r0_from_val_byte $(echo $pitch | cut -c3-4)
 			sh2_copy_to_reg_from_reg r3 r0
-
-			# debug
-			sh2_abs_call_to_reg_after_next_inst r12
-			sh2_nop
 
 			# MIBUFに注目対象のMIDIメッセージがあれば取得し
 			# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
@@ -895,12 +877,6 @@ f_synth_proc_noteon() {
 		cat src/main_n${note}.o
 	done
 
-	# debug
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_SHARP
-	sh2_copy_to_reg_from_reg r1 r0
-
 	# ノート番号をr4へコピーしておく
 	sh2_copy_to_reg_from_reg r4 r1
 
@@ -909,18 +885,10 @@ f_synth_proc_noteon() {
 	sh2_abs_call_to_reg_after_next_inst r1
 	sh2_nop
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_EXCLAMATION
-
 	# MIBUFに注目対象のMIDIメッセージがあれば取得し
 	# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_DOLLAR
 
 	# 取得した番号のスロットをr3のPITCHレジスタ値でKEY_ONする
 	copy_to_reg_from_val_long r5 $a_key_on_with_pitch
@@ -928,16 +896,10 @@ f_synth_proc_noteon() {
 	sh2_abs_call_to_reg_after_next_inst r5
 	sh2_copy_to_reg_from_reg r3 r4
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_set_reg r1 $CHARCODE_CLOSE_SQUARE_BRACKET
-
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15	# debug
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15	# debug
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r5 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
@@ -1293,7 +1255,6 @@ f_synth_proc_assign() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 	sh2_copy_to_reg_from_pr r0
@@ -1302,30 +1263,15 @@ f_synth_proc_assign() {
 	# 繰り返し使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r13 $SS_CT_SND_SLOTCTR_S0_ADDR
-	copy_to_reg_from_val_long r12 $a_putchar
-
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r1 $CHARCODE_a
 
 	# コントロール番号をデキューしr2へ設定
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
 	sh2_copy_to_reg_from_reg r2 r1
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r1 $CHARCODE_b
-
 	# ホイール回転角に比例した値をデキューしr1へ設定
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_nop
-
-	# debug
-	sh2_copy_to_reg_from_reg r0 r1
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r1 $CHARCODE_c
-	sh2_copy_to_reg_from_reg r1 r0
 
 	# AR(attack rate)処理
 	## コントロール番号 == 0x01?
@@ -1351,11 +1297,6 @@ f_synth_proc_assign() {
 		# r2 |= r1
 		sh2_or_to_reg_from_reg r2 r1
 
-		# debug
-		copy_to_reg_from_val_long r14 $a_putreg_word
-		sh2_abs_call_to_reg_after_next_inst r14
-		sh2_copy_to_reg_from_reg r1 r2
-
 		# 全スロットへr2を設定
 		sh2_set_reg r1 00
 		(
@@ -1376,26 +1317,17 @@ f_synth_proc_assign() {
 		## r1 > 31(0x1f)ならループを抜ける
 		local sz_setar=$(stat -c '%s' src/f_synth_proc_assign.setar.o)
 		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setar) / 2)))
-
-		# debug
-		sh2_abs_call_to_reg_after_next_inst r12
-		sh2_set_reg r1 $CHARCODE_d
 	) >src/f_synth_proc_assign.ar.o
 	local sz_ar=$(stat -c '%s' src/f_synth_proc_assign.ar.o)
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_ar - 2) / 2)))
 	cat src/f_synth_proc_assign.ar.o
 
-	# debug
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r1 $CHARCODE_e
-
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15

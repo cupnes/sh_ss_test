@@ -80,10 +80,10 @@ setup_vram_color_lookup_table() {
 	sh2_xor_to_reg_from_reg r0 r0
 	sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# | 1 | 白   | 0xffff |
-	sh2_add_to_reg_from_val_byte r1 02
-	sh2_set_reg r0 ff
-	sh2_copy_to_ptr_from_reg_word r1 r0
+	# # | 1 | 白   | 0xffff |
+	# sh2_add_to_reg_from_val_byte r1 02
+	# sh2_set_reg r0 ff
+	# sh2_copy_to_ptr_from_reg_word r1 r0
 
 	# # | 1 | 黒   | 0x8000 |
 	# sh2_add_to_reg_from_val_byte r1 02
@@ -91,10 +91,10 @@ setup_vram_color_lookup_table() {
 	# sh2_shift_left_logical_8 r0
 	# sh2_copy_to_ptr_from_reg_word r1 r0
 
-	# # | 1 | 赤   | 0x801f |
-	# sh2_add_to_reg_from_val_byte r1 02
-	# copy_to_reg_from_val_word r2 801f
-	# sh2_copy_to_ptr_from_reg_word r1 r2
+	# | 1 | 赤   | 0x801f |
+	sh2_add_to_reg_from_val_byte r1 02
+	copy_to_reg_from_val_word r2 801f
+	sh2_copy_to_ptr_from_reg_word r1 r2
 
 	# | 2 | 透明 | 0x0000 |
 	# | : |  :   |   :    |
@@ -177,7 +177,6 @@ main() {
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_set_start_addr
 	# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
-	copy_to_reg_from_val_long r13 $a_putchar
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r11 $var_synth_slot_state_base
 	copy_to_reg_from_val_long r10 $a_key_off
@@ -199,22 +198,11 @@ main() {
 		sh2_abs_call_to_reg_after_next_inst r12
 		sh2_nop
 
-		# debug
-		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_set_reg r1 $CHARCODE_A
-
 		# SYNTH_MIDIMSG_QUEUEにMIDIメッセージがあれば
 		# デキューしMIDIメッセージに応じた処理を実行
 		## SYNTH_MIDIMSG_QUEUEにMIDIメッセージがあるか確認
 		sh2_abs_call_to_reg_after_next_inst r5
 		sh2_nop
-
-		# debug
-		sh2_copy_to_reg_from_reg r2 r1
-		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_set_reg r1 $CHARCODE_B
-		sh2_copy_to_reg_from_reg r1 r2
-
 		### キューが空でない時、r1 == 0
 		## r1 == 0?
 		sh2_set_reg r0 00
@@ -224,20 +212,10 @@ main() {
 		(
 			# キューが空でない場合
 
-			# # debug
-			# sh2_abs_call_to_reg_after_next_inst r13
-			# sh2_set_reg r1 $CHARCODE_C
-
 			# ステータス・バイトをデキュー
 			sh2_abs_call_to_reg_after_next_inst r6
 			sh2_nop
 			sh2_extend_unsigned_to_reg_from_reg_byte r1 r1
-
-			# # debug
-			# sh2_copy_to_reg_from_reg r0 r1
-			# sh2_abs_call_to_reg_after_next_inst r13
-			# sh2_set_reg r1 $CHARCODE_D
-			# sh2_copy_to_reg_from_reg r1 r0
 
 			# ステータス・バイト == 0xe0?
 			sh2_set_reg r0 e0
@@ -346,22 +324,10 @@ main() {
 				## r1へノート番号を設定
 				sh2_copy_to_reg_from_reg r1 r0
 
-				# # debug
-				# sh2_copy_to_reg_from_reg r0 r1
-				# sh2_abs_call_to_reg_after_next_inst r13
-				# sh2_set_reg r1 $CHARCODE_G
-				# sh2_copy_to_reg_from_reg r1 r0
-
 				# MIBUFに注目対象のMIDIメッセージがあれば取得し
 				# 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
 				sh2_abs_call_to_reg_after_next_inst r12
 				sh2_nop
-
-				# # debug
-				# sh2_copy_to_reg_from_reg r0 r1
-				# sh2_abs_call_to_reg_after_next_inst r13
-				# sh2_set_reg r1 $CHARCODE_H
-				# sh2_copy_to_reg_from_reg r1 r0
 
 				# ノート・オンかノート・オフか?
 				sh2_set_reg r0 00
@@ -376,83 +342,37 @@ main() {
 					## 取得したノート番号を鳴らしているスロット番号を探す
 					sh2_abs_call_to_reg_after_next_inst r9
 					sh2_nop
-
-					# # debug
-					# sh2_copy_to_reg_from_reg r0 r1
-					# sh2_abs_call_to_reg_after_next_inst r13
-					# sh2_set_reg r1 $CHARCODE_I
-					# sh2_copy_to_reg_from_reg r1 r0
-
 					## MIBUFに注目対象のMIDIメッセージがあれば取得し
 					## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
 					sh2_abs_call_to_reg_after_next_inst r12
 					sh2_nop
-
 					## 取得したスロット番号 == $SLOT_NOT_FOUND?
 					sh2_set_reg r0 $SLOT_NOT_FOUND
 					sh2_compare_reg_eq_reg r1 r0
 					(
-						# debug
-						sh2_copy_to_reg_from_reg r0 r1
-						sh2_abs_call_to_reg_after_next_inst r13
-						sh2_set_reg r1 $CHARCODE_J
-						sh2_copy_to_reg_from_reg r1 r0
-
 						# ノート・オンの場合の処理を呼び出す
 						sh2_abs_call_to_reg_after_next_inst r8
 						sh2_copy_to_reg_from_reg r1 r2
-
-						# debug
-						sh2_abs_call_to_reg_after_next_inst r13
-						sh2_set_reg r1 $CHARCODE_K
 					) >src/main.noteon.1.o
 					local sz_noteon_1=$(stat -c '%s' src/main.noteon.1.o)
 					### 取得したスロット番号 != $SLOT_NOT_FOUNDなら処理を飛ばす
 					sh2_rel_jump_if_false $(two_digits_d $(((sz_noteon_1 - 2) / 2)))
 					cat src/main.noteon.1.o
-
-					# debug
-					sh2_abs_call_to_reg_after_next_inst r13
-					sh2_set_reg r1 $CHARCODE_L
 				) >src/main.noteon.o
 				(
 					# ノート・オフの場合
-
-					# # debug
-					# sh2_copy_to_reg_from_reg r0 r1
-					# sh2_abs_call_to_reg_after_next_inst r13
-					# sh2_set_reg r1 $CHARCODE_M
-					# sh2_copy_to_reg_from_reg r1 r0
 
 					# KEY_OFF
 					## 取得したノート番号を鳴らしているスロット番号を返す
 					sh2_abs_call_to_reg_after_next_inst r9
 					sh2_nop
-
-					# debug
-					sh2_copy_to_reg_from_reg r0 r1
-					sh2_abs_call_to_reg_after_next_inst r13
-					sh2_set_reg r1 $CHARCODE_O
-					sh2_copy_to_reg_from_reg r1 r0
-
 					## MIBUFに注目対象のMIDIメッセージがあれば取得し
 					## 専用のキュー(SYNTH_MIDIMSG_QUEUE)へエンキュー
 					sh2_abs_call_to_reg_after_next_inst r12
 					sh2_nop
-
-					# # debug
-					# sh2_copy_to_reg_from_reg r0 r1
-					# sh2_abs_call_to_reg_after_next_inst r13
-					# sh2_set_reg r1 $CHARCODE_P
-					# sh2_copy_to_reg_from_reg r1 r0
-
 					## 取得したスロット番号のスロットをKEY_OFFする
 					sh2_abs_call_to_reg_after_next_inst r10
 					sh2_nop
-
-					# debug
-					sh2_abs_call_to_reg_after_next_inst r13
-					sh2_set_reg r1 $CHARCODE_Q
 
 					# # WORKAROUND2: 常に全てのスロットをKEY_OFFする
 					# # 全スロットをKEY_OFFする
@@ -471,10 +391,6 @@ main() {
 				sh2_rel_jump_if_false $(two_digits_d $(((sz_noteoff - 2) / 2)))
 				cat src/main.noteoff.o
 				cat src/main.noteon.o
-
-				# debug
-				sh2_abs_call_to_reg_after_next_inst r13
-				sh2_set_reg r1 $CHARCODE_R
 			) >src/main.noteonoff.o
 			local sz_noteonoff=$(stat -c '%s' src/main.noteonoff.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_noteonoff - 2) / 2)))
@@ -519,10 +435,6 @@ main() {
 			local sz_progchg=$(stat -c '%s' src/main.progchg.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))
 			cat src/main.progchg.o
-
-			# debug
-			sh2_abs_call_to_reg_after_next_inst r13
-			sh2_set_reg r1 $CHARCODE_T
 		) >src/main.7.o
 		local sz_7=$(stat -c '%s' src/main.7.o)
 		### T == 0なら処理を飛ばす
