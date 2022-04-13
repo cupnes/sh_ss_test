@@ -436,10 +436,10 @@ f_synth_slot_init() {
 	sh2_or_to_r0_from_val_byte ff
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	sh2_add_to_reg_from_val_byte r1 02
-	## 0x0C: 0x0380
+	## 0x0C: 0x0010
 	## ---- --12 3333 3333
 	## 1:STWINH stack write inhibit 2:SDIR sound direct 3:TL total level
-	copy_to_reg_from_val_word r2 0380
+	sh2_set_reg r2 10
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	## 0x0E: 0x0000
