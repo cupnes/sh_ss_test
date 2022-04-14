@@ -1337,6 +1337,22 @@ f_synth_proc_assign() {
 	sh2_nop
 
 	# AR(attack rate)処理
+	## 共通で使用する処理
+	(
+		# AR更新
+		sh2_copy_to_ptr_from_reg_word r13 r2
+
+		# 次のスロットのアドレスへ、オフセットを加算
+		sh2_add_to_reg_from_val_byte r13 20
+
+		# スロット番号をインクリメント
+		sh2_add_to_reg_from_val_byte r1 01
+
+		# スロット番号 > 0x1f(31)?
+		sh2_set_reg r0 1f
+		sh2_compare_reg_gt_reg_unsigned r1 r0
+	) >src/f_synth_proc_assign.setreg.o
+	local sz_setreg=$(stat -c '%s' src/f_synth_proc_assign.setreg.o)
 	## コントロール番号 == 0x01?
 	sh2_set_reg r0 01
 	sh2_compare_reg_eq_reg r2 r0
@@ -1362,29 +1378,63 @@ f_synth_proc_assign() {
 
 		# 全スロットへr2を設定
 		sh2_set_reg r1 00
-		(
-			# AR更新
-			sh2_copy_to_ptr_from_reg_word r13 r2
-
-			# 次のスロットのアドレスへ、オフセットを加算
-			sh2_add_to_reg_from_val_byte r13 20
-
-			# スロット番号をインクリメント
-			sh2_add_to_reg_from_val_byte r1 01
-
-			# スロット番号 > 0x1f(31)?
-			sh2_set_reg r0 1f
-			sh2_compare_reg_gt_reg_unsigned r1 r0
-		) >src/f_synth_proc_assign.setar.o
-		cat src/f_synth_proc_assign.setar.o
+		cat src/f_synth_proc_assign.setreg.o
 		## r1 > 31(0x1f)ならループを抜ける
-		local sz_setar=$(stat -c '%s' src/f_synth_proc_assign.setar.o)
-		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setar) / 2)))
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
 	) >src/f_synth_proc_assign.ar.o
 	local sz_ar=$(stat -c '%s' src/f_synth_proc_assign.ar.o)
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_ar - 2) / 2)))
 	cat src/f_synth_proc_assign.ar.o
+
+	# D1R(decay 1 rate)処理
+	## コントロール番号 == 0x02?
+	sh2_set_reg r0 02
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x02ならT == 0
+	(
+		# コントロール番号 == 0x02 の場合
+
+		# r1の下位2ビットを切り捨てた値をD1Rのビット位置へシフト
+		# それは、r1のビット[6:2]をD1Rのビット[10:6]への移動
+		# 即ち、r1を4ビット左シフトする
+		sh2_shift_left_logical_2 r1
+		sh2_shift_left_logical_2 r1
+
+		# D1Rのビット[10:6]を抽出するマスクをr0へ設定
+		# mask = 0b0000 0111 1100 0000 = 0x07c0
+		sh2_set_reg r0 07
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_r0_from_val_byte c0
+
+		# r1のD1R以外のビットをマスク
+		sh2_and_to_reg_from_reg r1 r0
+
+		# ARを含む1ワード分のEGレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 08
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# r0をビット反転してD1R以外のビットを抽出するマスクにする
+		sh2_not_to_reg_from_reg r0 r0
+
+		# r2のD1Rビット[10:6]をマスク
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		cat src/f_synth_proc_assign.setreg.o
+		## r1 > 31(0x1f)ならループを抜ける
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
+	) >src/f_synth_proc_assign.d1r.o
+	local sz_d1r=$(stat -c '%s' src/f_synth_proc_assign.d1r.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_d1r - 2) / 2)))
+	cat src/f_synth_proc_assign.d1r.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
