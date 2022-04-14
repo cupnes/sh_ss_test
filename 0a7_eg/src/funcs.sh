@@ -671,9 +671,16 @@ funcs() {
 	f_putstr_xy >src/f_putstr_xy.o
 	cat src/f_putstr_xy.o
 
-	# r1の値を指定された座標に出力
+	# r1の下位8ビットを指定された座標に出力
 	fsz=$(to16 $(stat -c '%s' src/f_putstr_xy.o))
-	a_putreg_xy=$(calc16_8 "${a_putstr_xy}+${fsz}")
+	a_putreg_xy_byte=$(calc16_8 "${a_putstr_xy}+${fsz}")
+	echo -e "a_putreg_xy_byte=$a_putreg_xy_byte" >>$map_file
+	f_putreg_xy_byte >src/f_putreg_xy_byte.o
+	cat src/f_putreg_xy_byte.o
+
+	# r1の値を指定された座標に出力
+	fsz=$(to16 $(stat -c '%s' src/f_putreg_xy_byte.o))
+	a_putreg_xy=$(calc16_8 "${a_putreg_xy_byte}+${fsz}")
 	echo -e "a_putreg_xy=$a_putreg_xy" >>$map_file
 	f_putreg_xy >src/f_putreg_xy.o
 	cat src/f_putreg_xy.o
@@ -882,9 +889,16 @@ funcs() {
 	f_synth_add_pitch_to_slot >src/f_synth_add_pitch_to_slot.o
 	cat src/f_synth_add_pitch_to_slot.o
 
-	# synth: アサイナブルホイール固有処理
+	# synth: 現在のEGレジスタ値を表示する(デモ用)
 	fsz=$(to16 $(stat -c '%s' src/f_synth_add_pitch_to_slot.o))
-	a_synth_proc_assign=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
+	a_synth_dump_eg_reg=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
+	echo -e "a_synth_dump_eg_reg=$a_synth_dump_eg_reg" >>$map_file
+	f_synth_dump_eg_reg >src/f_synth_dump_eg_reg.o
+	cat src/f_synth_dump_eg_reg.o
+
+	# synth: アサイナブルホイール固有処理
+	fsz=$(to16 $(stat -c '%s' src/f_synth_dump_eg_reg.o))
+	a_synth_proc_assign=$(calc16_8 "${a_synth_dump_eg_reg}+${fsz}")
 	echo -e "a_synth_proc_assign=$a_synth_proc_assign" >>$map_file
 	f_synth_proc_assign >src/f_synth_proc_assign.o
 	cat src/f_synth_proc_assign.o
