@@ -76,6 +76,14 @@ shift_dl_to_lsb() {
 	sh2_shift_right_logical $reg
 }
 
+# TLのビット[7:0]を抽出するマスク(TLビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_tl_to_r0() {
+	# mask = 0b0000 0000 1111 1111 = 0x00ff
+	sh2_set_reg r0 ff
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -503,10 +511,10 @@ f_synth_slot_init() {
 	sh2_or_to_r0_from_val_byte ff
 	sh2_copy_to_ptr_from_reg_word r1 r0
 	sh2_add_to_reg_from_val_byte r1 02
-	## 0x0C: 0x0010
+	## 0x0C: 0x0000
 	## ---- --12 3333 3333
 	## 1:STWINH stack write inhibit 2:SDIR sound direct 3:TL total level
-	sh2_set_reg r2 10
+	sh2_set_reg r2 00
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	## 0x0E: 0x0000
@@ -1685,7 +1693,7 @@ f_synth_proc_assign() {
 		# 現在のレジスタ値をr2へ取得
 		sh2_copy_to_reg_from_ptr_word r2 r13
 
-		# r0をビット反転してRR以外のビットを抽出するマスクにする
+		# r0をビット反転してDL以外のビットを抽出するマスクにする
 		sh2_not_to_reg_from_reg r0 r0
 
 		# r2のDLビット[9:5]をマスク
@@ -1704,6 +1712,58 @@ f_synth_proc_assign() {
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_dl - 2) / 2)))
 	cat src/f_synth_proc_assign.dl.o
+
+	# KRS(key rate scaling)
+	## コントロール番号 == 0x06?
+	### TBD
+
+	# TL(total level)
+	## コントロール番号 == 0x07?
+	sh2_set_reg r0 07
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x07ならT == 0
+	(
+		# コントロール番号 == 0x07 の場合
+
+		# ※ TLは8ビットのビットフィールドだが、
+		# 　 現在はMIDIメッセージのデータバイト(0x00〜0x7f)を
+		# 　 そのまま設定している
+		# 　 TLは設定値が小さいほど減衰が少ない(音量が大きい)ため
+		# 　 0x80以上の減衰量が設定できない状態だが、
+		# 　 それ程の減衰量を設定して音量を小さくしたいケースは
+		# 　 今の所無いため、問題無い
+
+		# TLのビット[7:0]を抽出するマスクをr0へ設定
+		set_mask_expose_tl_to_r0
+
+		# r1のTL以外のビットをマスク
+		sh2_and_to_reg_from_reg r1 r0
+
+		# TLを含む1ワード分のレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 0c
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# r0をビット反転してTL以外のビットを抽出するマスクにする
+		sh2_not_to_reg_from_reg r0 r0
+
+		# r2のTLビット[7:0]をマスク
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		cat src/f_synth_proc_assign.setreg.o
+		## r1 > 31(0x1f)ならループを抜ける
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
+	) >src/f_synth_proc_assign.tl.o
+	local sz_tl=$(stat -c '%s' src/f_synth_proc_assign.tl.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_tl - 2) / 2)))
+	cat src/f_synth_proc_assign.tl.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
