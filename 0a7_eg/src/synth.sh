@@ -56,6 +56,26 @@ set_mask_expose_rr_to_r0() {
 	sh2_set_reg r0 1f
 }
 
+# DLのビット[9:5]を抽出するマスク(DLビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_dl_to_r0() {
+	# mask = 0b0000 0011 1110 0000 = 0x03e0
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte e0
+}
+
+# DLビット[9:5]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_dl_to_lsb() {
+	local reg=$1
+
+	# $regを5ビット右シフト
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical $reg
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -1367,28 +1387,49 @@ f_synth_dump_eg_reg() {
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# DLビット
+	## EGレジスタのDLビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_dl_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_dl_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_DL_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_DL_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
-	## 8文字のフォントサイズ分戻す
-	## $CON_FONT_SIZE * 8
-	## = $CON_FONT_SIZE * 2^3
-	## = $CON_FONT_SIZE << 3
+	## 10文字のフォントサイズ分戻す
+	## $CON_FONT_SIZE * 10
+	## = $CON_FONT_SIZE * (8 + 2)
+	## = ($CON_FONT_SIZE * 8) + ($CON_FONT_SIZE * 2)
+	## = ($CON_FONT_SIZE * 2^3) + ($CON_FONT_SIZE * 2^1)
+	## = ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 1)
 	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r3 $CON_FONT_SIZE
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_copy_to_reg_from_reg r0 r3
 	### $CON_FONT_SIZE << 3
 	sh2_shift_left_logical_2 r3
 	sh2_shift_left_logical r3
+	### $CON_FONT_SIZE << 1
+	sh2_shift_left_logical r0
+	### ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 1)
+	sh2_add_to_reg_from_reg r3 r0
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 	## VDPコマンドを配置するアドレス
-	## コマンド8つのサイズ(32 * 8 = 256 = 0x100)分戻す
+	## コマンド10個のサイズ(32 * 10 = 320 = 0x140)分戻す
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
-	sh2_set_reg r3 01
-	sh2_shift_left_logical_8 r3
-	sh2_sub_to_reg_from_reg r2 r3
+	sh2_set_reg r0 01
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte 40
+	sh2_sub_to_reg_from_reg r2 r0
 	sh2_copy_to_ptr_from_reg_long r1 r2
 
 	# 退避したレジスタを復帰
@@ -1617,6 +1658,52 @@ f_synth_proc_assign() {
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_rr - 2) / 2)))
 	cat src/f_synth_proc_assign.rr.o
+
+	# DL(decay level)処理
+	## コントロール番号 == 0x05?
+	sh2_set_reg r0 05
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x05ならT == 0
+	(
+		# コントロール番号 == 0x05 の場合
+
+		# r1の下位2ビットを切り捨てた値をDLのビット位置へシフト
+		# それは、r1のビット[6:2]をDLのビット[9:5]への移動
+		# 即ち、r1を3ビット左シフトする
+		sh2_shift_left_logical_2 r1
+		sh2_shift_left_logical r1
+
+		# DLのビット[9:5]を抽出するマスクをr0へ設定
+		set_mask_expose_dl_to_r0
+
+		# r1のDL以外のビットをマスク
+		sh2_and_to_reg_from_reg r1 r0
+
+		# DLを含む1ワード分のEGレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 0a
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# r0をビット反転してRR以外のビットを抽出するマスクにする
+		sh2_not_to_reg_from_reg r0 r0
+
+		# r2のDLビット[9:5]をマスク
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		cat src/f_synth_proc_assign.setreg.o
+		## r1 > 31(0x1f)ならループを抜ける
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
+	) >src/f_synth_proc_assign.dl.o
+	local sz_dl=$(stat -c '%s' src/f_synth_proc_assign.dl.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_dl - 2) / 2)))
+	cat src/f_synth_proc_assign.dl.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
