@@ -29,6 +29,15 @@ shift_d1r_to_lsb() {
 	sh2_shift_right_logical_2 $reg
 }
 
+# D2Rのビット[15:11]を抽出するマスク(D2Rビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_d2r_to_r0() {
+	# mask = 0b1111 1000 0000 0000 = 0xf800
+	sh2_set_reg r0 f8
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_shift_left_logical_8 r0
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -1466,6 +1475,52 @@ f_synth_proc_assign() {
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_d1r - 2) / 2)))
 	cat src/f_synth_proc_assign.d1r.o
+
+	# D2R(decay 2 rate)処理
+	## コントロール番号 == 0x03?
+	sh2_set_reg r0 03
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x03ならT == 0
+	(
+		# コントロール番号 == 0x03 の場合
+
+		# r1の下位2ビットを切り捨てた値をD2Rのビット位置へシフト
+		# それは、r1のビット[6:2]をD2Rのビット[15:11]への移動
+		# 即ち、r1を9ビット左シフトする
+		sh2_shift_left_logical_8 r1
+		sh2_shift_left_logical r1
+
+		# D2Rのビット[15:11]を抽出するマスクをr0へ設定
+		set_mask_expose_d2r_to_r0
+
+		# r1のD2R以外のビットをマスク
+		sh2_and_to_reg_from_reg r1 r0
+
+		# ARを含む1ワード分のEGレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 08
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# r0をビット反転してD2R以外のビットを抽出するマスクにする
+		sh2_not_to_reg_from_reg r0 r0
+
+		# r2のD2Rビット[15:11]をマスク
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		cat src/f_synth_proc_assign.setreg.o
+		## r1 > 31(0x1f)ならループを抜ける
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
+	) >src/f_synth_proc_assign.d2r.o
+	local sz_d2r=$(stat -c '%s' src/f_synth_proc_assign.d2r.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_d2r - 2) / 2)))
+	cat src/f_synth_proc_assign.d2r.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
