@@ -38,6 +38,17 @@ set_mask_expose_d2r_to_r0() {
 	sh2_shift_left_logical_8 r0
 }
 
+# D2Rビット[15:11]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_d2r_to_lsb() {
+	local reg=$1
+
+	# $regを11ビット右シフト
+	sh2_shift_right_logical_8 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical $reg
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -1321,21 +1332,44 @@ f_synth_dump_eg_reg() {
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# D2Rビット
+	## EGレジスタのD2Rビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_d2r_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_d2r_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_D2R_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_D2R_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
-	## 4文字のフォントサイズ($CON_FONT_SIZE * 4)分戻す
+	## 6文字のフォントサイズ分戻す
+	## $CON_FONT_SIZE * 6
+	## = $CON_FONT_SIZE * (4 + 2)
+	## = ($CON_FONT_SIZE * 4) + ($CON_FONT_SIZE * 2)
+	## = ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 1)
 	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r3 $CON_FONT_SIZE
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_copy_to_reg_from_reg r0 r3
+	### $CON_FONT_SIZE << 2
 	sh2_shift_left_logical_2 r3
+	### $CON_FONT_SIZE << 1
+	sh2_shift_left_logical r0
+	### ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 1)
+	sh2_add_to_reg_from_reg r3 r0
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 	## VDPコマンドを配置するアドレス
-	## コマンド4つのサイズ(32 * 4 = 128 = 0x80)分戻す
+	## コマンド6つのサイズ(32 * 6 = 192 = 0xc0)分戻す
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
-	sh2_set_reg r3 80
+	sh2_set_reg r3 c0
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
