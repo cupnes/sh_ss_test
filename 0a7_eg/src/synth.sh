@@ -9,6 +9,26 @@ SRC_SYNTH_SH=true
 . include/lib.sh
 . include/synth.sh
 
+# D1Rのビット[10:6]を抽出するマスク(D1Rビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_d1r_to_r0() {
+	# mask = 0b0000 0111 1100 0000 = 0x07c0
+	sh2_set_reg r0 07
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte c0
+}
+
+# D1Rビット[10:6]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_d1r_to_lsb() {
+	local reg=$1
+
+	# $regを6ビット右シフト
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -1267,33 +1287,47 @@ f_synth_dump_eg_reg() {
 	copy_to_reg_from_val_long r14 $(calc16_8 "$SS_CT_SND_SLOTCTR_S0_ADDR+8")
 	copy_to_reg_from_val_long r13 $a_putreg_xy_byte
 
-	# EGレジスタのARビットをr1へ取得
+	# ARビット
+	## EGレジスタのARビットをr1へ取得
 	sh2_copy_to_reg_from_ptr_word r1 r14
 	sh2_set_reg r0 1f
 	sh2_and_to_reg_from_reg r1 r0
-
-	# r1をグローバル変数で指定された座標へ出力
+	## r1をグローバル変数で指定された座標へ出力
 	sh2_set_reg r2 $DUMP_EG_AR_X
 	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 	sh2_set_reg r3 $DUMP_EG_AR_Y
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# D1Rビット
+	## EGレジスタのD1Rビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_d1r_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_d1r_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_D1R_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_D1R_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
-	## 2文字のフォントサイズ($CON_FONT_SIZE * 2)分戻す
+	## 4文字のフォントサイズ($CON_FONT_SIZE * 4)分戻す
 	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r3 $CON_FONT_SIZE
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	sh2_shift_left_logical r3
+	sh2_shift_left_logical_2 r3
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 	## VDPコマンドを配置するアドレス
-	## コマンド2つのサイズ(32 * 2 = 64 = 0x40)分戻す
+	## コマンド4つのサイズ(32 * 4 = 128 = 0x80)分戻す
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
-	sh2_set_reg r3 40
+	sh2_set_reg r3 80
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 
@@ -1402,10 +1436,7 @@ f_synth_proc_assign() {
 		sh2_shift_left_logical_2 r1
 
 		# D1Rのビット[10:6]を抽出するマスクをr0へ設定
-		# mask = 0b0000 0111 1100 0000 = 0x07c0
-		sh2_set_reg r0 07
-		sh2_shift_left_logical_8 r0
-		sh2_or_to_r0_from_val_byte c0
+		set_mask_expose_d1r_to_r0
 
 		# r1のD1R以外のビットをマスク
 		sh2_and_to_reg_from_reg r1 r0
