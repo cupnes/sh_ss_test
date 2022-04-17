@@ -425,11 +425,11 @@ f_synth_common_init() {
 
 	# SCSP共通制御レジスタを設定
 	copy_to_reg_from_val_long r1 $SS_CT_SND_COMMONCTR_ADDR
-	## 0x00: 0x0208
+	## 0x00: 0x020a
 	## ---- --12 3333 4444
 	## 1:MEM4MB memory size 2:DAC18B dac for digital output
 	## 3:VER version number 4:MVOL
-	copy_to_reg_from_val_word r2 0208
+	copy_to_reg_from_val_word r2 020a
 	sh2_copy_to_ptr_from_reg_word r1 r2
 
 	# 退避したレジスタを復帰しreturn
