@@ -84,6 +84,24 @@ set_mask_expose_tl_to_r0() {
 	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
 }
 
+# LFOFのビット[14:10]を抽出するマスク(LFOFビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_lfof_to_r0() {
+	# mask = 0b0111 1100 0000 0000 = 0x7c00
+	sh2_set_reg r0 7c
+	sh2_shift_left_logical_8 r0
+}
+
+# LFOFビット[14:10]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_lfof_to_lsb() {
+	local reg=$1
+
+	# $regを10ビット右シフト
+	sh2_shift_right_logical_8 $reg
+	sh2_shift_right_logical_2 $reg
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -1324,7 +1342,7 @@ f_synth_add_pitch_to_slot() {
 	sh2_nop
 }
 
-# 現在のEGレジスタ値を表示する(デモ用)
+# アサイナブルホイールで制御されるレジスタの現在値を表示する(デモ用)
 # ※ スロット間で設定値は同一という想定でスロット0の値を表示
 # ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
 f_synth_dump_eg_reg() {
@@ -1408,14 +1426,30 @@ f_synth_dump_eg_reg() {
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# r14がLFOFを含む1ワードのレジスタを指すようにオフセットを加える
+	sh2_add_to_reg_from_val_byte r14 08
+
+	# LFOFビット
+	## レジスタのLFOFビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_lfof_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_lfof_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_LFOF_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_LFO_LFOF_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
-	## 10文字のフォントサイズ分戻す
-	## $CON_FONT_SIZE * 10
-	## = $CON_FONT_SIZE * (8 + 2)
-	## = ($CON_FONT_SIZE * 8) + ($CON_FONT_SIZE * 2)
-	## = ($CON_FONT_SIZE * 2^3) + ($CON_FONT_SIZE * 2^1)
-	## = ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 1)
+	## 12文字のフォントサイズ分戻す
+	## $CON_FONT_SIZE * 12
+	## = $CON_FONT_SIZE * (8 + 4)
+	## = ($CON_FONT_SIZE * 8) + ($CON_FONT_SIZE * 4)
+	## = ($CON_FONT_SIZE * 2^3) + ($CON_FONT_SIZE * 2^2)
+	## = ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 2)
 	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r3 $CON_FONT_SIZE
@@ -1424,19 +1458,19 @@ f_synth_dump_eg_reg() {
 	### $CON_FONT_SIZE << 3
 	sh2_shift_left_logical_2 r3
 	sh2_shift_left_logical r3
-	### $CON_FONT_SIZE << 1
-	sh2_shift_left_logical r0
-	### ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 1)
+	### $CON_FONT_SIZE << 2
+	sh2_shift_left_logical_2 r0
+	### ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 2)
 	sh2_add_to_reg_from_reg r3 r0
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 	## VDPコマンドを配置するアドレス
-	## コマンド10個のサイズ(32 * 10 = 320 = 0x140)分戻す
+	## コマンド12個のサイズ(32 * 12 = 384 = 0x180)分戻す
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r0 01
 	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte 40
+	sh2_or_to_r0_from_val_byte 80
 	sh2_sub_to_reg_from_reg r2 r0
 	sh2_copy_to_ptr_from_reg_long r1 r2
 
@@ -1764,6 +1798,51 @@ f_synth_proc_assign() {
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_tl - 2) / 2)))
 	cat src/f_synth_proc_assign.tl.o
+
+	# LFOF
+	## コントロール番号 == 0x08?
+	sh2_set_reg r0 08
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x08ならT == 0
+	(
+		# コントロール番号 == 0x08 の場合
+
+		# r1の下位2ビットを切り捨てた値をLFOFのビット位置へシフト
+		# それは、r1のビット[6:2]をLFOFのビット[14:10]への移動
+		# 即ち、r1を8ビット左シフトする
+		sh2_shift_left_logical_8 r1
+
+		# LFOFのビット[14:10]を抽出するマスクをr0へ設定
+		set_mask_expose_lfof_to_r0
+
+		# r1のLFOF以外のビットをマスク
+		sh2_and_to_reg_from_reg r1 r0
+
+		# LFOFを含む1ワード分のレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 12
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# r0をビット反転してLFOF以外のビットを抽出するマスクにする
+		sh2_not_to_reg_from_reg r0 r0
+
+		# r2のLFOFビット[14:10]をマスク
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		cat src/f_synth_proc_assign.setreg.o
+		## r1 > 31(0x1f)ならループを抜ける
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
+	) >src/f_synth_proc_assign.lfof.o
+	local sz_lfof=$(stat -c '%s' src/f_synth_proc_assign.lfof.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_lfof - 2) / 2)))
+	cat src/f_synth_proc_assign.lfof.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
