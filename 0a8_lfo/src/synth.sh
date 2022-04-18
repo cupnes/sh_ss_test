@@ -102,6 +102,25 @@ shift_lfof_to_lsb() {
 	sh2_shift_right_logical_2 $reg
 }
 
+# PLFOSのビット[7:5]を抽出するマスク(PLFOSビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_plfos_to_r0() {
+	# mask = 0b0000 0000 1110 0000 = 0x00e0
+	sh2_set_reg r0 e0
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+}
+
+# PLFOSビット[7:5]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_plfos_to_lsb() {
+	local reg=$1
+
+	# $regを5ビット右シフト
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical $reg
+}
+
 # MIDIメッセージキューへ1バイトエンキューする
 # in  : r1 - エンキューする1バイト
 f_synth_midimsg_enq() {
@@ -547,10 +566,10 @@ f_synth_slot_init() {
 	## 1:OCT octave 2:FNS frequency number switch
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
-	## 0x12: 0x8108
+	## 0x12: 0x0108
 	## 1222 2233 4445 5666
 	## 1:LFORE 2:LFOF 3:PLFOWS 4:PLFOS 5:ALFOWS 6:ALFOS
-	copy_to_reg_from_val_word r2 8108
+	copy_to_reg_from_val_word r2 0108
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	## 0x14: 0x0000
@@ -1442,14 +1461,27 @@ f_synth_dump_eg_reg() {
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# PLFOSビット
+	## レジスタのPLFOSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_plfos_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_plfos_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_PLFOS_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_LFO_PLFOS_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
-	## 12文字のフォントサイズ分戻す
+	## 14文字のフォントサイズ分戻す
 	## $CON_FONT_SIZE * 12
-	## = $CON_FONT_SIZE * (8 + 4)
-	## = ($CON_FONT_SIZE * 8) + ($CON_FONT_SIZE * 4)
-	## = ($CON_FONT_SIZE * 2^3) + ($CON_FONT_SIZE * 2^2)
-	## = ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 2)
+	## = $CON_FONT_SIZE * (8 + 4 + 2)
+	## = ($CON_FONT_SIZE * 8) + ($CON_FONT_SIZE * 4) + ($CON_FONT_SIZE * 2)
+	## = ($CON_FONT_SIZE * 2^3) + ($CON_FONT_SIZE * 2^2) + ($CON_FONT_SIZE * 2^1)
+	## = ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 1)
 	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r3 $CON_FONT_SIZE
@@ -1462,15 +1494,21 @@ f_synth_dump_eg_reg() {
 	sh2_shift_left_logical_2 r0
 	### ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 2)
 	sh2_add_to_reg_from_reg r3 r0
+	### $CON_FONT_SIZE << 1
+	sh2_set_reg r0 $CON_FONT_SIZE
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_shift_left_logical r0
+	### ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 1)
+	sh2_add_to_reg_from_reg r3 r0
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 	## VDPコマンドを配置するアドレス
-	## コマンド12個のサイズ(32 * 12 = 384 = 0x180)分戻す
+	## コマンド14個のサイズ(32 * 14 = 448 = 0x1c0)分戻す
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r0 01
 	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte 80
+	sh2_or_to_r0_from_val_byte c0
 	sh2_sub_to_reg_from_reg r2 r0
 	sh2_copy_to_ptr_from_reg_long r1 r2
 
@@ -1843,6 +1881,51 @@ f_synth_proc_assign() {
 	## T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_lfof - 2) / 2)))
 	cat src/f_synth_proc_assign.lfof.o
+
+	# PLFOS
+	## コントロール番号 == 0x09?
+	sh2_set_reg r0 09
+	sh2_compare_reg_eq_reg r2 r0
+	### コントロール番号 != 0x09ならT == 0
+	(
+		# コントロール番号 == 0x09 の場合
+
+		# r1の下位4ビットを切り捨てた値をPLFOSのビット位置へシフト
+		# それは、r1のビット[6:4]をPLFOSのビット[7:5]への移動
+		# 即ち、r1を1ビット左シフトする
+		sh2_shift_left_logical r1
+
+		# PLFOSのビット[7:5]を抽出するマスクをr0へ設定
+		set_mask_expose_plfos_to_r0
+
+		# r1のPLFOS以外のビットをマスク
+		sh2_and_to_reg_from_reg r1 r0
+
+		# PLFOSを含む1ワード分のレジスタアドレスをr13へ設定
+		sh2_add_to_reg_from_val_byte r13 12
+
+		# 現在のレジスタ値をr2へ取得
+		sh2_copy_to_reg_from_ptr_word r2 r13
+
+		# r0をビット反転してPLFOS以外のビットを抽出するマスクにする
+		sh2_not_to_reg_from_reg r0 r0
+
+		# r2のPLFOSビット[7:5]をマスク
+		sh2_and_to_reg_from_reg r2 r0
+
+		# r2 |= r1
+		sh2_or_to_reg_from_reg r2 r1
+
+		# 全スロットへr2を設定
+		sh2_set_reg r1 00
+		cat src/f_synth_proc_assign.setreg.o
+		## r1 > 31(0x1f)ならループを抜ける
+		sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
+	) >src/f_synth_proc_assign.plfos.o
+	local sz_plfos=$(stat -c '%s' src/f_synth_proc_assign.plfos.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfos - 2) / 2)))
+	cat src/f_synth_proc_assign.plfos.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
