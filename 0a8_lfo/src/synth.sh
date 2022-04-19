@@ -9,6 +9,27 @@ SRC_SYNTH_SH=true
 . include/lib.sh
 . include/synth.sh
 
+# SSCTLのビット[8:7]を抽出するマスク(SSCTLビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_ssctl_to_r0() {
+	# mask = 0b0000 0001 1000 0000 = 0x0180
+	sh2_set_reg r0 01
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte 80
+}
+
+# SSCTLビット[8:7]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_ssctl_to_lsb() {
+	local reg=$1
+
+	# $regを7ビット右シフト
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical $reg
+}
+
 # D1Rのビット[10:6]を抽出するマスク(D1Rビット以外をマスクする)を
 # r0へ設定するマクロ
 set_mask_expose_d1r_to_r0() {
@@ -84,6 +105,25 @@ set_mask_expose_tl_to_r0() {
 	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
 }
 
+# PLFOSのビット[7:5]を抽出するマスク(PLFOSビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_plfos_to_r0() {
+	# mask = 0b0000 0000 1110 0000 = 0x00e0
+	sh2_set_reg r0 e0
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+}
+
+# PLFOSビット[7:5]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_plfos_to_lsb() {
+	local reg=$1
+
+	# $regを5ビット右シフト
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical $reg
+}
+
 # LFOFのビット[14:10]を抽出するマスク(LFOFビット以外をマスクする)を
 # r0へ設定するマクロ
 set_mask_expose_lfof_to_r0() {
@@ -102,23 +142,42 @@ shift_lfof_to_lsb() {
 	sh2_shift_right_logical_2 $reg
 }
 
-# PLFOSのビット[7:5]を抽出するマスク(PLFOSビット以外をマスクする)を
-# r0へ設定するマクロ
-set_mask_expose_plfos_to_r0() {
-	# mask = 0b0000 0000 1110 0000 = 0x00e0
-	sh2_set_reg r0 e0
-	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
-}
+# 指定されたワードで全スロットのレジスタを設定するマクロ
+# in  : reg_val        - 設定値が格納されたレジスタ
+#     : reg_slot_addr* - スロット0の設定先レジスタアドレス
+#     : reg_idx*       - ループ中のスロット番号
+#     : reg_eidx*      - 最後のスロット番号
+# ※ *が付いているレジスタはマクロ内で変更される
+set_to_all_slot_regs_from_reg() {
+	local reg_val=$1
+	local reg_slot_addr=$2
+	local reg_idx=$3
+	local reg_eidx=$4
 
-# PLFOSビット[7:5]をLSBへ持ってくるように
-# 指定されたレジスタをシフトするマクロ
-shift_plfos_to_lsb() {
-	local reg=$1
+	# スロット番号 = 0
+	sh2_set_reg $reg_idx 00
 
-	# $regを5ビット右シフト
-	sh2_shift_right_logical_2 $reg
-	sh2_shift_right_logical_2 $reg
-	sh2_shift_right_logical $reg
+	# 最後のスロット番号 = 0x1f(31)
+	sh2_set_reg $reg_eidx 1f
+
+	# 全スロットへ値を設定
+	(
+		# 設定
+		sh2_copy_to_ptr_from_reg_word $reg_slot_addr $reg_val
+
+		# 次のスロットのアドレスへ、オフセットを加算
+		sh2_add_to_reg_from_val_byte $reg_slot_addr 20
+
+		# スロット番号をインクリメント
+		sh2_add_to_reg_from_val_byte $reg_idx 01
+
+		# スロット番号 > 0x1f(31)?
+		sh2_compare_reg_gt_reg_unsigned $reg_idx $reg_eidx
+	) >src/set_to_all_slot_regs_from_reg.setreg.o
+	cat src/set_to_all_slot_regs_from_reg.setreg.o
+	## r1 > 31(0x1f)ならループを抜ける
+	local sz_setreg=$(stat -c '%s' src/set_to_all_slot_regs_from_reg.setreg.o)
+	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setreg) / 2)))
 }
 
 # MIDIメッセージキューへ1バイトエンキューする
@@ -505,7 +564,7 @@ f_synth_slot_init() {
 	sh2_shift_left_logical r1
 	copy_to_reg_from_val_long r2 $SS_CT_SND_SLOTCTR_S0_ADDR
 	sh2_add_to_reg_from_reg r1 r2
-	## 0x00: 0x0030
+	## 0x00: 0x0020
 	## ---1 2334 4556 7777
 	## 1:KYONEX 2:KYONB 3:SBCTL 4:SSCTL 5:LPCTL 6:PCM8B
 	## 7:SA start address
@@ -1115,12 +1174,6 @@ f_synth_proc_progchg() {
 	# 変更が発生するレジスタを退避
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r4
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r5
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
-	# sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
@@ -1129,165 +1182,249 @@ f_synth_proc_progchg() {
 	sh2_abs_call_to_reg_after_next_inst r1
 	sh2_nop
 
-	# SSCTL設定
-	## r2へデフォルト値(0=外部DRAMデータ)を設定
-	sh2_set_reg r2 00
-	## オシレータにノイズが指定された場合、r2の設定を変更
-	sh2_set_reg r0 $PROGNUM_OSC_NOISE
+	# 繰り返し使用する処理をファイルへ出力
+	set_to_all_slot_regs_from_reg r2 r14 r0 r1 >src/f_synth_proc_progchg.setallslot.o
+
+	# SSCTL・SA[15:0]設定
+	## プログラム番号 == $PROGNUM_OSC_SAW?
+	sh2_set_reg r0 $PROGNUM_OSC_SAW
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != ノイズの時、T == 0
+	### プログラム番号 != $PROGNUM_OSC_SAWならT == 0
 	(
-		# プログラム番号 == ノイズの場合
+		# プログラム番号 == $PROGNUM_OSC_SAW の場合
 
-		# r2へ1(内部データ(ノイズ))を設定
-		sh2_set_reg r2 01
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# SSCTLのビット位置までシフト
-		sh2_shift_left_logical_8 r2
-		sh2_shift_right_logical r2
-	) >src/f_synth_proc_progchg.noise.1.o
-	local sz_noise_1=$(stat -c '%s' src/f_synth_proc_progchg.noise.1.o)
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_noise_1 - 2) / 2)))
-	cat src/f_synth_proc_progchg.noise.1.o
-	## スロット0のSSCTLがあるワードのアドレスをr13へ設定
-	copy_to_reg_from_val_long r13 $SS_CT_SND_SLOTCTR_S0_ADDR
-	## 全スロットのSSCTLをr2で更新
-	sh2_set_reg r5 00
-	(
-		# SSCTLを含む1ワードをr3へ取得
-		sh2_copy_to_reg_from_ptr_word r3 r13
+		# # カーソル表示
+		# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
-		# r3のSSCTLのビットをマスクしてクリア
-		copy_to_reg_from_val_word r4 fe7f
-		sh2_and_to_reg_from_reg r3 r4
+		# 繰り返し使用するアドレスをレジスタへ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_copy_to_reg_from_reg r13 r14
 
-		# r3へr2のSSCTLビットを設定
-		sh2_or_to_reg_from_reg r3 r2
+		# 全スロットのSSCTL=0
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## SSCTLを0するマスクをr0へ設定
+		set_mask_expose_ssctl_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のSSCTLビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
 
-		# SSCTL更新
-		sh2_copy_to_ptr_from_reg_word r13 r3
-
-		# 次のスロットのアドレスへ、オフセットを加算
-		sh2_add_to_reg_from_val_byte r13 20
-
-		# スロット番号をインクリメント
-		sh2_add_to_reg_from_val_byte r5 01
-
-		# スロット番号 > 0x1f(31)?
-		sh2_set_reg r0 1f
-		sh2_compare_reg_gt_reg_unsigned r5 r0
-	) >src/f_synth_proc_progchg.setssctl.o
-	cat src/f_synth_proc_progchg.setssctl.o
-	## r5 > 31(0x1f)ならループを抜ける
-	local sz_setssctl=$(stat -c '%s' src/f_synth_proc_progchg.setssctl.o)
-	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setssctl) / 2)))
-	## プログラム番号 == ノイズならここでreturn
-	sh2_set_reg r0 $PROGNUM_OSC_NOISE
-	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != ノイズの時、T == 0
-	(
-		# プログラム番号 == ノイズの場合
+		# SA[15:0]設定
+		## スロットのレジスタへ設定する値をr2へ設定
+		### 1ワード分のみ設定する
+		copy_to_reg_from_val_word r2 $(echo $OSC_PCM_SAW_MC68K_BASE | cut -c5-8)
+		## スロット0における該当レジスタアドレスをr14へ設定
+		sh2_copy_to_reg_from_reg r14 r13
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_SA_15_0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
 
 		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 		sh2_copy_to_pr_from_reg r0
-		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
-		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r5 r15
-		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
-		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
-		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	) >src/f_synth_proc_progchg.noise.2.o
-	local sz_noise_2=$(stat -c '%s' src/f_synth_proc_progchg.noise.2.o)
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_noise_2 - 2) / 2)))
-	cat src/f_synth_proc_progchg.noise.2.o
-
-	# 繰り返し使用するアドレスをレジスタへ設定
-	# copy_to_reg_from_val_long r14 $a_synth_point_current_osc
-	copy_to_reg_from_val_long r13 $a_synth_set_start_addr
-
-	# プログラム番号に応じたオシレータ波形アドレスを
-	# レジスタへ設定
-	## ノコギリ波
-	sh2_set_reg r0 $PROGNUM_OSC_SAW
-	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != ノコギリ波の時、T == 0
-	(
-		# # カーソル表示
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
-		# sh2_abs_call_to_reg_after_next_inst r14
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-
-		# r2へオシレータ波形アドレス設定
-		copy_to_reg_from_val_long r2 $OSC_PCM_SAW_MC68K_BASE
-	) >src/f_synth_proc_progchg.saw.o
-	local sz_saw=$(stat -c '%s' src/f_synth_proc_progchg.saw.o)
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_saw - 2) / 2)))
-	cat src/f_synth_proc_progchg.saw.o
-	## 矩形波
+	) >src/f_synth_proc_progchg.sa.saw.o
+	local sz_sa_saw=$(stat -c '%s' src/f_synth_proc_progchg.sa.saw.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_sa_saw - 2) / 2)))
+	cat src/f_synth_proc_progchg.sa.saw.o
+	## プログラム番号 == $PROGNUM_OSC_SQU?
 	sh2_set_reg r0 $PROGNUM_OSC_SQU
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != 矩形波の時、T == 0
+	### プログラム番号 != $PROGNUM_OSC_SQUならT == 0
 	(
+		# プログラム番号 == $PROGNUM_OSC_SQU の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
 		# # カーソル表示
+		# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
 		# sh2_set_reg r1 $OSC_CURSOR_X
 		# sh2_set_reg r2 $OSC_CURSOR_Y_SQU
-		# sh2_abs_call_to_reg_after_next_inst r14
+		# sh2_abs_call_to_reg_after_next_inst r13
 		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
-		# r2へオシレータ波形アドレス設定
-		copy_to_reg_from_val_long r2 $OSC_PCM_SQU_MC68K_BASE
-	) >src/f_synth_proc_progchg.squ.o
-	local sz_squ=$(stat -c '%s' src/f_synth_proc_progchg.squ.o)
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_squ - 2) / 2)))
-	cat src/f_synth_proc_progchg.squ.o
-	## サイン波
+		# 繰り返し使用するアドレスをレジスタへ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_copy_to_reg_from_reg r13 r14
+
+		# 全スロットのSSCTL=0
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## SSCTLを0するマスクをr0へ設定
+		set_mask_expose_ssctl_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のSSCTLビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# SA[15:0]設定
+		## スロットのレジスタへ設定する値をr2へ設定
+		### 1ワード分のみ設定する
+		copy_to_reg_from_val_word r2 $(echo $OSC_PCM_SQU_MC68K_BASE | cut -c5-8)
+		## スロット0における該当レジスタアドレスをr14へ設定
+		sh2_copy_to_reg_from_reg r14 r13
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_SA_15_0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_progchg.sa.squ.o
+	local sz_sa_squ=$(stat -c '%s' src/f_synth_proc_progchg.sa.squ.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_sa_squ - 2) / 2)))
+	cat src/f_synth_proc_progchg.sa.squ.o
+	## プログラム番号 == $PROGNUM_OSC_SIN?
 	sh2_set_reg r0 $PROGNUM_OSC_SIN
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != サイン波の時、T == 0
+	### プログラム番号 != $PROGNUM_OSC_SINならT == 0
 	(
+		# プログラム番号 == $PROGNUM_OSC_SIN の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
 		# # カーソル表示
+		# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
 		# sh2_set_reg r1 $OSC_CURSOR_X
 		# sh2_set_reg r2 $OSC_CURSOR_Y_SIN
-		# sh2_abs_call_to_reg_after_next_inst r14
+		# sh2_abs_call_to_reg_after_next_inst r13
 		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
-		# r2へオシレータ波形アドレス設定
-		copy_to_reg_from_val_long r2 $OSC_PCM_SIN_MC68K_BASE
-	) >src/f_synth_proc_progchg.sin.o
-	local sz_sin=$(stat -c '%s' src/f_synth_proc_progchg.sin.o)
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_sin - 2) / 2)))
-	cat src/f_synth_proc_progchg.sin.o
+		# 繰り返し使用するアドレスをレジスタへ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_copy_to_reg_from_reg r13 r14
 
-	# 全スロットの波形データ開始アドレスを変更
-	sh2_set_reg r1 00
-	sh2_set_reg r0 1f
-	(
-		sh2_abs_call_to_reg_after_next_inst r13
+		# 全スロットのSSCTL=0
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## SSCTLを0するマスクをr0へ設定
+		set_mask_expose_ssctl_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のSSCTLビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# SA[15:0]設定
+		## スロットのレジスタへ設定する値をr2へ設定
+		### 1ワード分のみ設定する
+		copy_to_reg_from_val_word r2 $(echo $OSC_PCM_SIN_MC68K_BASE | cut -c5-8)
+		## スロット0における該当レジスタアドレスをr14へ設定
+		sh2_copy_to_reg_from_reg r14 r13
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_SA_15_0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
 		sh2_nop
-		sh2_add_to_reg_from_val_byte r1 01
-		sh2_compare_reg_gt_reg_unsigned r1 r0
-	) >src/f_synth_proc_progchg.setsa.o
-	cat src/f_synth_proc_progchg.setsa.o
-	## r1 > 31(0x1f)ならループを抜ける
-	local sz_setsa=$(stat -c '%s' src/f_synth_proc_progchg.setsa.o)
-	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_setsa) / 2)))
+	) >src/f_synth_proc_progchg.sa.sin.o
+	local sz_sa_sin=$(stat -c '%s' src/f_synth_proc_progchg.sa.sin.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_sa_sin - 2) / 2)))
+	cat src/f_synth_proc_progchg.sa.sin.o
+	## プログラム番号 == $PROGNUM_OSC_NOISE?
+	sh2_set_reg r0 $PROGNUM_OSC_NOISE
+	sh2_compare_reg_eq_reg r1 r0
+	### プログラム番号 != $PROGNUM_OSC_NOISEならT == 0
+	(
+		# プログラム番号 == $PROGNUM_OSC_NOISE の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+		# 全スロットのSSCTL=1
+		## スロット0における該当レジスタアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## SSCTLを0するマスクをr0へ設定
+		set_mask_expose_ssctl_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のSSCTLビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## r2 |= 0x80 (SSCTL=1)
+		sh2_copy_to_reg_from_reg r0 r2
+		sh2_or_to_r0_from_val_byte 80
+		sh2_copy_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_progchg.sa.sin.o
+	local sz_sa_sin=$(stat -c '%s' src/f_synth_proc_progchg.sa.sin.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_sa_sin - 2) / 2)))
+	cat src/f_synth_proc_progchg.sa.sin.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
-	# sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r5 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r4 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
