@@ -124,6 +124,14 @@ shift_plfos_to_lsb() {
 	sh2_shift_right_logical $reg
 }
 
+# PLFOWSのビット[9:8]を抽出するマスク(PLFOWSビット以外をマスクする)を
+# r0へ設定するマクロ
+set_mask_expose_plfows_to_r0() {
+	# mask = 0b0000 0011 0000 0000 = 0x0300
+	sh2_set_reg r0 03
+	sh2_shift_left_logical_8 r0
+}
+
 # LFOFのビット[14:10]を抽出するマスク(LFOFビット以外をマスクする)を
 # r0へ設定するマクロ
 set_mask_expose_lfof_to_r0() {
@@ -1421,6 +1429,192 @@ f_synth_proc_progchg() {
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_sa_sin - 2) / 2)))
 	cat src/f_synth_proc_progchg.sa.sin.o
+
+	# PLFOWS設定
+	## プログラム番号 == $PROGNUM_LFO_SSAW?
+	sh2_set_reg r0 $PROGNUM_LFO_SSAW
+	sh2_compare_reg_eq_reg r1 r0
+	### プログラム番号 != $PROGNUM_LFO_SSAWならT == 0
+	(
+		# プログラム番号 == $PROGNUM_LFO_SSAW の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+		# 全スロットのPLFOWS=0
+		## スロット0における該当レジスタアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_RE_LFOF_PLFOWS_PLFOS_ALFOWS_ALFOS
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## PLFOWSを0するマスクをr0へ設定
+		set_mask_expose_plfows_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のPLFOWSビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_progchg.plfows.ssaw.o
+	local sz_plfows_ssaw=$(stat -c '%s' src/f_synth_proc_progchg.plfows.ssaw.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_ssaw - 2) / 2)))
+	cat src/f_synth_proc_progchg.plfows.ssaw.o
+	## プログラム番号 == $PROGNUM_LFO_SQU?
+	sh2_set_reg r0 $PROGNUM_LFO_SQU
+	sh2_compare_reg_eq_reg r1 r0
+	### プログラム番号 != $PROGNUM_LFO_SQUならT == 0
+	(
+		# プログラム番号 == $PROGNUM_LFO_SQU の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+		# 全スロットのPLFOWS=1
+		## スロット0における該当レジスタアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_RE_LFOF_PLFOWS_PLFOS_ALFOWS_ALFOS
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## PLFOWSを0するマスクをr0へ設定
+		set_mask_expose_plfows_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のPLFOWSビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## r2 |= 0x0100 (PLFOWS=1)
+		sh2_set_reg r0 01
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_progchg.plfows.squ.o
+	local sz_plfows_squ=$(stat -c '%s' src/f_synth_proc_progchg.plfows.squ.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_squ - 2) / 2)))
+	cat src/f_synth_proc_progchg.plfows.squ.o
+	## プログラム番号 == $PROGNUM_LFO_DSAW?
+	sh2_set_reg r0 $PROGNUM_LFO_DSAW
+	sh2_compare_reg_eq_reg r1 r0
+	### プログラム番号 != $PROGNUM_LFO_DSAWならT == 0
+	(
+		# プログラム番号 == $PROGNUM_LFO_DSAW の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+		# 全スロットのPLFOWS=2
+		## スロット0における該当レジスタアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_RE_LFOF_PLFOWS_PLFOS_ALFOWS_ALFOS
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## PLFOWSを0するマスクをr0へ設定
+		set_mask_expose_plfows_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のPLFOWSビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## r2 |= 0x0200 (PLFOWS=2)
+		sh2_set_reg r0 02
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_progchg.plfows.dsaw.o
+	local sz_plfows_dsaw=$(stat -c '%s' src/f_synth_proc_progchg.plfows.dsaw.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_dsaw - 2) / 2)))
+	cat src/f_synth_proc_progchg.plfows.dsaw.o
+	## プログラム番号 == $PROGNUM_LFO_NOISE?
+	sh2_set_reg r0 $PROGNUM_LFO_NOISE
+	sh2_compare_reg_eq_reg r1 r0
+	### プログラム番号 != $PROGNUM_LFO_NOISEならT == 0
+	(
+		# プログラム番号 == $PROGNUM_LFO_NOISE の場合
+
+		# 変更が発生するレジスタを退避
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+
+		# 全スロットのPLFOWS=3
+		## スロット0における該当レジスタアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
+		sh2_add_to_reg_from_val_byte r14 $SS_SND_SLOT_OFS_RE_LFOF_PLFOWS_PLFOS_ALFOWS_ALFOS
+		## r2へ現在の値を1ワード分取得
+		sh2_copy_to_reg_from_ptr_word r2 r14
+		## PLFOWSを0するマスクをr0へ設定
+		set_mask_expose_plfows_to_r0
+		sh2_not_to_reg_from_reg r0 r0
+		## r2のPLFOWSビット部分を0にする
+		sh2_and_to_reg_from_reg r2 r0
+		## r2 |= 0x0300 (PLFOWS=3)
+		sh2_set_reg r0 03
+		sh2_shift_left_logical_8 r0
+		sh2_or_to_reg_from_reg r2 r0
+		## 全スロットへr2を設定
+		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 退避したレジスタを復帰
+		## この処理
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_progchg.plfows.noise.o
+	local sz_plfows_noise=$(stat -c '%s' src/f_synth_proc_progchg.plfows.noise.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_noise - 2) / 2)))
+	cat src/f_synth_proc_progchg.plfows.noise.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
