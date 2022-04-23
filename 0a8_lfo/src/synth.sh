@@ -1445,12 +1445,12 @@ f_synth_proc_progchg() {
 	cat src/f_synth_proc_progchg.sa.sin.o
 
 	# PLFOWS設定
-	## プログラム番号 == $PROGNUM_LFO_PLFOWS_SSAW?
-	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_SSAW
+	## プログラム番号 == $PROGNUM_LFO_PLFOWS_SAW?
+	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_SAW
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_PLFOWS_SSAWならT == 0
+	### プログラム番号 != $PROGNUM_LFO_PLFOWS_SAWならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_PLFOWS_SSAW の場合
+		# プログラム番号 == $PROGNUM_LFO_PLFOWS_SAW の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1483,11 +1483,11 @@ f_synth_proc_progchg() {
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	) >src/f_synth_proc_progchg.plfows.ssaw.o
-	local sz_plfows_ssaw=$(stat -c '%s' src/f_synth_proc_progchg.plfows.ssaw.o)
+	) >src/f_synth_proc_progchg.plfows.saw.o
+	local sz_plfows_saw=$(stat -c '%s' src/f_synth_proc_progchg.plfows.saw.o)
 	### T == 0なら処理を飛ばす
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_ssaw - 2) / 2)))
-	cat src/f_synth_proc_progchg.plfows.ssaw.o
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_saw - 2) / 2)))
+	cat src/f_synth_proc_progchg.plfows.saw.o
 	## プログラム番号 == $PROGNUM_LFO_PLFOWS_SQU?
 	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_SQU
 	sh2_compare_reg_eq_reg r1 r0
@@ -1535,12 +1535,12 @@ f_synth_proc_progchg() {
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_squ - 2) / 2)))
 	cat src/f_synth_proc_progchg.plfows.squ.o
-	## プログラム番号 == $PROGNUM_LFO_PLFOWS_DSAW?
-	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_DSAW
+	## プログラム番号 == $PROGNUM_LFO_PLFOWS_TRI?
+	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_TRI
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_PLFOWS_DSAWならT == 0
+	### プログラム番号 != $PROGNUM_LFO_PLFOWS_TRIならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_PLFOWS_DSAW の場合
+		# プログラム番号 == $PROGNUM_LFO_PLFOWS_TRI の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1577,11 +1577,11 @@ f_synth_proc_progchg() {
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	) >src/f_synth_proc_progchg.plfows.dsaw.o
-	local sz_plfows_dsaw=$(stat -c '%s' src/f_synth_proc_progchg.plfows.dsaw.o)
+	) >src/f_synth_proc_progchg.plfows.tri.o
+	local sz_plfows_tri=$(stat -c '%s' src/f_synth_proc_progchg.plfows.tri.o)
 	### T == 0なら処理を飛ばす
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_dsaw - 2) / 2)))
-	cat src/f_synth_proc_progchg.plfows.dsaw.o
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_tri - 2) / 2)))
+	cat src/f_synth_proc_progchg.plfows.tri.o
 	## プログラム番号 == $PROGNUM_LFO_PLFOWS_NOISE?
 	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_NOISE
 	sh2_compare_reg_eq_reg r1 r0
@@ -1631,12 +1631,12 @@ f_synth_proc_progchg() {
 	cat src/f_synth_proc_progchg.plfows.noise.o
 
 	# ALFOWS設定
-	## プログラム番号 == $PROGNUM_LFO_ALFOWS_SSAW?
-	sh2_set_reg r0 $PROGNUM_LFO_ALFOWS_SSAW
+	## プログラム番号 == $PROGNUM_LFO_ALFOWS_SAW?
+	sh2_set_reg r0 $PROGNUM_LFO_ALFOWS_SAW
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_ALFOWS_SSAWならT == 0
+	### プログラム番号 != $PROGNUM_LFO_ALFOWS_SAWならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_ALFOWS_SSAW の場合
+		# プログラム番号 == $PROGNUM_LFO_ALFOWS_SAW の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1669,11 +1669,11 @@ f_synth_proc_progchg() {
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	) >src/f_synth_proc_progchg.alfows.ssaw.o
-	local sz_alfows_ssaw=$(stat -c '%s' src/f_synth_proc_progchg.alfows.ssaw.o)
+	) >src/f_synth_proc_progchg.alfows.saw.o
+	local sz_alfows_saw=$(stat -c '%s' src/f_synth_proc_progchg.alfows.saw.o)
 	### T == 0なら処理を飛ばす
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_alfows_ssaw - 2) / 2)))
-	cat src/f_synth_proc_progchg.alfows.ssaw.o
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_alfows_saw - 2) / 2)))
+	cat src/f_synth_proc_progchg.alfows.saw.o
 	## プログラム番号 == $PROGNUM_LFO_ALFOWS_SQU?
 	sh2_set_reg r0 $PROGNUM_LFO_ALFOWS_SQU
 	sh2_compare_reg_eq_reg r1 r0
@@ -1720,12 +1720,12 @@ f_synth_proc_progchg() {
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_alfows_squ - 2) / 2)))
 	cat src/f_synth_proc_progchg.alfows.squ.o
-	## プログラム番号 == $PROGNUM_LFO_ALFOWS_DSAW?
-	sh2_set_reg r0 $PROGNUM_LFO_ALFOWS_DSAW
+	## プログラム番号 == $PROGNUM_LFO_ALFOWS_TRI?
+	sh2_set_reg r0 $PROGNUM_LFO_ALFOWS_TRI
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_ALFOWS_DSAWならT == 0
+	### プログラム番号 != $PROGNUM_LFO_ALFOWS_TRIならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_ALFOWS_DSAW の場合
+		# プログラム番号 == $PROGNUM_LFO_ALFOWS_TRI の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1761,11 +1761,11 @@ f_synth_proc_progchg() {
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	) >src/f_synth_proc_progchg.alfows.dsaw.o
-	local sz_alfows_dsaw=$(stat -c '%s' src/f_synth_proc_progchg.alfows.dsaw.o)
+	) >src/f_synth_proc_progchg.alfows.tri.o
+	local sz_alfows_tri=$(stat -c '%s' src/f_synth_proc_progchg.alfows.tri.o)
 	### T == 0なら処理を飛ばす
-	sh2_rel_jump_if_false $(two_digits_d $(((sz_alfows_dsaw - 2) / 2)))
-	cat src/f_synth_proc_progchg.alfows.dsaw.o
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_alfows_tri - 2) / 2)))
+	cat src/f_synth_proc_progchg.alfows.tri.o
 	## プログラム番号 == $PROGNUM_LFO_ALFOWS_NOISE?
 	sh2_set_reg r0 $PROGNUM_LFO_ALFOWS_NOISE
 	sh2_compare_reg_eq_reg r1 r0
