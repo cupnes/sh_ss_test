@@ -1438,12 +1438,12 @@ f_synth_proc_progchg() {
 	cat src/f_synth_proc_progchg.sa.sin.o
 
 	# PLFOWS設定
-	## プログラム番号 == $PROGNUM_LFO_SSAW?
-	sh2_set_reg r0 $PROGNUM_LFO_SSAW
+	## プログラム番号 == $PROGNUM_LFO_PLFOWS_SSAW?
+	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_SSAW
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_SSAWならT == 0
+	### プログラム番号 != $PROGNUM_LFO_PLFOWS_SSAWならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_SSAW の場合
+		# プログラム番号 == $PROGNUM_LFO_PLFOWS_SSAW の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1481,12 +1481,12 @@ f_synth_proc_progchg() {
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_ssaw - 2) / 2)))
 	cat src/f_synth_proc_progchg.plfows.ssaw.o
-	## プログラム番号 == $PROGNUM_LFO_SQU?
-	sh2_set_reg r0 $PROGNUM_LFO_SQU
+	## プログラム番号 == $PROGNUM_LFO_PLFOWS_SQU?
+	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_SQU
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_SQUならT == 0
+	### プログラム番号 != $PROGNUM_LFO_PLFOWS_SQUならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_SQU の場合
+		# プログラム番号 == $PROGNUM_LFO_PLFOWS_SQU の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1528,12 +1528,12 @@ f_synth_proc_progchg() {
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_squ - 2) / 2)))
 	cat src/f_synth_proc_progchg.plfows.squ.o
-	## プログラム番号 == $PROGNUM_LFO_DSAW?
-	sh2_set_reg r0 $PROGNUM_LFO_DSAW
+	## プログラム番号 == $PROGNUM_LFO_PLFOWS_DSAW?
+	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_DSAW
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_DSAWならT == 0
+	### プログラム番号 != $PROGNUM_LFO_PLFOWS_DSAWならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_DSAW の場合
+		# プログラム番号 == $PROGNUM_LFO_PLFOWS_DSAW の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
@@ -1575,12 +1575,12 @@ f_synth_proc_progchg() {
 	### T == 0なら処理を飛ばす
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_plfows_dsaw - 2) / 2)))
 	cat src/f_synth_proc_progchg.plfows.dsaw.o
-	## プログラム番号 == $PROGNUM_LFO_NOISE?
-	sh2_set_reg r0 $PROGNUM_LFO_NOISE
+	## プログラム番号 == $PROGNUM_LFO_PLFOWS_NOISE?
+	sh2_set_reg r0 $PROGNUM_LFO_PLFOWS_NOISE
 	sh2_compare_reg_eq_reg r1 r0
-	### プログラム番号 != $PROGNUM_LFO_NOISEならT == 0
+	### プログラム番号 != $PROGNUM_LFO_PLFOWS_NOISEならT == 0
 	(
-		# プログラム番号 == $PROGNUM_LFO_NOISE の場合
+		# プログラム番号 == $PROGNUM_LFO_PLFOWS_NOISE の場合
 
 		# 変更が発生するレジスタを退避
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
