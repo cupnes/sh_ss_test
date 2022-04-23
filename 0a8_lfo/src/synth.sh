@@ -119,6 +119,16 @@ set_mask_expose_alfows_to_r0() {
 	sh2_set_reg r0 18
 }
 
+# ALFOWSビット[4:3]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_alfows_to_lsb() {
+	local reg=$1
+
+	# $regを3ビット右シフト
+	sh2_shift_right_logical_2 $reg
+	sh2_shift_right_logical $reg
+}
+
 # PLFOSのビット[7:5]を抽出するマスク(PLFOSビット以外をマスクする)を
 # r0へ設定するマクロ
 set_mask_expose_plfos_to_r0() {
@@ -144,6 +154,15 @@ set_mask_expose_plfows_to_r0() {
 	# mask = 0b0000 0011 0000 0000 = 0x0300
 	sh2_set_reg r0 03
 	sh2_shift_left_logical_8 r0
+}
+
+# PLFOWSビット[9:8]をLSBへ持ってくるように
+# 指定されたレジスタをシフトするマクロ
+shift_plfows_to_lsb() {
+	local reg=$1
+
+	# $regを8ビット右シフト
+	sh2_shift_right_logical_8 $reg
 }
 
 # LFOFのビット[14:10]を抽出するマスク(LFOFビット以外をマスクする)を
@@ -647,10 +666,10 @@ f_synth_slot_init() {
 	## 1:OCT octave 2:FNS frequency number switch
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
-	## 0x12: 0x0108
+	## 0x12: 0x0000
 	## 1222 2233 4445 5666
 	## 1:LFORE 2:LFOF 3:PLFOWS 4:PLFOS 5:ALFOWS 6:ALFOS
-	copy_to_reg_from_val_word r2 0108
+	copy_to_reg_from_val_word r2 0000
 	sh2_copy_to_ptr_from_reg_word r1 r2
 	sh2_add_to_reg_from_val_byte r1 02
 	## 0x14: 0x0000
@@ -1898,80 +1917,84 @@ f_synth_dump_eg_reg() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	sh2_copy_to_reg_from_macl r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
 	# 繰り返し使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $(calc16_8 "$SS_CT_SND_SLOTCTR_S0_ADDR+8")
 	copy_to_reg_from_val_long r13 $a_putreg_xy_byte
+	copy_to_reg_from_val_long r12 $a_putchar_xy
 
-	# ARビット
-	## EGレジスタのARビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	sh2_set_reg r0 1f
-	sh2_and_to_reg_from_reg r1 r0
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_EG_AR_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_EG_AR_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	# # ARビット
+	# ## EGレジスタのARビットをr1へ取得
+	# sh2_copy_to_reg_from_ptr_word r1 r14
+	# sh2_set_reg r0 1f
+	# sh2_and_to_reg_from_reg r1 r0
+	# ## r1をグローバル変数で指定された座標へ出力
+	# sh2_set_reg r2 $DUMP_EG_AR_X
+	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# sh2_set_reg r3 $DUMP_EG_AR_Y
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
-	# D1Rビット
-	## EGレジスタのD1Rビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_d1r_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_d1r_to_lsb r1
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_EG_D1R_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_EG_D1R_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	# # D1Rビット
+	# ## EGレジスタのD1Rビットをr1へ取得
+	# sh2_copy_to_reg_from_ptr_word r1 r14
+	# set_mask_expose_d1r_to_r0
+	# sh2_and_to_reg_from_reg r1 r0
+	# shift_d1r_to_lsb r1
+	# ## r1をグローバル変数で指定された座標へ出力
+	# sh2_set_reg r2 $DUMP_EG_D1R_X
+	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# sh2_set_reg r3 $DUMP_EG_D1R_Y
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
-	# D2Rビット
-	## EGレジスタのD2Rビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_d2r_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_d2r_to_lsb r1
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_EG_D2R_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_EG_D2R_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	# # D2Rビット
+	# ## EGレジスタのD2Rビットをr1へ取得
+	# sh2_copy_to_reg_from_ptr_word r1 r14
+	# set_mask_expose_d2r_to_r0
+	# sh2_and_to_reg_from_reg r1 r0
+	# shift_d2r_to_lsb r1
+	# ## r1をグローバル変数で指定された座標へ出力
+	# sh2_set_reg r2 $DUMP_EG_D2R_X
+	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# sh2_set_reg r3 $DUMP_EG_D2R_Y
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
 	# r14がRRとDLを含む1ワードのEGレジスタを指すようにオフセットを加える
 	sh2_add_to_reg_from_val_byte r14 02
 
-	# RRビット
-	## EGレジスタのRRビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_rr_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_EG_RR_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_EG_RR_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	# # RRビット
+	# ## EGレジスタのRRビットをr1へ取得
+	# sh2_copy_to_reg_from_ptr_word r1 r14
+	# set_mask_expose_rr_to_r0
+	# sh2_and_to_reg_from_reg r1 r0
+	# ## r1をグローバル変数で指定された座標へ出力
+	# sh2_set_reg r2 $DUMP_EG_RR_X
+	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# sh2_set_reg r3 $DUMP_EG_RR_Y
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
-	# DLビット
-	## EGレジスタのDLビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_dl_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_dl_to_lsb r1
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_EG_DL_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_EG_DL_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	# # DLビット
+	# ## EGレジスタのDLビットをr1へ取得
+	# sh2_copy_to_reg_from_ptr_word r1 r14
+	# set_mask_expose_dl_to_r0
+	# sh2_and_to_reg_from_reg r1 r0
+	# shift_dl_to_lsb r1
+	# ## r1をグローバル変数で指定された座標へ出力
+	# sh2_set_reg r2 $DUMP_EG_DL_X
+	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# sh2_set_reg r3 $DUMP_EG_DL_Y
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
 	# r14がLFOFを含む1ワードのレジスタを指すようにオフセットを加える
 	sh2_add_to_reg_from_val_byte r14 08
@@ -1989,6 +2012,27 @@ f_synth_dump_eg_reg() {
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# PLFOWSビット
+	## レジスタのPLFOWSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_plfows_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_plfows_to_lsb r1
+	## カーソルのY座標をr3へ設定
+	## r3 = coef * r1 + base
+	sh2_set_reg r3 $DUMP_LFO_PLFOWS_Y_BASE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_set_reg r0 $DUMP_LFO_PLFOWS_Y_COEF
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_multiply_reg_by_reg_unsigned_word r0 r1
+	sh2_copy_to_reg_from_macl r0
+	sh2_add_to_reg_from_reg r3 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_PLFOWS_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_set_reg r1 $CHARCODE_GREATER_THAN
+
 	# PLFOSビット
 	## レジスタのPLFOSビットをr1へ取得
 	sh2_copy_to_reg_from_ptr_word r1 r14
@@ -2002,39 +2046,92 @@ f_synth_dump_eg_reg() {
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# ALFOWSビット
+	## レジスタのALFOWSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_alfows_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_alfows_to_lsb r1
+	## カーソルのY座標をr3へ設定
+	## r3 = coef * r1 + base
+	sh2_set_reg r3 $DUMP_LFO_ALFOWS_Y_BASE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_set_reg r0 $DUMP_LFO_ALFOWS_Y_COEF
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_multiply_reg_by_reg_unsigned_word r0 r1
+	sh2_copy_to_reg_from_macl r0
+	sh2_add_to_reg_from_reg r3 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_ALFOWS_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_set_reg r1 $CHARCODE_LESS_THAN
+
 	# ALFOSビット
 	## レジスタのALFOSビットをr1へ取得
 	sh2_copy_to_reg_from_ptr_word r1 r14
 	set_mask_expose_alfos_to_r0
 	sh2_and_to_reg_from_reg r1 r0
 	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_LFO_ALFOS_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r0 $(echo $DUMP_LFO_ALFOS_X | cut -c1-2)
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $DUMP_LFO_ALFOS_X | cut -c3-4)
+	sh2_copy_to_reg_from_reg r2 r0
 	sh2_set_reg r3 $DUMP_LFO_ALFOS_Y
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
 
+	# # 次に表示するときのために各種アドレス変数を戻す
+	# ## キャラクタパターンを配置するアドレス
+	# ## 16文字のフォントサイズ分戻す
+	# ## $CON_FONT_SIZE * 16
+	# ## = $CON_FONT_SIZE * 16
+	# ## = $CON_FONT_SIZE * 2^4
+	# ## = $CON_FONT_SIZE << 4
+	# copy_to_reg_from_val_long r1 $var_next_cp_other_addr
+	# sh2_copy_to_reg_from_ptr_long r2 r1
+	# sh2_set_reg r3 $CON_FONT_SIZE
+	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	# ### $CON_FONT_SIZE << 4
+	# sh2_shift_left_logical_2 r3
+	# sh2_shift_left_logical_2 r3
+	# sh2_sub_to_reg_from_reg r2 r3
+	# sh2_copy_to_ptr_from_reg_long r1 r2
+	# ## VDPコマンドを配置するアドレス
+	# ## コマンド16個のサイズ(32 * 16 = 512 = 0x200)分戻す
+	# copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
+	# sh2_copy_to_reg_from_ptr_long r2 r1
+	# sh2_set_reg r0 02
+	# sh2_shift_left_logical_8 r0
+	# sh2_sub_to_reg_from_reg r2 r0
+	# sh2_copy_to_ptr_from_reg_long r1 r2
+
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
-	## 16文字のフォントサイズ分戻す
-	## $CON_FONT_SIZE * 16
-	## = $CON_FONT_SIZE * 16
-	## = $CON_FONT_SIZE * 2^4
-	## = $CON_FONT_SIZE << 4
+	## 8文字のフォントサイズ分戻す
+	## $CON_FONT_SIZE * 8
+	## = $CON_FONT_SIZE * (4 + 4)
+	## = ($CON_FONT_SIZE * 4) + ($CON_FONT_SIZE * 4)
+	## = ($CON_FONT_SIZE * 2^2) + ($CON_FONT_SIZE * 2^2)
+	## = ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 2)
 	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
 	sh2_set_reg r3 $CON_FONT_SIZE
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	### $CON_FONT_SIZE << 4
+	sh2_copy_to_reg_from_reg r0 r3
+	### $CON_FONT_SIZE << 2
 	sh2_shift_left_logical_2 r3
-	sh2_shift_left_logical_2 r3
+	### $CON_FONT_SIZE << 2
+	sh2_shift_left_logical_2 r0
+	### ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 2)
+	sh2_add_to_reg_from_reg r3 r0
 	sh2_sub_to_reg_from_reg r2 r3
 	sh2_copy_to_ptr_from_reg_long r1 r2
 	## VDPコマンドを配置するアドレス
-	## コマンド16個のサイズ(32 * 16 = 512 = 0x200)分戻す
+	## コマンド8個のサイズ(32 * 8 = 256 = 0x100)分戻す
 	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
 	sh2_copy_to_reg_from_ptr_long r2 r1
-	sh2_set_reg r0 02
+	sh2_set_reg r0 01
 	sh2_shift_left_logical_8 r0
 	sh2_sub_to_reg_from_reg r2 r0
 	sh2_copy_to_ptr_from_reg_long r1 r2
@@ -2042,8 +2139,11 @@ f_synth_dump_eg_reg() {
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_macl_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
