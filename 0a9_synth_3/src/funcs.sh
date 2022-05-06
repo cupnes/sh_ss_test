@@ -868,16 +868,16 @@ funcs() {
 	f_synth_set_start_addr >src/f_synth_set_start_addr.o
 	cat src/f_synth_set_start_addr.o
 
-	# synth: 現在のオシレータを示す文字を表示する(デモ用)
+	# synth: 現在のオシレータを示すカーソルを表示する
 	fsz=$(to16 $(stat -c '%s' src/f_synth_set_start_addr.o))
-	a_synth_point_current_osc=$(calc16_8 "${a_synth_set_start_addr}+${fsz}")
-	echo -e "a_synth_point_current_osc=$a_synth_point_current_osc" >>$map_file
-	f_synth_point_current_osc >src/f_synth_point_current_osc.o
-	cat src/f_synth_point_current_osc.o
+	a_synth_put_osc_param=$(calc16_8 "${a_synth_set_start_addr}+${fsz}")
+	echo -e "a_synth_put_osc_param=$a_synth_put_osc_param" >>$map_file
+	f_synth_put_osc_param >src/f_synth_put_osc_param.o
+	cat src/f_synth_put_osc_param.o
 
 	# synth: プログラム・チェンジ固有処理
-	fsz=$(to16 $(stat -c '%s' src/f_synth_point_current_osc.o))
-	a_synth_proc_progchg=$(calc16_8 "${a_synth_point_current_osc}+${fsz}")
+	fsz=$(to16 $(stat -c '%s' src/f_synth_put_osc_param.o))
+	a_synth_proc_progchg=$(calc16_8 "${a_synth_put_osc_param}+${fsz}")
 	echo -e "a_synth_proc_progchg=$a_synth_proc_progchg" >>$map_file
 	f_synth_proc_progchg >src/f_synth_proc_progchg.o
 	cat src/f_synth_proc_progchg.o
@@ -889,7 +889,7 @@ funcs() {
 	f_synth_add_pitch_to_slot >src/f_synth_add_pitch_to_slot.o
 	cat src/f_synth_add_pitch_to_slot.o
 
-	# synth: 現在のEGレジスタ値を表示する(デモ用)
+	# synth: LFO関連のレジスタの現在値を表示する
 	fsz=$(to16 $(stat -c '%s' src/f_synth_add_pitch_to_slot.o))
 	a_synth_put_lfo_param=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
 	echo -e "a_synth_put_lfo_param=$a_synth_put_lfo_param" >>$map_file
@@ -903,7 +903,7 @@ funcs() {
 	f_synth_proc_assign >src/f_synth_proc_assign.o
 	cat src/f_synth_proc_assign.o
 
-	# 指定された画面番号の背景を表示する
+	# synth: 指定された画面番号の背景を表示する
 	fsz=$(to16 $(stat -c '%s' src/f_synth_proc_assign.o))
 	a_synth_put_bg=$(calc16_8 "${a_synth_proc_assign}+${fsz}")
 	echo -e "a_synth_put_bg=$a_synth_put_bg" >>$map_file

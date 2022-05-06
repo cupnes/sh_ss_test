@@ -1158,10 +1158,12 @@ f_synth_set_start_addr() {
 	sh2_nop
 }
 
-# 現在のオシレータを示す文字を表示する(デモ用)
+# 現在のオシレータを示すカーソルを表示する
 # in  : r1 - 領域左上のX座標
 #     : r2 - 領域左上のY座標
-f_synth_point_current_osc() {
+# ※ スロット間で設定値は同一という想定でスロット0の値を表示
+# ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
+f_synth_put_osc_param() {
 	# 変更が発生するレジスタを退避
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
@@ -1240,12 +1242,12 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# # カーソル表示
-		# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# カーソル表示
+		copy_to_reg_from_val_long r13 $a_synth_put_osc_param
+		sh2_set_reg r1 $OSC_CURSOR_X
+		sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+		sh2_abs_call_to_reg_after_next_inst r13
+		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1303,12 +1305,12 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# # カーソル表示
-		# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SQU
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# カーソル表示
+		copy_to_reg_from_val_long r13 $a_synth_put_osc_param
+		sh2_set_reg r1 $OSC_CURSOR_X
+		sh2_set_reg r2 $OSC_CURSOR_Y_SQU
+		sh2_abs_call_to_reg_after_next_inst r13
+		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1366,12 +1368,12 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# # カーソル表示
-		# copy_to_reg_from_val_long r13 $a_synth_point_current_osc
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SIN
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# カーソル表示
+		copy_to_reg_from_val_long r13 $a_synth_put_osc_param
+		sh2_set_reg r1 $OSC_CURSOR_X
+		sh2_set_reg r2 $OSC_CURSOR_Y_SIN
+		sh2_abs_call_to_reg_after_next_inst r13
+		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1909,7 +1911,7 @@ f_synth_add_pitch_to_slot() {
 	sh2_nop
 }
 
-# アサイナブルホイールで制御されるレジスタの現在値を表示する(デモ用)
+# LFO関連のレジスタの現在値を表示する
 # ※ スロット間で設定値は同一という想定でスロット0の値を表示
 # ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
 f_synth_put_lfo_param() {

@@ -197,7 +197,7 @@ main() {
 	sh2_rel_jump_if_false $(two_comp_d $(((4 + sz_4) / 2)))
 
 	# 使用するアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $a_synth_set_start_addr
+	copy_to_reg_from_val_long r14 $a_synth_put_osc_param
 	copy_to_reg_from_val_long r13 $a_synth_put_lfo_param
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r11 $var_synth_slot_state_base
@@ -208,7 +208,14 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# # 現在のEGレジスタ値を表示する
+	# 現在のオシレータを示すカーソルを表示する(デモ用)
+	# (デフォルト=ノコギリ波)
+	sh2_set_reg r1 $OSC_CURSOR_X
+	sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+	# # LFO関連のレジスタの現在値を表示する(デモ用)
 	# sh2_abs_call_to_reg_after_next_inst r13
 	# sh2_nop
 
