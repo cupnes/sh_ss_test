@@ -208,9 +208,9 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# 現在のEGレジスタ値を表示する
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_nop
+	# # 現在のEGレジスタ値を表示する
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_nop
 
 	(
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
@@ -432,9 +432,9 @@ main() {
 				sh2_abs_call_to_reg_after_next_inst r1
 				sh2_nop
 
-				# 現在のEGレジスタ値を表示する
-				sh2_abs_call_to_reg_after_next_inst r13
-				sh2_nop
+				# # 現在のEGレジスタ値を表示する
+				# sh2_abs_call_to_reg_after_next_inst r13
+				# sh2_nop
 			) >src/main.assign.o
 			local sz_assign=$(stat -c '%s' src/main.assign.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_assign - 2) / 2)))
@@ -456,9 +456,9 @@ main() {
 				sh2_abs_call_to_reg_after_next_inst r1
 				sh2_nop
 
-				# 現在のEGレジスタ値を表示する
-				sh2_abs_call_to_reg_after_next_inst r13
-				sh2_nop
+				# # 現在のEGレジスタ値を表示する
+				# sh2_abs_call_to_reg_after_next_inst r13
+				# sh2_nop
 			) >src/main.progchg.o
 			local sz_progchg=$(stat -c '%s' src/main.progchg.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))
