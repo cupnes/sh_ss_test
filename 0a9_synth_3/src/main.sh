@@ -16,8 +16,6 @@ set -ue
 . src/vdp.sh
 . src/con.sh
 
-FAD_FIRST_IMG=02a2
-
 # コマンドテーブル設定
 # work: r0* - put_file_to_addr,copy_to_reg_from_val_long,この中の作業用
 #     : r1* - put_file_to_addrの作業用
@@ -128,12 +126,11 @@ main() {
 
 	# 説明画像を表示
 	## 使用する関数のアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
-	## 表示する画像のFADをr12へ設定
-	copy_to_reg_from_val_word r12 $FAD_FIRST_IMG
-	## 表示画像更新
+	copy_to_reg_from_val_long r14 $a_synth_put_bg
+	## 画面番号=0、画面クリアフラグ=0で関数呼び出し
+	sh2_set_reg r1 00
 	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_copy_to_reg_from_reg r1 r12
+	sh2_set_reg r2 00
 
 	# 画像を表示した分、各種アドレス変数を進める
 	## キャラクタパターンを配置するアドレス
@@ -211,9 +208,9 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# 現在のEGレジスタ値を表示する
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_nop
+	# # 現在のEGレジスタ値を表示する
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_nop
 
 	(
 		# MIBUFに注目対象のMIDIメッセージがあれば取得し
@@ -435,9 +432,9 @@ main() {
 				sh2_abs_call_to_reg_after_next_inst r1
 				sh2_nop
 
-				# 現在のEGレジスタ値を表示する
-				sh2_abs_call_to_reg_after_next_inst r13
-				sh2_nop
+				# # 現在のEGレジスタ値を表示する
+				# sh2_abs_call_to_reg_after_next_inst r13
+				# sh2_nop
 			) >src/main.assign.o
 			local sz_assign=$(stat -c '%s' src/main.assign.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_assign - 2) / 2)))
@@ -459,9 +456,9 @@ main() {
 				sh2_abs_call_to_reg_after_next_inst r1
 				sh2_nop
 
-				# 現在のEGレジスタ値を表示する
-				sh2_abs_call_to_reg_after_next_inst r13
-				sh2_nop
+				# # 現在のEGレジスタ値を表示する
+				# sh2_abs_call_to_reg_after_next_inst r13
+				# sh2_nop
 			) >src/main.progchg.o
 			local sz_progchg=$(stat -c '%s' src/main.progchg.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))

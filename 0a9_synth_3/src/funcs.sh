@@ -902,6 +902,13 @@ funcs() {
 	echo -e "a_synth_proc_assign=$a_synth_proc_assign" >>$map_file
 	f_synth_proc_assign >src/f_synth_proc_assign.o
 	cat src/f_synth_proc_assign.o
+
+	# 指定された画面番号の背景を表示する
+	fsz=$(to16 $(stat -c '%s' src/f_synth_proc_assign.o))
+	a_synth_put_bg=$(calc16_8 "${a_synth_proc_assign}+${fsz}")
+	echo -e "a_synth_put_bg=$a_synth_put_bg" >>$map_file
+	f_synth_put_bg >src/f_synth_put_bg.o
+	cat src/f_synth_put_bg.o
 }
 
 funcs

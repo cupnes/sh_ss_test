@@ -8,6 +8,7 @@ SRC_SYNTH_SH=true
 . include/common.sh
 . include/lib.sh
 . include/synth.sh
+. include/cd.sh
 
 # SSCTLのビット[8:7]を抽出するマスク(SSCTLビット以外をマスクする)を
 # r0へ設定するマクロ
@@ -2606,6 +2607,39 @@ f_synth_proc_assign() {
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# 指定された画面番号の背景を表示する
+# in  : r1 - 画面番号(0〜)
+#     : r2 - 画面クリアフラグ(0=画面クリア無し, 1=画面クリア有り)
+f_synth_put_bg() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	sh2_copy_to_reg_from_pr r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# 使用する関数のアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
+
+	# 表示する画像のFADをr1へ設定
+	copy_to_reg_from_val_word r1 $FAD_FIRST_IMG
+
+	# 画像表示
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_nop
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
