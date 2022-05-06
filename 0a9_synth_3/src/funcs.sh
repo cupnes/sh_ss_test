@@ -891,14 +891,14 @@ funcs() {
 
 	# synth: 現在のEGレジスタ値を表示する(デモ用)
 	fsz=$(to16 $(stat -c '%s' src/f_synth_add_pitch_to_slot.o))
-	a_synth_dump_eg_reg=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
-	echo -e "a_synth_dump_eg_reg=$a_synth_dump_eg_reg" >>$map_file
-	f_synth_dump_eg_reg >src/f_synth_dump_eg_reg.o
-	cat src/f_synth_dump_eg_reg.o
+	a_synth_put_lfo_param=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
+	echo -e "a_synth_put_lfo_param=$a_synth_put_lfo_param" >>$map_file
+	f_synth_put_lfo_param >src/f_synth_put_lfo_param.o
+	cat src/f_synth_put_lfo_param.o
 
 	# synth: アサイナブルホイール固有処理
-	fsz=$(to16 $(stat -c '%s' src/f_synth_dump_eg_reg.o))
-	a_synth_proc_assign=$(calc16_8 "${a_synth_dump_eg_reg}+${fsz}")
+	fsz=$(to16 $(stat -c '%s' src/f_synth_put_lfo_param.o))
+	a_synth_proc_assign=$(calc16_8 "${a_synth_put_lfo_param}+${fsz}")
 	echo -e "a_synth_proc_assign=$a_synth_proc_assign" >>$map_file
 	f_synth_proc_assign >src/f_synth_proc_assign.o
 	cat src/f_synth_proc_assign.o

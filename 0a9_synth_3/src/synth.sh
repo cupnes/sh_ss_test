@@ -1912,7 +1912,7 @@ f_synth_add_pitch_to_slot() {
 # アサイナブルホイールで制御されるレジスタの現在値を表示する(デモ用)
 # ※ スロット間で設定値は同一という想定でスロット0の値を表示
 # ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
-f_synth_dump_eg_reg() {
+f_synth_put_lfo_param() {
 	# 変更が発生するレジスタを退避
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
@@ -1931,74 +1931,8 @@ f_synth_dump_eg_reg() {
 	copy_to_reg_from_val_long r13 $a_putreg_xy_byte
 	copy_to_reg_from_val_long r12 $a_putchar_xy
 
-	# # ARビット
-	# ## EGレジスタのARビットをr1へ取得
-	# sh2_copy_to_reg_from_ptr_word r1 r14
-	# sh2_set_reg r0 1f
-	# sh2_and_to_reg_from_reg r1 r0
-	# ## r1をグローバル変数で指定された座標へ出力
-	# sh2_set_reg r2 $DUMP_EG_AR_X
-	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	# sh2_set_reg r3 $DUMP_EG_AR_Y
-	# sh2_abs_call_to_reg_after_next_inst r13
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# # D1Rビット
-	# ## EGレジスタのD1Rビットをr1へ取得
-	# sh2_copy_to_reg_from_ptr_word r1 r14
-	# set_mask_expose_d1r_to_r0
-	# sh2_and_to_reg_from_reg r1 r0
-	# shift_d1r_to_lsb r1
-	# ## r1をグローバル変数で指定された座標へ出力
-	# sh2_set_reg r2 $DUMP_EG_D1R_X
-	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	# sh2_set_reg r3 $DUMP_EG_D1R_Y
-	# sh2_abs_call_to_reg_after_next_inst r13
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# # D2Rビット
-	# ## EGレジスタのD2Rビットをr1へ取得
-	# sh2_copy_to_reg_from_ptr_word r1 r14
-	# set_mask_expose_d2r_to_r0
-	# sh2_and_to_reg_from_reg r1 r0
-	# shift_d2r_to_lsb r1
-	# ## r1をグローバル変数で指定された座標へ出力
-	# sh2_set_reg r2 $DUMP_EG_D2R_X
-	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	# sh2_set_reg r3 $DUMP_EG_D2R_Y
-	# sh2_abs_call_to_reg_after_next_inst r13
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# r14がRRとDLを含む1ワードのEGレジスタを指すようにオフセットを加える
-	sh2_add_to_reg_from_val_byte r14 02
-
-	# # RRビット
-	# ## EGレジスタのRRビットをr1へ取得
-	# sh2_copy_to_reg_from_ptr_word r1 r14
-	# set_mask_expose_rr_to_r0
-	# sh2_and_to_reg_from_reg r1 r0
-	# ## r1をグローバル変数で指定された座標へ出力
-	# sh2_set_reg r2 $DUMP_EG_RR_X
-	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	# sh2_set_reg r3 $DUMP_EG_RR_Y
-	# sh2_abs_call_to_reg_after_next_inst r13
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# # DLビット
-	# ## EGレジスタのDLビットをr1へ取得
-	# sh2_copy_to_reg_from_ptr_word r1 r14
-	# set_mask_expose_dl_to_r0
-	# sh2_and_to_reg_from_reg r1 r0
-	# shift_dl_to_lsb r1
-	# ## r1をグローバル変数で指定された座標へ出力
-	# sh2_set_reg r2 $DUMP_EG_DL_X
-	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	# sh2_set_reg r3 $DUMP_EG_DL_Y
-	# sh2_abs_call_to_reg_after_next_inst r13
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
 	# r14がLFOFを含む1ワードのレジスタを指すようにオフセットを加える
-	sh2_add_to_reg_from_val_byte r14 08
+	sh2_add_to_reg_from_val_byte r14 0a
 
 	# LFOFビット
 	## レジスタのLFOFビットをr1へ取得
@@ -2081,31 +2015,6 @@ f_synth_dump_eg_reg() {
 	sh2_set_reg r3 $DUMP_LFO_ALFOS_Y
 	sh2_abs_call_to_reg_after_next_inst r13
 	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# # 次に表示するときのために各種アドレス変数を戻す
-	# ## キャラクタパターンを配置するアドレス
-	# ## 16文字のフォントサイズ分戻す
-	# ## $CON_FONT_SIZE * 16
-	# ## = $CON_FONT_SIZE * 16
-	# ## = $CON_FONT_SIZE * 2^4
-	# ## = $CON_FONT_SIZE << 4
-	# copy_to_reg_from_val_long r1 $var_next_cp_other_addr
-	# sh2_copy_to_reg_from_ptr_long r2 r1
-	# sh2_set_reg r3 $CON_FONT_SIZE
-	# sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	# ### $CON_FONT_SIZE << 4
-	# sh2_shift_left_logical_2 r3
-	# sh2_shift_left_logical_2 r3
-	# sh2_sub_to_reg_from_reg r2 r3
-	# sh2_copy_to_ptr_from_reg_long r1 r2
-	# ## VDPコマンドを配置するアドレス
-	# ## コマンド16個のサイズ(32 * 16 = 512 = 0x200)分戻す
-	# copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
-	# sh2_copy_to_reg_from_ptr_long r2 r1
-	# sh2_set_reg r0 02
-	# sh2_shift_left_logical_8 r0
-	# sh2_sub_to_reg_from_reg r2 r0
-	# sh2_copy_to_ptr_from_reg_long r1 r2
 
 	# 次に表示するときのために各種アドレス変数を戻す
 	## キャラクタパターンを配置するアドレス
