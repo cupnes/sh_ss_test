@@ -1242,12 +1242,12 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# カーソル表示
-		copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		sh2_set_reg r1 $OSC_CURSOR_X
-		sh2_set_reg r2 $OSC_CURSOR_Y_SAW
-		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# # カーソル表示
+		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1305,12 +1305,12 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# カーソル表示
-		copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		sh2_set_reg r1 $OSC_CURSOR_X
-		sh2_set_reg r2 $OSC_CURSOR_Y_SQU
-		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# # カーソル表示
+		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SQU
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1368,12 +1368,12 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
-		# カーソル表示
-		copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		sh2_set_reg r1 $OSC_CURSOR_X
-		sh2_set_reg r2 $OSC_CURSOR_Y_SIN
-		sh2_abs_call_to_reg_after_next_inst r13
-		sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# # カーソル表示
+		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
+		# sh2_set_reg r1 $OSC_CURSOR_X
+		# sh2_set_reg r2 $OSC_CURSOR_Y_SIN
+		# sh2_abs_call_to_reg_after_next_inst r13
+		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -2533,7 +2533,10 @@ f_synth_put_bg() {
 	# 変更が発生するレジスタを退避
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	sh2_copy_to_reg_from_macl r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
@@ -2541,7 +2544,15 @@ f_synth_put_bg() {
 	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
 
 	# 表示する画像のFADをr1へ設定
-	copy_to_reg_from_val_word r1 $FAD_FIRST_IMG
+	# r1 = $FAD_FIRST_IMG + ($SECTORS_IMG_OFS * r1)
+	## r1 *= $SECTORS_IMG_OFS
+	sh2_set_reg r0 $SECTORS_IMG_OFS
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_multiply_reg_by_reg_unsigned_word r1 r0
+	sh2_copy_to_reg_from_macl r1
+	## r1 += $FAD_FIRST_IMG
+	copy_to_reg_from_val_word r2 $FAD_FIRST_IMG
+	sh2_add_to_reg_from_reg r1 r2
 
 	# 画像表示
 	sh2_abs_call_to_reg_after_next_inst r14
@@ -2550,7 +2561,10 @@ f_synth_put_bg() {
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_macl_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
