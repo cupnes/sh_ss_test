@@ -127,8 +127,9 @@ main() {
 	# 説明画像を表示
 	## 使用する関数のアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_put_bg
-	## 画面番号=2、画面クリアフラグ=0で関数呼び出し
-	sh2_set_reg r1 02
+	## 画面クリアフラグ=0で関数呼び出し
+	## ※ 初期値はオシレータ画面である想定
+	sh2_set_reg r1 $SCRNUM_OSC
 	sh2_abs_call_to_reg_after_next_inst r14
 	sh2_set_reg r2 00
 
@@ -209,16 +210,17 @@ main() {
 	copy_to_reg_from_val_long r6 $a_synth_midimsg_deq
 	copy_to_reg_from_val_long r5 $a_synth_midimsg_is_empty
 
-	# # 現在のオシレータを示すカーソルを表示する
-	# # (デフォルト=ノコギリ波)
-	# sh2_set_reg r1 $OSC_CURSOR_X
-	# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
-	# sh2_abs_call_to_reg_after_next_inst r14
-	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	# 現在のオシレータを示すカーソルを表示する
+	# (デフォルト=ノコギリ波)
+	# ※ 初期画面はオシレータ画面である想定
+	sh2_set_reg r1 $OSC_CURSOR_X
+	sh2_set_reg r2 $OSC_CURSOR_Y_SAW
+	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
 
-	# EG関連のレジスタの現在値を表示する
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_nop
+	# # EG関連のレジスタの現在値を表示する
+	# sh2_abs_call_to_reg_after_next_inst r13
+	# sh2_nop
 
 	# # LFO関連のレジスタの現在値を表示する
 	# sh2_abs_call_to_reg_after_next_inst r13
