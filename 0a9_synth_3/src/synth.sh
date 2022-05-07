@@ -536,6 +536,62 @@ f_synth_check_and_enq_midimsg() {
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))
 	cat src/f_synth_check_and_enq_midimsg.progchg.o
 
+	# ステータス・バイト == 0xfa || ステータス・バイト == 0xfc ?
+	## フラグをゼロクリア
+	sh2_set_reg r1 00
+	## ステータス・バイト == 0xfaならフラグをセット
+	sh2_compare_r0_eq_val fa
+	### ステータス・バイト != 0xfaの時、T == 0
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_setr101 - 2) / 2)))
+	cat src/f_synth_check_and_enq_midimsg.setr101.o
+	## ステータス・バイト == 0xfcならフラグをセット
+	sh2_compare_r0_eq_val fc
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_setr101 - 2) / 2)))
+	cat src/f_synth_check_and_enq_midimsg.setr101.o
+	## フラグはセットされているか?
+	sh2_set_reg r2 01
+	sh2_compare_reg_eq_reg r1 r2
+	### フラグがセットされていない時、T == 0
+
+	# ステータス・バイト == 0xfa || ステータス・バイト == 0xfc なら
+	# スタート,ストップのMIDIメッセージをエンキュー
+	(
+		# ステータス・バイト == 0xfa || ステータス・バイト == 0xfc の場合
+
+		# ステータス・バイトをr1へコピーしておく
+		sh2_copy_to_reg_from_reg r1 r0
+
+		# 変更が発生するレジスタを退避
+		sh2_copy_to_reg_from_pr r0
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+		# 使用するアドレスをレジスタへ設定
+		copy_to_reg_from_val_long r2 $a_synth_midimsg_enq
+
+		# ステータス・バイトをエンキュー
+		sh2_abs_call_to_reg_after_next_inst r2
+		sh2_nop
+
+		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_check_and_enq_midimsg.startstop.o
+	local sz_startstop=$(stat -c '%s' src/f_synth_check_and_enq_midimsg.startstop.o)
+	## T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_startstop - 2) / 2)))
+	cat src/f_synth_check_and_enq_midimsg.startstop.o
+
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
