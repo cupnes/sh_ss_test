@@ -198,7 +198,8 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_put_osc_param
-	copy_to_reg_from_val_long r13 $a_synth_put_lfo_param
+	copy_to_reg_from_val_long r13 $a_synth_put_eg_param
+	# copy_to_reg_from_val_long r13 $a_synth_put_lfo_param
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r11 $var_synth_slot_state_base
 	copy_to_reg_from_val_long r10 $a_key_off
@@ -214,6 +215,10 @@ main() {
 	# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
 	# sh2_abs_call_to_reg_after_next_inst r14
 	# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+
+	# EG関連のレジスタの現在値を表示する
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_nop
 
 	# # LFO関連のレジスタの現在値を表示する
 	# sh2_abs_call_to_reg_after_next_inst r13
@@ -437,6 +442,10 @@ main() {
 				# アサイナブルホイール固有処理の関数を呼び出す
 				copy_to_reg_from_val_long r1 $a_synth_proc_assign
 				sh2_abs_call_to_reg_after_next_inst r1
+				sh2_nop
+
+				# EG関連のレジスタの現在値を表示する
+				sh2_abs_call_to_reg_after_next_inst r13
 				sh2_nop
 
 				# # LFO関連のレジスタの現在値を表示する
