@@ -1911,6 +1911,137 @@ f_synth_add_pitch_to_slot() {
 	sh2_nop
 }
 
+# EG関連のレジスタの現在値を表示する
+# ※ スロット間で設定値は同一という想定でスロット0の値を表示
+# ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
+f_synth_put_eg_param() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	sh2_copy_to_reg_from_pr r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# 繰り返し使用するアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $(calc16_8 "$SS_CT_SND_SLOTCTR_S0_ADDR+8")
+	copy_to_reg_from_val_long r13 $a_putreg_xy_byte
+
+	# ARビット
+	## EGレジスタのARビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	sh2_set_reg r0 1f
+	sh2_and_to_reg_from_reg r1 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_AR_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_AR_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# D1Rビット
+	## EGレジスタのD1Rビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_d1r_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_d1r_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_D1R_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_D1R_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# D2Rビット
+	## EGレジスタのD2Rビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_d2r_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_d2r_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_D2R_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_D2R_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# r14がRRとDLを含む1ワードのEGレジスタを指すようにオフセットを加える
+	sh2_add_to_reg_from_val_byte r14 02
+
+	# RRビット
+	## EGレジスタのRRビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_rr_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_RR_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_RR_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# DLビット
+	## EGレジスタのDLビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_dl_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_dl_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_EG_DL_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_EG_DL_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# 次に表示するときのために各種アドレス変数を戻す
+	## キャラクタパターンを配置するアドレス
+	## 10文字のフォントサイズ分戻す
+	## $CON_FONT_SIZE * 10
+	## = $CON_FONT_SIZE * (8 + 2)
+	## = ($CON_FONT_SIZE * 8) + ($CON_FONT_SIZE * 2)
+	## = ($CON_FONT_SIZE * 2^3) + ($CON_FONT_SIZE * 2^1)
+	## = ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 1)
+	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r1
+	sh2_set_reg r3 $CON_FONT_SIZE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_copy_to_reg_from_reg r0 r3
+	### $CON_FONT_SIZE << 3
+	sh2_shift_left_logical_2 r3
+	sh2_shift_left_logical r3
+	### $CON_FONT_SIZE << 1
+	sh2_shift_left_logical r0
+	### ($CON_FONT_SIZE << 3) + ($CON_FONT_SIZE << 1)
+	sh2_add_to_reg_from_reg r3 r0
+	sh2_sub_to_reg_from_reg r2 r3
+	sh2_copy_to_ptr_from_reg_long r1 r2
+	## VDPコマンドを配置するアドレス
+	## コマンド10個のサイズ(32 * 10 = 320 = 0x140)分戻す
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r1
+	sh2_set_reg r0 01
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte 40
+	sh2_sub_to_reg_from_reg r2 r0
+	sh2_copy_to_ptr_from_reg_long r1 r2
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # LFO関連のレジスタの現在値を表示する
 # ※ スロット間で設定値は同一という想定でスロット0の値を表示
 # ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義

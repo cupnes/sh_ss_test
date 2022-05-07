@@ -889,9 +889,16 @@ funcs() {
 	f_synth_add_pitch_to_slot >src/f_synth_add_pitch_to_slot.o
 	cat src/f_synth_add_pitch_to_slot.o
 
-	# synth: LFO関連のレジスタの現在値を表示する
+	# synth: EG関連のレジスタの現在値を表示する
 	fsz=$(to16 $(stat -c '%s' src/f_synth_add_pitch_to_slot.o))
-	a_synth_put_lfo_param=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
+	a_synth_put_eg_param=$(calc16_8 "${a_synth_add_pitch_to_slot}+${fsz}")
+	echo -e "a_synth_put_eg_param=$a_synth_put_eg_param" >>$map_file
+	f_synth_put_eg_param >src/f_synth_put_eg_param.o
+	cat src/f_synth_put_eg_param.o
+
+	# synth: LFO関連のレジスタの現在値を表示する
+	fsz=$(to16 $(stat -c '%s' src/f_synth_put_eg_param.o))
+	a_synth_put_lfo_param=$(calc16_8 "${a_synth_put_eg_param}+${fsz}")
 	echo -e "a_synth_put_lfo_param=$a_synth_put_lfo_param" >>$map_file
 	f_synth_put_lfo_param >src/f_synth_put_lfo_param.o
 	cat src/f_synth_put_lfo_param.o
