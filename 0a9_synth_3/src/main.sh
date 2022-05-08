@@ -481,6 +481,11 @@ main() {
 			local sz_progchg=$(stat -c '%s' src/main.progchg.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))
 			cat src/main.progchg.o
+
+			# その他のステータス・バイト固有処理
+			copy_to_reg_from_val_long r2 $a_synth_proc_others
+			sh2_abs_call_to_reg_after_next_inst r2
+			sh2_nop
 		) >src/main.7.o
 		local sz_7=$(stat -c '%s' src/main.7.o)
 		### T == 0なら処理を飛ばす

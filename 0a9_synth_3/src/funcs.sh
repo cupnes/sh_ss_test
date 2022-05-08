@@ -923,6 +923,13 @@ funcs() {
 	echo -e "a_synth_proc_startstop=$a_synth_proc_startstop" >>$map_file
 	f_synth_proc_startstop >src/f_synth_proc_startstop.o
 	cat src/f_synth_proc_startstop.o
+
+	# synth: その他のステータス・バイト固有処理
+	fsz=$(to16 $(stat -c '%s' src/f_synth_proc_startstop.o))
+	a_synth_proc_others=$(calc16_8 "${a_synth_proc_startstop}+${fsz}")
+	echo -e "a_synth_proc_others=$a_synth_proc_others" >>$map_file
+	f_synth_proc_others >src/f_synth_proc_others.o
+	cat src/f_synth_proc_others.o
 }
 
 funcs

@@ -2732,6 +2732,8 @@ f_synth_put_bg() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 	sh2_copy_to_reg_from_macl r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
@@ -2739,7 +2741,31 @@ f_synth_put_bg() {
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
 	# 使用する関数のアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $a_load_img_from_cd_and_view
+	copy_to_reg_from_val_long r14 $var_next_cp_other_addr
+	copy_to_reg_from_val_long r13 $var_next_vdpcom_other_addr
+	copy_to_reg_from_val_long r12 $a_load_img_from_cd_and_view
+
+	# 画面クリアフラグがセットされている場合、
+	# キャラクタパターンを配置するアドレスと
+	# VDPコマンドを配置するアドレスを
+	# 初期値へ戻す
+	sh2_set_reg r0 01
+	sh2_compare_reg_eq_reg r2 r0
+	## r2 != 01ならT == 0
+	(
+		# 画面クリアフラグがセットされている場合
+
+		# キャラクタパターンを配置するアドレスを初期値へ戻す
+		copy_to_reg_from_val_long r2 $VRAM_CPT_OTHER_BASE
+		sh2_copy_to_ptr_from_reg_long r14 r2
+
+		# VDPコマンドを配置するアドレスを初期値へ戻す
+		copy_to_reg_from_val_long r2 $VRAM_CT_OTHER_BASE
+		sh2_copy_to_ptr_from_reg_long r13 r2
+	) >src/f_synth_put_bg.init.o
+	local sz_init=$(stat -c '%s' src/f_synth_put_bg.init.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_init - 2) / 2)))
+	cat src/f_synth_put_bg.init.o
 
 	# 表示する画像のFADをr1へ設定
 	# r1 = $FAD_FIRST_IMG + ($SECTORS_IMG_OFS * r1)
@@ -2753,8 +2779,40 @@ f_synth_put_bg() {
 	sh2_add_to_reg_from_reg r1 r2
 
 	# 画像表示
-	sh2_abs_call_to_reg_after_next_inst r14
+	sh2_abs_call_to_reg_after_next_inst r12
 	sh2_nop
+
+	# 画像を表示した分、各種アドレス変数を進める
+	## キャラクタパターンを配置するアドレス
+	## 画像のサイズ(143360=0x23000バイト)分進める
+	## 0x05C10C00 + 0x23000 = 0x05C33C00
+	copy_to_reg_from_val_long r2 05C33C00
+	sh2_copy_to_ptr_from_reg_long r14 r2
+	## VDPコマンドを配置するアドレス
+	## コマンドのサイズ(32=0x20)分進める
+	## 0x05C02360 + 0x20 = 0x05C02380
+	copy_to_reg_from_val_long r2 05C02380
+	sh2_copy_to_ptr_from_reg_long r13 r2
+
+	# 現在VDPコマンドを配置するアドレスが指す場所(r2の内容)に
+	# 描画終了コマンドを配置
+	## 描画終了を待つ
+	copy_to_reg_from_val_long r14 $SS_VDP1_EDSR_ADDR
+	(
+		# r14の指す先(EDSRの内容)をr0へ取得
+		sh2_copy_to_reg_from_ptr_word r0 r14
+		# r0とCEFビット(0x02)との論理積をとり、
+		# 結果がゼロのときTビットをセット
+		# (CEFビットは描画終了状態でセットされるビット)
+		sh2_test_r0_and_val_byte $SS_VDP1_EDSR_BIT_CEF
+	) >src/f_synth_put_bg.wait.o
+	local sz_wait=$(stat -c '%s' src/f_synth_put_bg.wait.o)
+	cat src/f_synth_put_bg.wait.o
+	sh2_rel_jump_if_true $(two_comp_d $(((4 + sz_wait) / 2)))
+	## 描画終了コマンドを配置
+	sh2_set_reg r0 80
+	sh2_shift_left_logical_8 r0
+	sh2_copy_to_ptr_from_reg_word r2 r0
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
@@ -2762,6 +2820,8 @@ f_synth_put_bg() {
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_macl_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
@@ -2880,13 +2940,91 @@ f_synth_proc_startstop() {
 		# return
 		sh2_return_after_next_inst
 		sh2_nop
-	)
+	) >src/f_synth_proc_startstop.osc.o
+	local sz_osc=$(stat -c '%s' src/f_synth_proc_startstop.osc.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_osc - 2) / 2)))
+	cat src/f_synth_proc_startstop.osc.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# その他のステータス・バイト固有処理
+# in  : r1 - ステータス・バイト(0x000000XX)
+f_synth_proc_others() {
+	# 変更が発生するレジスタを退避
+	## 共通
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+
+	# ステータス・バイト == 0xfa || ステータス・バイト == 0xfc?
+	## フラグをゼロクリア
+	sh2_set_reg r2 00
+	## ステータス・バイト == 0xfaならフラグをセット
+	sh2_set_reg r0 fa
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_compare_reg_eq_reg r1 r0
+	### ステータス・バイト != 0xfaならT == 0
+	(
+		sh2_set_reg r2 01
+	) >src/f_synth_proc_others.setr201.o
+	local sz_setr201=$(stat -c '%s' src/f_synth_proc_others.setr201.o)
+	### T == 0なら処理を飛ばす
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_setr201 - 2) / 2)))
+	cat src/f_synth_proc_others.setr201.o
+	## ステータス・バイト == 0xfcならフラグをセット
+	sh2_set_reg r0 fc
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_compare_reg_eq_reg r1 r0
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_setr201 - 2) / 2)))
+	cat src/f_synth_proc_others.setr201.o
+	## フラグはセットされているか?
+	sh2_set_reg r0 01
+	sh2_compare_reg_eq_reg r2 r0
+	### フラグがセットされていない時、T == 0
+
+	# ステータス・バイト != 0xfa && ステータス・バイト != 0xfcなら
+	# スタート・ストップ固有処理を飛ばす
+	(
+		# ステータス・バイト == 0xfa || ステータス・バイト == 0xfc の場合
+
+		# 変更が発生するレジスタを退避
+		## 個別
+		sh2_copy_to_reg_from_pr r0
+		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+		# スタート・ストップ固有処理の関数を呼び出す
+		copy_to_reg_from_val_long r2 $a_synth_proc_startstop
+		sh2_abs_call_to_reg_after_next_inst r2
+		sh2_nop
+
+		# 退避したレジスタを復帰
+		## 個別
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		## 共通
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_others.startstop.o
+	local sz_startstop=$(stat -c '%s' src/f_synth_proc_others.startstop.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_startstop - 2) / 2)))
+	cat src/f_synth_proc_others.startstop.o
+
+	# 退避したレジスタを復帰
+	## 共通
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
