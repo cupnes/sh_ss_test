@@ -139,14 +139,19 @@ vars() {
 
 	# synth: 現在の画面番号(1バイト)
 	var_synth_current_scrnum=$(calc16_8 "$var_synth_osc_pcm_sin_base+($OSC_PCM_NUM_SAMPLES*2)")
+	echo -e "var_synth_current_scrnum=$var_synth_current_scrnum" >>$map_file
 	echo -en "\x$(echo $SCRNUM_OSC)"
-	## 3バイトのパディング
-	echo -en "\x00\x00\x00"
+	# synth: 現在のオシレータカーソルY座標(1バイト)
+	var_synth_current_osc_cursor_y=$(calc16_8 "$var_synth_current_scrnum+1")
+	echo -e "var_synth_current_osc_cursor_y=$var_synth_current_osc_cursor_y" >>$map_file
+	echo -en "\x$(echo $OSC_CURSOR_Y_SAW)"
+	## 2バイトのパディング
+	echo -en "\x00\x00"
 	## 4バイト境界
 
 	# cd: f_load_img_from_cd_and_view()の一時的な画像配置領域
 	## (143360(0x23000)バイト)
-	var_tmp_img_area=$(calc16_8 "$var_synth_current_scrnum+4")
+	var_tmp_img_area=$(calc16_8 "$var_synth_current_osc_cursor_y+3")
 	echo -e "var_tmp_img_area=$var_tmp_img_area" >>$map_file
 	dd if=/dev/zero bs=1 count=143360 status=none
 	## 4バイト境界

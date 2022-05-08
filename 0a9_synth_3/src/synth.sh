@@ -9,6 +9,7 @@ SRC_SYNTH_SH=true
 . include/lib.sh
 . include/synth.sh
 . include/cd.sh
+. src/vars_map.sh
 
 # SSCTLのビット[8:7]を抽出するマスク(SSCTLビット以外をマスクする)を
 # r0へ設定するマクロ
@@ -1215,10 +1216,7 @@ f_synth_set_start_addr() {
 }
 
 # 現在のオシレータを示すカーソルを表示する
-# in  : r1 - 領域左上のX座標
-#     : r2 - 領域左上のY座標
 # ※ スロット間で設定値は同一という想定でスロット0の値を表示
-# ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
 f_synth_put_osc_param() {
 	# 変更が発生するレジスタを退避
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
@@ -1229,9 +1227,13 @@ f_synth_put_osc_param() {
 	sh2_copy_to_reg_from_pr r0
 	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
 
-	# Y座標をr3へ、X座標をr2へ設定
-	sh2_copy_to_reg_from_reg r3 r2
-	sh2_copy_to_reg_from_reg r2 r1
+	# Y座標をr3へ設定
+	copy_to_reg_from_val_long r1 $var_synth_current_osc_cursor_y
+	sh2_copy_to_reg_from_ptr_byte r3 r1
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# X座標をr2へ設定
+	sh2_set_reg r2 $OSC_CURSOR_X
 
 	# '>'を表示
 	copy_to_reg_from_val_long r4 $a_putchar_xy
@@ -1298,12 +1300,15 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
+		# 現在のオシレータカーソルY座標の変数を更新
+		copy_to_reg_from_val_long r13 $var_synth_current_osc_cursor_y
+		sh2_set_reg r0 $OSC_CURSOR_Y_SAW
+		sh2_copy_to_ptr_from_reg_byte r13 r0
+
 		# # カーソル表示
 		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SAW
 		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# sh2_nop
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1361,12 +1366,15 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
+		# 現在のオシレータカーソルY座標の変数を更新
+		copy_to_reg_from_val_long r13 $var_synth_current_osc_cursor_y
+		sh2_set_reg r0 $OSC_CURSOR_Y_SQU
+		sh2_copy_to_ptr_from_reg_byte r13 r0
+
 		# # カーソル表示
 		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SQU
 		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# sh2_nop
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1424,12 +1432,15 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
+		# 現在のオシレータカーソルY座標の変数を更新
+		copy_to_reg_from_val_long r13 $var_synth_current_osc_cursor_y
+		sh2_set_reg r0 $OSC_CURSOR_Y_SIN
+		sh2_copy_to_ptr_from_reg_byte r13 r0
+
 		# # カーソル表示
 		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		# sh2_set_reg r1 $OSC_CURSOR_X
-		# sh2_set_reg r2 $OSC_CURSOR_Y_SIN
 		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+		# sh2_nop
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -2753,6 +2764,130 @@ f_synth_put_bg() {
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
+# スタート・ストップ固有処理
+# in  : r1 - スタートあるいはストップのMIDIメッセージ
+#            スタート = 0x000000fa
+#            ストップ = 0x000000fc
+f_synth_proc_startstop() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+
+	# 繰り返し使用するアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r2 $var_synth_current_scrnum
+
+	# 繰り返し使用する処理をファイルへ出力
+	(
+		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_startstop.ret.o
+	local sz_ret=$(stat -c '%s' src/f_synth_proc_startstop.ret.o)
+
+	# 現在の画面番号をr3へ取得
+	sh2_copy_to_reg_from_ptr_byte r3 r2
+
+	# r1 == スタート?
+	sh2_set_reg r0 fa
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_compare_reg_eq_reg r1 r0
+	## r1 == スタートの時、T == 1
+
+	# r1 == スタートか否かに応じた処理
+	(
+		# r1 == スタートの場合
+
+		# 現在の画面番号 >= 最後の画面番号?
+		sh2_set_reg r0 $SCRNUM_LAST
+		sh2_compare_reg_ge_reg_unsigned r3 r0
+		## T == 0なら処理を飛ばす
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_ret - 2) / 2)))
+		cat src/f_synth_proc_startstop.ret.o
+
+		# 画面番号をインクリメント
+		sh2_add_to_reg_from_val_byte r3 01
+	) >src/f_synth_proc_startstop.start.o
+	(
+		# r1 != スタート(== ストップ)の場合
+
+		# 現在の画面番号 == 0?
+		sh2_set_reg r0 00
+		sh2_compare_reg_eq_reg r3 r0
+		## T == 0なら処理を飛ばす
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_ret - 2) / 2)))
+		cat src/f_synth_proc_startstop.ret.o
+
+		# 画面番号をデクリメント
+		sh2_add_to_reg_from_val_byte r3 $(two_comp 01)
+
+		# r1 == スタートの場合の処理を飛ばす
+		local sz_start=$(stat -c '%s' src/f_synth_proc_startstop.start.o)
+		sh2_rel_jump_after_next_inst $(extend_digit $(to16 $((sz_start / 2))) 3)
+		sh2_nop
+	) >src/f_synth_proc_startstop.stop.o
+	## T == 1ならr1 != スタート(== ストップ)の場合の処理を飛ばす
+	local sz_stop=$(stat -c '%s' src/f_synth_proc_startstop.stop.o)
+	sh2_rel_jump_if_true $(two_digits_d $(((sz_stop - 2) / 2)))
+	cat src/f_synth_proc_startstop.stop.o
+	cat src/f_synth_proc_startstop.start.o
+
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_copy_to_reg_from_pr r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# 画面番号を変数へ設定
+	sh2_copy_to_ptr_from_reg_byte r2 r3
+
+	# 背景を再表示
+	sh2_copy_to_reg_from_reg r1 r3
+	copy_to_reg_from_val_long r3 $a_synth_put_bg
+	sh2_abs_call_to_reg_after_next_inst r3
+	sh2_set_reg r2 01
+
+	# 現在の画面がオシレータ設定画面の場合、カーソルを表示しreturn
+	sh2_set_reg r0 $SCRNUM_OSC
+	sh2_compare_reg_eq_reg r1 r0
+	(
+		# 現在の画面番号 == オシレータ設定画面番号の場合
+
+		# カーソルを表示
+		copy_to_reg_from_val_long r1 $a_synth_put_osc_param
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
+
+		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	)
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 
 	# return
