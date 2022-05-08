@@ -1286,6 +1286,13 @@ f_synth_proc_progchg() {
 
 	# 繰り返し使用する処理をファイルへ出力
 	set_to_all_slot_regs_from_reg r2 r14 r0 r1 >src/f_synth_proc_progchg.setallslot.o
+	(
+		# カーソル表示を更新
+		copy_to_reg_from_val_long r14 $a_synth_put_osc_param
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_nop
+	) >src/f_synth_proc_progchg.updatecursor.o
+	local sz_updatecursor=$(stat -c '%s' src/f_synth_proc_progchg.updatecursor.o)
 
 	# SSCTL・SA[15:0]設定
 	## プログラム番号 == $PROGNUM_OSC_SAW?
@@ -1301,14 +1308,21 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
 		# 現在のオシレータカーソルY座標の変数を更新
-		copy_to_reg_from_val_long r13 $var_synth_current_osc_cursor_y
+		copy_to_reg_from_val_long r14 $var_synth_current_osc_cursor_y
 		sh2_set_reg r0 $OSC_CURSOR_Y_SAW
-		sh2_copy_to_ptr_from_reg_byte r13 r0
+		sh2_copy_to_ptr_from_reg_byte r14 r0
 
-		# # カーソル表示
-		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_nop
+		# 現在の画面がオシレータ設定画面ならカーソル表示を更新
+		## 現在の画面番号変数のアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		## 現在の画面番号をr1へ設定
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_OSC?
+		sh2_set_reg r0 $SCRNUM_OSC
+		sh2_compare_reg_eq_reg r1 r0
+		## 現在の画面番号 == $SCRNUM_OSCならカーソル表示を更新
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatecursor - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatecursor.o
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1367,14 +1381,21 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
 		# 現在のオシレータカーソルY座標の変数を更新
-		copy_to_reg_from_val_long r13 $var_synth_current_osc_cursor_y
+		copy_to_reg_from_val_long r14 $var_synth_current_osc_cursor_y
 		sh2_set_reg r0 $OSC_CURSOR_Y_SQU
-		sh2_copy_to_ptr_from_reg_byte r13 r0
+		sh2_copy_to_ptr_from_reg_byte r14 r0
 
-		# # カーソル表示
-		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_nop
+		# 現在の画面がオシレータ設定画面ならカーソル表示を更新
+		## 現在の画面番号変数のアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		## 現在の画面番号をr1へ設定
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_OSC?
+		sh2_set_reg r0 $SCRNUM_OSC
+		sh2_compare_reg_eq_reg r1 r0
+		## 現在の画面番号 == $SCRNUM_OSCならカーソル表示を更新
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatecursor - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatecursor.o
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
@@ -1433,14 +1454,21 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
 		# 現在のオシレータカーソルY座標の変数を更新
-		copy_to_reg_from_val_long r13 $var_synth_current_osc_cursor_y
+		copy_to_reg_from_val_long r14 $var_synth_current_osc_cursor_y
 		sh2_set_reg r0 $OSC_CURSOR_Y_SIN
-		sh2_copy_to_ptr_from_reg_byte r13 r0
+		sh2_copy_to_ptr_from_reg_byte r14 r0
 
-		# # カーソル表示
-		# copy_to_reg_from_val_long r13 $a_synth_put_osc_param
-		# sh2_abs_call_to_reg_after_next_inst r13
-		# sh2_nop
+		# 現在の画面がオシレータ設定画面ならカーソル表示を更新
+		## 現在の画面番号変数のアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		## 現在の画面番号をr1へ設定
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_OSC?
+		sh2_set_reg r0 $SCRNUM_OSC
+		sh2_compare_reg_eq_reg r1 r0
+		## 現在の画面番号 == $SCRNUM_OSCならカーソル表示を更新
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatecursor - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatecursor.o
 
 		# 繰り返し使用するアドレスをレジスタへ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
