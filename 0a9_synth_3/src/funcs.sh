@@ -875,9 +875,16 @@ funcs() {
 	f_synth_put_osc_param >src/f_synth_put_osc_param.o
 	cat src/f_synth_put_osc_param.o
 
-	# synth: プログラム・チェンジ固有処理
+	# synth: LFO関連のレジスタの現在値を表示する
 	fsz=$(to16 $(stat -c '%s' src/f_synth_put_osc_param.o))
-	a_synth_proc_progchg=$(calc16_8 "${a_synth_put_osc_param}+${fsz}")
+	a_synth_put_lfo_param=$(calc16_8 "${a_synth_put_osc_param}+${fsz}")
+	echo -e "a_synth_put_lfo_param=$a_synth_put_lfo_param" >>$map_file
+	f_synth_put_lfo_param >src/f_synth_put_lfo_param.o
+	cat src/f_synth_put_lfo_param.o
+
+	# synth: プログラム・チェンジ固有処理
+	fsz=$(to16 $(stat -c '%s' src/f_synth_put_lfo_param.o))
+	a_synth_proc_progchg=$(calc16_8 "${a_synth_put_lfo_param}+${fsz}")
 	echo -e "a_synth_proc_progchg=$a_synth_proc_progchg" >>$map_file
 	f_synth_proc_progchg >src/f_synth_proc_progchg.o
 	cat src/f_synth_proc_progchg.o
@@ -896,16 +903,9 @@ funcs() {
 	f_synth_put_eg_param >src/f_synth_put_eg_param.o
 	cat src/f_synth_put_eg_param.o
 
-	# synth: LFO関連のレジスタの現在値を表示する
-	fsz=$(to16 $(stat -c '%s' src/f_synth_put_eg_param.o))
-	a_synth_put_lfo_param=$(calc16_8 "${a_synth_put_eg_param}+${fsz}")
-	echo -e "a_synth_put_lfo_param=$a_synth_put_lfo_param" >>$map_file
-	f_synth_put_lfo_param >src/f_synth_put_lfo_param.o
-	cat src/f_synth_put_lfo_param.o
-
 	# synth: アサイナブルホイール固有処理
-	fsz=$(to16 $(stat -c '%s' src/f_synth_put_lfo_param.o))
-	a_synth_proc_assign=$(calc16_8 "${a_synth_put_lfo_param}+${fsz}")
+	fsz=$(to16 $(stat -c '%s' src/f_synth_put_eg_param.o))
+	a_synth_proc_assign=$(calc16_8 "${a_synth_put_eg_param}+${fsz}")
 	echo -e "a_synth_proc_assign=$a_synth_proc_assign" >>$map_file
 	f_synth_proc_assign >src/f_synth_proc_assign.o
 	cat src/f_synth_proc_assign.o

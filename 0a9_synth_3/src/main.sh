@@ -199,8 +199,6 @@ main() {
 
 	# 使用するアドレスをレジスタへ設定
 	copy_to_reg_from_val_long r14 $a_synth_put_osc_param
-	copy_to_reg_from_val_long r13 $a_synth_put_eg_param
-	# copy_to_reg_from_val_long r13 $a_synth_put_lfo_param
 	copy_to_reg_from_val_long r12 $a_synth_check_and_enq_midimsg
 	copy_to_reg_from_val_long r11 $var_synth_slot_state_base
 	copy_to_reg_from_val_long r10 $a_key_off
@@ -213,16 +211,16 @@ main() {
 	# 現在のオシレータを示すカーソルを表示する
 	# (デフォルト=ノコギリ波)
 	# ※ 初期画面はオシレータ画面である想定
-	sh2_set_reg r1 $OSC_CURSOR_X
-	sh2_set_reg r2 $OSC_CURSOR_Y_SAW
 	sh2_abs_call_to_reg_after_next_inst r14
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_nop
 
 	# # EG関連のレジスタの現在値を表示する
+	# copy_to_reg_from_val_long r13 $a_synth_put_eg_param
 	# sh2_abs_call_to_reg_after_next_inst r13
 	# sh2_nop
 
 	# # LFO関連のレジスタの現在値を表示する
+	# copy_to_reg_from_val_long r13 $a_synth_put_lfo_param
 	# sh2_abs_call_to_reg_after_next_inst r13
 	# sh2_nop
 
@@ -445,14 +443,6 @@ main() {
 				copy_to_reg_from_val_long r1 $a_synth_proc_assign
 				sh2_abs_call_to_reg_after_next_inst r1
 				sh2_nop
-
-				# EG関連のレジスタの現在値を表示する
-				sh2_abs_call_to_reg_after_next_inst r13
-				sh2_nop
-
-				# # LFO関連のレジスタの現在値を表示する
-				# sh2_abs_call_to_reg_after_next_inst r13
-				# sh2_nop
 			) >src/main.assign.o
 			local sz_assign=$(stat -c '%s' src/main.assign.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_assign - 2) / 2)))
@@ -473,10 +463,6 @@ main() {
 				copy_to_reg_from_val_long r1 $a_synth_proc_progchg
 				sh2_abs_call_to_reg_after_next_inst r1
 				sh2_nop
-
-				# # LFO関連のレジスタの現在値を表示する
-				# sh2_abs_call_to_reg_after_next_inst r13
-				# sh2_nop
 			) >src/main.progchg.o
 			local sz_progchg=$(stat -c '%s' src/main.progchg.o)
 			sh2_rel_jump_if_false $(two_digits_d $(((sz_progchg - 2) / 2)))

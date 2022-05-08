@@ -1271,6 +1271,161 @@ f_synth_put_osc_param() {
 	sh2_nop
 }
 
+# LFO関連のレジスタの現在値を表示する
+# ※ スロット間で設定値は同一という想定でスロット0の値を表示
+# ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
+f_synth_put_lfo_param() {
+	# 変更が発生するレジスタを退避
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
+	sh2_copy_to_reg_from_macl r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+	sh2_copy_to_reg_from_pr r0
+	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
+
+	# 繰り返し使用するアドレスをレジスタへ設定
+	copy_to_reg_from_val_long r14 $(calc16_8 "$SS_CT_SND_SLOTCTR_S0_ADDR+8")
+	copy_to_reg_from_val_long r13 $a_putreg_xy_byte
+	copy_to_reg_from_val_long r12 $a_putchar_xy
+
+	# r14がLFOFを含む1ワードのレジスタを指すようにオフセットを加える
+	sh2_add_to_reg_from_val_byte r14 0a
+
+	# LFOFビット
+	## レジスタのLFOFビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_lfof_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_lfof_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_LFOF_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_LFO_LFOF_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# PLFOWSビット
+	## レジスタのPLFOWSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_plfows_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_plfows_to_lsb r1
+	## カーソルのY座標をr3へ設定
+	## r3 = coef * r1 + base
+	sh2_set_reg r3 $DUMP_LFO_PLFOWS_Y_BASE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_set_reg r0 $DUMP_LFO_PLFOWS_Y_COEF
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_multiply_reg_by_reg_unsigned_word r0 r1
+	sh2_copy_to_reg_from_macl r0
+	sh2_add_to_reg_from_reg r3 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_PLFOWS_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_set_reg r1 $CHARCODE_GREATER_THAN
+
+	# PLFOSビット
+	## レジスタのPLFOSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_plfos_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_plfos_to_lsb r1
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_PLFOS_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_set_reg r3 $DUMP_LFO_PLFOS_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# ALFOWSビット
+	## レジスタのALFOWSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_alfows_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	shift_alfows_to_lsb r1
+	## カーソルのY座標をr3へ設定
+	## r3 = coef * r1 + base
+	sh2_set_reg r3 $DUMP_LFO_ALFOWS_Y_BASE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_set_reg r0 $DUMP_LFO_ALFOWS_Y_COEF
+	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
+	sh2_multiply_reg_by_reg_unsigned_word r0 r1
+	sh2_copy_to_reg_from_macl r0
+	sh2_add_to_reg_from_reg r3 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r2 $DUMP_LFO_ALFOWS_X
+	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
+	sh2_abs_call_to_reg_after_next_inst r12
+	sh2_set_reg r1 $CHARCODE_LESS_THAN
+
+	# ALFOSビット
+	## レジスタのALFOSビットをr1へ取得
+	sh2_copy_to_reg_from_ptr_word r1 r14
+	set_mask_expose_alfos_to_r0
+	sh2_and_to_reg_from_reg r1 r0
+	## r1をグローバル変数で指定された座標へ出力
+	sh2_set_reg r0 $(echo $DUMP_LFO_ALFOS_X | cut -c1-2)
+	sh2_shift_left_logical_8 r0
+	sh2_or_to_r0_from_val_byte $(echo $DUMP_LFO_ALFOS_X | cut -c3-4)
+	sh2_copy_to_reg_from_reg r2 r0
+	sh2_set_reg r3 $DUMP_LFO_ALFOS_Y
+	sh2_abs_call_to_reg_after_next_inst r13
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+
+	# 次に表示するときのために各種アドレス変数を戻す
+	## キャラクタパターンを配置するアドレス
+	## 8文字のフォントサイズ分戻す
+	## $CON_FONT_SIZE * 8
+	## = $CON_FONT_SIZE * (4 + 4)
+	## = ($CON_FONT_SIZE * 4) + ($CON_FONT_SIZE * 4)
+	## = ($CON_FONT_SIZE * 2^2) + ($CON_FONT_SIZE * 2^2)
+	## = ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 2)
+	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r1
+	sh2_set_reg r3 $CON_FONT_SIZE
+	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
+	sh2_copy_to_reg_from_reg r0 r3
+	### $CON_FONT_SIZE << 2
+	sh2_shift_left_logical_2 r3
+	### $CON_FONT_SIZE << 2
+	sh2_shift_left_logical_2 r0
+	### ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 2)
+	sh2_add_to_reg_from_reg r3 r0
+	sh2_sub_to_reg_from_reg r2 r3
+	sh2_copy_to_ptr_from_reg_long r1 r2
+	## VDPコマンドを配置するアドレス
+	## コマンド8個のサイズ(32 * 8 = 256 = 0x100)分戻す
+	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
+	sh2_copy_to_reg_from_ptr_long r2 r1
+	sh2_set_reg r0 01
+	sh2_shift_left_logical_8 r0
+	sh2_sub_to_reg_from_reg r2 r0
+	sh2_copy_to_ptr_from_reg_long r1 r2
+
+	# 退避したレジスタを復帰
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_pr_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+	sh2_copy_to_macl_from_reg r0
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+	# return
+	sh2_return_after_next_inst
+	sh2_nop
+}
+
 # プログラム・チェンジ固有処理
 f_synth_proc_progchg() {
 	# 変更が発生するレジスタを退避
@@ -1293,6 +1448,13 @@ f_synth_proc_progchg() {
 		sh2_nop
 	) >src/f_synth_proc_progchg.updatecursor.o
 	local sz_updatecursor=$(stat -c '%s' src/f_synth_proc_progchg.updatecursor.o)
+	(
+		# LFO関連のパラメータ表示を更新
+		copy_to_reg_from_val_long r14 $a_synth_put_lfo_param
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_nop
+	) >src/f_synth_proc_progchg.updatelfo.o
+	local sz_updatelfo=$(stat -c '%s' src/f_synth_proc_progchg.updatelfo.o)
 
 	# SSCTL・SA[15:0]設定
 	## プログラム番号 == $PROGNUM_OSC_SAW?
@@ -1587,6 +1749,16 @@ f_synth_proc_progchg() {
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
 
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
+
 		# 退避したレジスタを復帰
 		## この処理
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
@@ -1633,6 +1805,16 @@ f_synth_proc_progchg() {
 		sh2_or_to_reg_from_reg r2 r0
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
 
 		# 退避したレジスタを復帰
 		## この処理
@@ -1681,6 +1863,16 @@ f_synth_proc_progchg() {
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
 
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
+
 		# 退避したレジスタを復帰
 		## この処理
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
@@ -1728,6 +1920,16 @@ f_synth_proc_progchg() {
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
 
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
+
 		# 退避したレジスタを復帰
 		## この処理
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
@@ -1772,6 +1974,16 @@ f_synth_proc_progchg() {
 		sh2_and_to_reg_from_reg r2 r0
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
 
 		# 退避したレジスタを復帰
 		## この処理
@@ -1819,6 +2031,16 @@ f_synth_proc_progchg() {
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
 
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
+
 		# 退避したレジスタを復帰
 		## この処理
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
@@ -1865,6 +2087,16 @@ f_synth_proc_progchg() {
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
 
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
+
 		# 退避したレジスタを復帰
 		## この処理
 		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
@@ -1910,6 +2142,16 @@ f_synth_proc_progchg() {
 		sh2_or_to_reg_from_reg r2 r0
 		## 全スロットへr2を設定
 		cat src/f_synth_proc_progchg.setallslot.o
+
+		# 現在の画面番号に応じてパラメータ表示を更新
+		## 現在の画面番号をr1へ取得
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+		sh2_set_reg r0 $SCRNUM_LFO
+		sh2_compare_reg_eq_reg r1 r0
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatelfo.o
 
 		# 退避したレジスタを復帰
 		## この処理
@@ -2127,161 +2369,6 @@ f_synth_put_eg_param() {
 	sh2_copy_to_pr_from_reg r0
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
-
-	# return
-	sh2_return_after_next_inst
-	sh2_nop
-}
-
-# LFO関連のレジスタの現在値を表示する
-# ※ スロット間で設定値は同一という想定でスロット0の値を表示
-# ※ 各ビットフィールドの値を表示する座標はグローバル変数で定義
-f_synth_put_lfo_param() {
-	# 変更が発生するレジスタを退避
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r1
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r3
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r12
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r13
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
-	sh2_copy_to_reg_from_macl r0
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
-	sh2_copy_to_reg_from_pr r0
-	sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r0
-
-	# 繰り返し使用するアドレスをレジスタへ設定
-	copy_to_reg_from_val_long r14 $(calc16_8 "$SS_CT_SND_SLOTCTR_S0_ADDR+8")
-	copy_to_reg_from_val_long r13 $a_putreg_xy_byte
-	copy_to_reg_from_val_long r12 $a_putchar_xy
-
-	# r14がLFOFを含む1ワードのレジスタを指すようにオフセットを加える
-	sh2_add_to_reg_from_val_byte r14 0a
-
-	# LFOFビット
-	## レジスタのLFOFビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_lfof_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_lfof_to_lsb r1
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_LFO_LFOF_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_LFO_LFOF_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# PLFOWSビット
-	## レジスタのPLFOWSビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_plfows_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_plfows_to_lsb r1
-	## カーソルのY座標をr3へ設定
-	## r3 = coef * r1 + base
-	sh2_set_reg r3 $DUMP_LFO_PLFOWS_Y_BASE
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	sh2_set_reg r0 $DUMP_LFO_PLFOWS_Y_COEF
-	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
-	sh2_multiply_reg_by_reg_unsigned_word r0 r1
-	sh2_copy_to_reg_from_macl r0
-	sh2_add_to_reg_from_reg r3 r0
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_LFO_PLFOWS_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r1 $CHARCODE_GREATER_THAN
-
-	# PLFOSビット
-	## レジスタのPLFOSビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_plfos_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_plfos_to_lsb r1
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_LFO_PLFOS_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_set_reg r3 $DUMP_LFO_PLFOS_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# ALFOWSビット
-	## レジスタのALFOWSビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_alfows_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	shift_alfows_to_lsb r1
-	## カーソルのY座標をr3へ設定
-	## r3 = coef * r1 + base
-	sh2_set_reg r3 $DUMP_LFO_ALFOWS_Y_BASE
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	sh2_set_reg r0 $DUMP_LFO_ALFOWS_Y_COEF
-	sh2_extend_unsigned_to_reg_from_reg_byte r0 r0
-	sh2_multiply_reg_by_reg_unsigned_word r0 r1
-	sh2_copy_to_reg_from_macl r0
-	sh2_add_to_reg_from_reg r3 r0
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r2 $DUMP_LFO_ALFOWS_X
-	sh2_extend_unsigned_to_reg_from_reg_byte r2 r2
-	sh2_abs_call_to_reg_after_next_inst r12
-	sh2_set_reg r1 $CHARCODE_LESS_THAN
-
-	# ALFOSビット
-	## レジスタのALFOSビットをr1へ取得
-	sh2_copy_to_reg_from_ptr_word r1 r14
-	set_mask_expose_alfos_to_r0
-	sh2_and_to_reg_from_reg r1 r0
-	## r1をグローバル変数で指定された座標へ出力
-	sh2_set_reg r0 $(echo $DUMP_LFO_ALFOS_X | cut -c1-2)
-	sh2_shift_left_logical_8 r0
-	sh2_or_to_r0_from_val_byte $(echo $DUMP_LFO_ALFOS_X | cut -c3-4)
-	sh2_copy_to_reg_from_reg r2 r0
-	sh2_set_reg r3 $DUMP_LFO_ALFOS_Y
-	sh2_abs_call_to_reg_after_next_inst r13
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-
-	# 次に表示するときのために各種アドレス変数を戻す
-	## キャラクタパターンを配置するアドレス
-	## 8文字のフォントサイズ分戻す
-	## $CON_FONT_SIZE * 8
-	## = $CON_FONT_SIZE * (4 + 4)
-	## = ($CON_FONT_SIZE * 4) + ($CON_FONT_SIZE * 4)
-	## = ($CON_FONT_SIZE * 2^2) + ($CON_FONT_SIZE * 2^2)
-	## = ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 2)
-	copy_to_reg_from_val_long r1 $var_next_cp_other_addr
-	sh2_copy_to_reg_from_ptr_long r2 r1
-	sh2_set_reg r3 $CON_FONT_SIZE
-	sh2_extend_unsigned_to_reg_from_reg_byte r3 r3
-	sh2_copy_to_reg_from_reg r0 r3
-	### $CON_FONT_SIZE << 2
-	sh2_shift_left_logical_2 r3
-	### $CON_FONT_SIZE << 2
-	sh2_shift_left_logical_2 r0
-	### ($CON_FONT_SIZE << 2) + ($CON_FONT_SIZE << 2)
-	sh2_add_to_reg_from_reg r3 r0
-	sh2_sub_to_reg_from_reg r2 r3
-	sh2_copy_to_ptr_from_reg_long r1 r2
-	## VDPコマンドを配置するアドレス
-	## コマンド8個のサイズ(32 * 8 = 256 = 0x100)分戻す
-	copy_to_reg_from_val_long r1 $var_next_vdpcom_other_addr
-	sh2_copy_to_reg_from_ptr_long r2 r1
-	sh2_set_reg r0 01
-	sh2_shift_left_logical_8 r0
-	sh2_sub_to_reg_from_reg r2 r0
-	sh2_copy_to_ptr_from_reg_long r1 r2
-
-	# 退避したレジスタを復帰
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
-	sh2_copy_to_pr_from_reg r0
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
-	sh2_copy_to_macl_from_reg r0
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r14 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r13 r15
-	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r12 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
@@ -2738,6 +2825,35 @@ f_synth_proc_assign() {
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_alfos - 2) / 2)))
 	cat src/f_synth_proc_assign.alfos.o
 
+	# 現在の画面番号に応じてパラメータ表示を更新
+	## 現在の画面番号をr1へ取得
+	copy_to_reg_from_val_long r1 $var_synth_current_scrnum
+	sh2_copy_to_reg_from_ptr_byte r1 r1
+	## 現在の画面番号 == $SCRNUM_EGならEG関連のパラメータ表示を更新
+	sh2_set_reg r0 $SCRNUM_EG
+	sh2_compare_reg_eq_reg r1 r0
+	(
+		# EG関連のパラメータ表示を更新
+		copy_to_reg_from_val_long r14 $a_synth_put_eg_param
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_nop
+	) >src/f_synth_proc_assign.updateeg.o
+	local sz_updateeg=$(stat -c '%s' src/f_synth_proc_assign.updateeg.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_updateeg - 2) / 2)))
+	cat src/f_synth_proc_assign.updateeg.o
+	## 現在の画面番号 == $SCRNUM_LFOならLFO関連のパラメータ表示を更新
+	sh2_set_reg r0 $SCRNUM_LFO
+	sh2_compare_reg_eq_reg r1 r0
+	(
+		# LFO関連のパラメータ表示を更新
+		copy_to_reg_from_val_long r14 $a_synth_put_lfo_param
+		sh2_abs_call_to_reg_after_next_inst r14
+		sh2_nop
+	) >src/f_synth_proc_assign.updatelfo.o
+	local sz_updatelfo=$(stat -c '%s' src/f_synth_proc_assign.updatelfo.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_updatelfo - 2) / 2)))
+	cat src/f_synth_proc_assign.updatelfo.o
+
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
 	sh2_copy_to_pr_from_reg r0
@@ -2972,6 +3088,60 @@ f_synth_proc_startstop() {
 	local sz_osc=$(stat -c '%s' src/f_synth_proc_startstop.osc.o)
 	sh2_rel_jump_if_false $(two_digits_d $(((sz_osc - 2) / 2)))
 	cat src/f_synth_proc_startstop.osc.o
+
+	# 現在の画面がEG設定画面の場合、EG関連のパラメータを表示しreturn
+	sh2_set_reg r0 $SCRNUM_EG
+	sh2_compare_reg_eq_reg r1 r0
+	(
+		# 現在の画面番号 == EG設定画面番号の場合
+
+		# EG関連のパラメータを表示
+		copy_to_reg_from_val_long r1 $a_synth_put_eg_param
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
+
+		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_startstop.eg.o
+	local sz_eg=$(stat -c '%s' src/f_synth_proc_startstop.eg.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_eg - 2) / 2)))
+	cat src/f_synth_proc_startstop.eg.o
+
+	# 現在の画面がLFO設定画面の場合、LFO関連のパラメータを表示しreturn
+	sh2_set_reg r0 $SCRNUM_LFO
+	sh2_compare_reg_eq_reg r1 r0
+	(
+		# 現在の画面番号 == LFO設定画面番号の場合
+
+		# LFO関連のパラメータを表示
+		copy_to_reg_from_val_long r1 $a_synth_put_lfo_param
+		sh2_abs_call_to_reg_after_next_inst r1
+		sh2_nop
+
+		# 退避したレジスタを復帰
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+		sh2_copy_to_pr_from_reg r0
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r1 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r3 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r2 r15
+		sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
+
+		# return
+		sh2_return_after_next_inst
+		sh2_nop
+	) >src/f_synth_proc_startstop.lfo.o
+	local sz_lfo=$(stat -c '%s' src/f_synth_proc_startstop.lfo.o)
+	sh2_rel_jump_if_false $(two_digits_d $(((sz_lfo - 2) / 2)))
+	cat src/f_synth_proc_startstop.lfo.o
 
 	# 退避したレジスタを復帰
 	sh2_copy_to_reg_from_ptr_and_inc_ptr_long r0 r15
