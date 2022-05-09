@@ -1687,6 +1687,23 @@ f_synth_proc_progchg() {
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r2
 		sh2_dec_ptr_and_copy_to_ptr_from_reg_long r15 r14
 
+		# 現在のオシレータカーソルY座標の変数を更新
+		copy_to_reg_from_val_long r14 $var_synth_current_osc_cursor_y
+		sh2_set_reg r0 $OSC_CURSOR_Y_NOISE
+		sh2_copy_to_ptr_from_reg_byte r14 r0
+
+		# 現在の画面がオシレータ設定画面ならカーソル表示を更新
+		## 現在の画面番号変数のアドレスをr14へ設定
+		copy_to_reg_from_val_long r14 $var_synth_current_scrnum
+		## 現在の画面番号をr1へ設定
+		sh2_copy_to_reg_from_ptr_byte r1 r14
+		## 現在の画面番号 == $SCRNUM_OSC?
+		sh2_set_reg r0 $SCRNUM_OSC
+		sh2_compare_reg_eq_reg r1 r0
+		## 現在の画面番号 == $SCRNUM_OSCならカーソル表示を更新
+		sh2_rel_jump_if_false $(two_digits_d $(((sz_updatecursor - 2) / 2)))
+		cat src/f_synth_proc_progchg.updatecursor.o
+
 		# 全スロットのSSCTL=1
 		## スロット0における該当レジスタアドレスをr14へ設定
 		copy_to_reg_from_val_long r14 $SS_CT_SND_SLOTCTR_S0_ADDR
