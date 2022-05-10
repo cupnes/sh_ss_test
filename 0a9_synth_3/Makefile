@@ -9,7 +9,7 @@ all: $(TARGETS)
 $(NAME).cue: $(NAME).iso
 	$(TOOLS_PATH)/make_cue.sh $< >$@
 
-$(NAME).iso: 0.BIN osc.img pitch_bend.img eg.img lfo.img
+$(NAME).iso: 0.BIN author.img osc.img pitch_bend.img eg.img lfo.img
 	./iso9660.sh $^ >$@
 
 0.BIN: src/main.sh src/vars.o src/vars_map.sh src/funcs.o	\
